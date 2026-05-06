@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freedom AI — 무한 캔버스 협업 툴</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0e0e0d;
+    --ink2: #3a3a38;
+    --ink3: #7a7a75;
+    --paper: #f5f3ee;
+    --paper2: #ede9e2;
+    --paper3: #e3dfd6;
+    --accent: #1a1a18;
+    --gold: #b8924a;
+    --gold-light: #d4aa6a;
+    --white: #ffffff;
+    --radius: 14px;
+    --radius-lg: 22px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 64px;
+    background: rgba(245, 243, 238, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 0.5px solid rgba(14,14,13,0.1);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    background: var(--ink);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark svg { display: block; }
+
+  .logo-text {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+
+  nav a {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink2);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: color 0.2s;
+  }
+
+  nav a:hover { color: var(--ink); }
+
+  .header-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-ghost {
+    font-size: 14px;
+    color: var(--ink2);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px 4px;
+    font-family: inherit;
+    transition: color 0.2s;
+  }
+
+  .btn-ghost:hover { color: var(--ink); }
+
+  .btn-primary {
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--paper);
+    background: var(--ink);
+    border: none;
+    border-radius: 100px;
+    padding: 9px 22px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: -0.01em;
+  }
+
+  .btn-primary:hover { background: var(--ink2); transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* ── BANNER / HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* decorative grid */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(14,14,13,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(14,14,13,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    text-align: center;
+    max-width: 800px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--white);
+    border: 0.5px solid rgba(14,14,13,0.15);
+    border-radius: 100px;
+    padding: 5px 14px 5px 8px;
+    font-size: 12px;
+    color: var(--ink2);
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-badge-dot {
+    width: 18px;
+    height: 18px;
+    background: var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-badge-dot::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--gold-light);
+    border-radius: 50%;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(48px, 8vw, 80px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-desc {
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--ink2);
+    max-width: 520px;
+    margin: 0 auto 40px;
+    line-height: 1.65;
+    letter-spacing: -0.01em;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-hero {
+    font-size: 15px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--paper);
+    background: var(--ink);
+    border: none;
+    border-radius: 100px;
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: -0.01em;
+  }
+
+  .btn-hero:hover { background: var(--ink2); transform: translateY(-2px); }
+
+  .btn-outline {
+    font-size: 15px;
+    font-weight: 400;
+    font-family: inherit;
+    color: var(--ink);
+    background: transparent;
+    border: 0.5px solid rgba(14,14,13,0.3);
+    border-radius: 100px;
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    letter-spacing: -0.01em;
+  }
+
+  .btn-outline:hover { border-color: var(--ink); background: rgba(14,14,13,0.04); transform: translateY(-2px); }
+
+  /* canvas preview mockup */
+  .hero-canvas {
+    margin-top: 64px;
+    width: 100%;
+    max-width: 780px;
+    background: var(--white);
+    border: 0.5px solid rgba(14,14,13,0.12);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 32px 80px rgba(14,14,13,0.1), 0 2px 8px rgba(14,14,13,0.06);
+    overflow: hidden;
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+
+  .canvas-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid rgba(14,14,13,0.08);
+    background: var(--paper);
+  }
+
+  .canvas-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .canvas-dot:nth-child(1) { background: #ff5f57; }
+  .canvas-dot:nth-child(2) { background: #febc2e; }
+  .canvas-dot:nth-child(3) { background: #28c840; }
+
+  .canvas-title {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink3);
+    letter-spacing: -0.01em;
+  }
+
+  .canvas-body {
+    height: 320px;
+    background: var(--paper2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* sticky notes */
+  .sticky {
+    position: absolute;
+    width: 130px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    box-shadow: 0 4px 16px rgba(14,14,13,0.1);
+    font-weight: 400;
+  }
+
+  .sticky-yellow { background: #fef08a; color: #713f12; top: 40px; left: 60px; transform: rotate(-2deg); }
+  .sticky-pink   { background: #fbcfe8; color: #831843; top: 80px; left: 230px; transform: rotate(1.5deg); }
+  .sticky-green  { background: #bbf7d0; color: #14532d; top: 30px; left: 400px; transform: rotate(-1deg); }
+  .sticky-blue   { background: #bae6fd; color: #0c4a6e; top: 170px; left: 120px; transform: rotate(2deg); }
+  .sticky-peach  { background: #fed7aa; color: #7c2d12; top: 160px; left: 320px; transform: rotate(-1.5deg); }
+
+  /* cursor dots */
+  .cursor-dot {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    pointer-events: none;
+  }
+
+  .cursor-dot-circle {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--white);
+  }
+
+  .cursor-label {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 100px;
+    color: var(--white);
+    white-space: nowrap;
+  }
+
+  .cursor-a { top: 55px; left: 188px; }
+  .cursor-a .cursor-dot-circle { background: #8b5cf6; }
+  .cursor-a .cursor-label { background: #8b5cf6; }
+
+  .cursor-b { top: 175px; left: 460px; }
+  .cursor-b .cursor-dot-circle { background: #0ea5e9; }
+  .cursor-b .cursor-label { background: #0ea5e9; }
+
+  /* ── SECTION SHARED ── */
+  section {
+    padding: 96px 40px;
+  }
+
+  .section-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .section-kicker {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .section-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(32px, 5vw, 50px);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+
+  .section-sub {
+    font-size: 17px;
+    font-weight: 300;
+    color: var(--ink2);
+    line-height: 1.65;
+    max-width: 520px;
+  }
+
+  /* ── CARD SECTION ── */
+  .cards-section {
+    background: var(--white);
+  }
+
+  .cards-header {
+    margin-bottom: 56px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    nav { display: none; }
+    header { padding: 0 20px; }
+    section { padding: 72px 20px; }
+    .hero { padding: 100px 20px 60px; }
+  }
+
+  .card {
+    background: var(--paper);
+    border: 0.5px solid rgba(14,14,13,0.1);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    cursor: default;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(14,14,13,0.08);
+  }
+
+  .card-icon-wrap {
+    width: 44px;
+    height: 44px;
+    background: var(--ink);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .card-icon-wrap svg { display: block; }
+
+  .card h3 {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .card p {
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--ink2);
+    line-height: 1.6;
+  }
+
+  .card-phase {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-top: 16px;
+    letter-spacing: 0.03em;
+  }
+
+  .phase-1 { background: var(--ink); color: var(--paper); }
+  .phase-2 { background: var(--paper3); color: var(--ink2); }
+  .phase-3 { background: rgba(184,146,74,0.12); color: var(--gold); }
+
+  /* featured card */
+  .card-featured {
+    background: var(--ink);
+    color: var(--paper);
+    grid-column: span 1;
+  }
+
+  .card-featured .card-icon-wrap { background: rgba(255,255,255,0.1); }
+  .card-featured h3 { color: var(--paper); }
+  .card-featured p { color: rgba(245,243,238,0.65); }
+
+  /* ── PHASE SECTION ── */
+  .phase-section {
+    background: var(--paper2);
+  }
+
+  .phase-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 56px;
+  }
+
+  @media (max-width: 900px) {
+    .phase-list { grid-template-columns: 1fr; }
+  }
+
+  .phase-card {
+    background: var(--white);
+    border: 0.5px solid rgba(14,14,13,0.1);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+  }
+
+  .phase-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px;
+    line-height: 1;
+    color: var(--paper3);
+    margin-bottom: 16px;
+  }
+
+  .phase-card h3 {
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .phase-card p {
+    font-size: 13px;
+    color: var(--ink2);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .phase-items {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .phase-item {
+    font-size: 13px;
+    color: var(--ink2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-item::before {
+    content: '';
+    width: 5px; height: 5px;
+    background: var(--gold);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 64px 40px 40px;
+  }
+
+  .footer-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 48px;
+    border-bottom: 0.5px solid rgba(245,243,238,0.1);
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 800px) {
+    .footer-top { grid-template-columns: 1fr 1fr; }
+  }
+
+  .footer-brand .logo-text { color: var(--paper); }
+  .footer-brand p {
+    font-size: 13px;
+    color: rgba(245,243,238,0.45);
+    margin-top: 14px;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .footer-col h4 {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(245,243,238,0.4);
+    margin-bottom: 16px;
+  }
+
+  .footer-col a {
+    display: block;
+    font-size: 14px;
+    color: rgba(245,243,238,0.7);
+    text-decoration: none;
+    margin-bottom: 10px;
+    font-weight: 300;
+    transition: color 0.2s;
+  }
+
+  .footer-col a:hover { color: var(--paper); }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-bottom p {
+    font-size: 12px;
+    color: rgba(245,243,238,0.3);
+    font-weight: 300;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+    color: rgba(245,243,238,0.3);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: rgba(245,243,238,0.7); }
+
+  /* animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════
+     HEADER
+══════════════════════════ -->
+<header>
+  <a href="#" class="logo">
+    <div class="logo-mark">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M3 9C3 5.686 5.686 3 9 3s6 2.686 6 6-2.686 6-6 6S3 12.314 3 9z" fill="none" stroke="#f5f3ee" stroke-width="1.2"/>
+        <path d="M6 9h6M9 6v6" stroke="#b8924a" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">Freedom AI</span>
+  </a>
+
+  <nav>
+    <a href="#features">기능</a>
+    <a href="#phases">로드맵</a>
+    <a href="#about">소개</a>
+  </nav>
+
+  <div class="header-cta">
+    <button class="btn-ghost">로그인</button>
+    <button class="btn-primary">무료로 시작하기</button>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════
+     BANNER / HERO
+══════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-inner">
+
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      언제 어디서나 쉽게 — 웹 & 모바일에서 바로
+    </div>
+
+    <h1>생각을 <em>함께</em><br>그리는 공간</h1>
+
+    <p class="hero-desc">
+      Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.
+    </p>
+
+    <div class="hero-actions">
+      <a href="app.html" class="btn-hero" style="text-decoration:none; display:inline-flex; align-items:center;">지금 시작하기 →</a>
+      <button class="btn-outline">데모 보기</button>
+    </div>
+
+    <!-- Canvas mockup -->
+    <div class="hero-canvas">
+      <div class="canvas-bar">
+        <div class="canvas-dot"></div>
+        <div class="canvas-dot"></div>
+        <div class="canvas-dot"></div>
+        <div class="canvas-title">무제 보드 — 3명 작업 중</div>
+      </div>
+      <div class="canvas-body">
+
+        <div class="sticky sticky-yellow">🎯 핵심 기능<br>우선 정리하기</div>
+        <div class="sticky sticky-pink">디자인 레퍼런스<br>Miro, FigJam</div>
+        <div class="sticky sticky-green">WebSocket으로<br>실시간 협업!</div>
+        <div class="sticky sticky-blue">Phase 1<br>뼈대부터 시작</div>
+        <div class="sticky sticky-peach">AI 이미지<br>편집 기능 🤖</div>
+
+        <!-- live cursors -->
+        <div class="cursor-dot cursor-a">
+          <div class="cursor-dot-circle"></div>
+          <span class="cursor-label">지영</span>
+        </div>
+        <div class="cursor-dot cursor-b">
+          <div class="cursor-dot-circle"></div>
+          <span class="cursor-label">민준</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════
+     CARD SECTION — 기능
+══════════════════════════ -->
+<section class="cards-section" id="features">
+  <div class="section-inner">
+
+    <div class="cards-header">
+      <div class="section-kicker">Features</div>
+      <h2 class="section-heading">필요한 것,<br>전부 담았어요</h2>
+      <p class="section-sub">복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.</p>
+    </div>
+
+    <div class="cards-grid">
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M2 11h18M11 2v18" stroke="#f5f3ee" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="11" cy="11" r="3" stroke="rgba(245,243,238,0.6)" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <h3>무한 캔버스</h3>
+        <p>핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.</p>
+        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 18L14 4l4 4L8 18H4v-4l10-10" stroke="#f5f3ee" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>펜 & 지우개</h3>
+        <p>손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.</p>
+        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="7" cy="11" r="3" fill="#f5f3ee" opacity="0.9"/>
+            <circle cx="15" cy="7" r="2.5" fill="#f5f3ee" opacity="0.6"/>
+            <circle cx="15" cy="15" r="2.5" fill="#f5f3ee" opacity="0.35"/>
+          </svg>
+        </div>
+        <h3>색상 팔레트</h3>
+        <p>기본 색상부터 HEX 직접 입력까지. 내 감각대로 캔버스를 색칠하세요.</p>
+        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="5" width="7" height="7" rx="2" fill="#f5f3ee" opacity="0.9"/>
+            <rect x="12" y="5" width="7" height="7" rx="2" fill="#f5f3ee" opacity="0.5"/>
+            <rect x="3" y="14" width="16" height="4" rx="2" fill="#f5f3ee" opacity="0.3"/>
+          </svg>
+        </div>
+        <h3>포스트잇</h3>
+        <p>색깔 포스트잇을 자유롭게 붙이고 이동하세요. 아이디에이션의 시작.</p>
+        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="5" cy="11" r="2" fill="#f5f3ee"/>
+            <circle cx="17" cy="11" r="2" fill="#f5f3ee"/>
+            <circle cx="11" cy="5" r="2" fill="#f5f3ee" opacity="0.5"/>
+            <path d="M7 11h8M11 7v8" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3>실시간 협업</h3>
+        <p>팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
+        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 6h14M4 11h10M4 16h7" stroke="#f5f3ee" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="17" cy="16" r="3" fill="#f5f3ee" opacity="0.4"/>
+            <path d="M16 16h2M17 15v2" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>협업 To-Do</h3>
+        <p>캔버스 안에 할 일 목록을 만들고 팀원과 함께 체크해 나가세요.</p>
+        <span class="card-phase phase-2">Phase 2</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="5" width="16" height="12" rx="2.5" fill="#f5f3ee" opacity="0.15" stroke="#f5f3ee" stroke-width="1.2"/>
+            <path d="M3 13l4-3 3 2 4-4 5 4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>이미지 드래그</h3>
+        <p>레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.</p>
+        <span class="card-phase phase-2">Phase 2</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 3C6.582 3 3 6.582 3 11s3.582 8 8 8 8-3.582 8-8" stroke="#f5f3ee" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M15 3l2 2-5 5-2-2 5-5z" fill="#b8924a" opacity="0.8"/>
+            <path d="M17 5l2-2" stroke="#b8924a" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>AI 이미지 편집</h3>
+        <p>캔버스 위 이미지를 선택해 AI가 변형·생성해드려요. 레퍼런스를 즉시 시각화.</p>
+        <span class="card-phase phase-3">Phase 3 · AI</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2"/>
+            <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2" opacity="0.5"/>
+            <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2" opacity="0.5"/>
+            <path d="M14 16h4M16 14v4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </div>
+        <h3>도형 도구</h3>
+        <p>사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.</p>
+        <span class="card-phase phase-2">Phase 2</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════
+     PHASE SECTION — 로드맵
+══════════════════════════ -->
+<section class="phase-section" id="phases">
+  <div class="section-inner">
+    <div class="section-kicker">Roadmap</div>
+    <h2 class="section-heading">기초부터,<br>단계적으로</h2>
+    <p class="section-sub">처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.</p>
+
+    <div class="phase-list">
+      <div class="phase-card">
+        <div class="phase-num">01</div>
+        <h3>기초 — 핵심 기능</h3>
+        <p>앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.</p>
+        <div class="phase-items">
+          <div class="phase-item">무한 캔버스</div>
+          <div class="phase-item">펜 & 지우개</div>
+          <div class="phase-item">색상 팔레트</div>
+          <div class="phase-item">포스트잇</div>
+          <div class="phase-item">실시간 협업 커서</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num">02</div>
+        <h3>발전 — 확장 기능</h3>
+        <p>뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
+        <div class="phase-items">
+          <div class="phase-item">기본 도형 도구</div>
+          <div class="phase-item">이미지 드래그 & 드롭</div>
+          <div class="phase-item">협업 To-Do List</div>
+          <div class="phase-item">공유 링크 생성</div>
+          <div class="phase-item">모바일 최적화</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num">03</div>
+        <h3>고도화 — AI 기능</h3>
+        <p>AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.</p>
+        <div class="phase-items">
+          <div class="phase-item">AI 이미지 편집·생성</div>
+          <div class="phase-item">AI 아이디어 제안</div>
+          <div class="phase-item">자동 레이아웃 정리</div>
+          <div class="phase-item">버전 히스토리</div>
+          <div class="phase-item">오프라인 지원</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════
+     FOOTER
+══════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+
+      <div class="footer-brand">
+        <a href="#" class="logo" style="margin-bottom: 0;">
+          <div class="logo-mark">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M3 9C3 5.686 5.686 3 9 3s6 2.686 6 6-2.686 6-6 6S3 12.314 3 9z" fill="none" stroke="rgba(245,243,238,0.5)" stroke-width="1.2"/>
+              <path d="M6 9h6M9 6v6" stroke="#b8924a" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="logo-text">Freedom AI</span>
+        </a>
+        <p>언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>제품</h4>
+        <a href="#">기능 소개</a>
+        <a href="#">로드맵</a>
+        <a href="#">업데이트</a>
+        <a href="#">요금제</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>지원</h4>
+        <a href="#">시작 가이드</a>
+        <a href="#">자주 묻는 질문</a>
+        <a href="#">문의하기</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>회사</h4>
+        <a href="#">소개</a>
+        <a href="#">블로그</a>
+        <a href="#">채용</a>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2025 Freedom AI. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">개인정보처리방침</a>
+        <a href="#">이용약관</a>
+        <a href="#">쿠키 설정</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

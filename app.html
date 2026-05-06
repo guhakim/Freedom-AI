@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Freedom AI — 캔버스</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0e0e0d; --ink2: #3a3a38; --ink3: #7a7a75;
+    --paper: #f5f3ee; --paper2: #ede9e2; --paper3: #e3dfd6;
+    --gold: #b8924a; --white: #ffffff;
+  }
+
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--paper2);
+    font-family:'DM Sans',sans-serif; -webkit-font-smoothing:antialiased; user-select:none; }
+
+  /* ── CANVAS ── */
+  #canvas { display:block; width:100%; height:100%; touch-action:none;
+    position:fixed; top:0; left:0; z-index:1; }
+
+  /* ── NOTES LAYER ── */
+  #notes-layer { position:fixed; top:0; left:0; width:0; height:0;
+    transform-origin:0 0; overflow:visible; pointer-events:none; z-index:10; }
+
+  .note { position:absolute; border-radius:10px; display:flex; flex-direction:column;
+    pointer-events:auto; overflow:hidden;
+    box-shadow:0 4px 14px rgba(14,14,13,.13),0 1px 3px rgba(14,14,13,.08);
+    animation:noteIn .18s cubic-bezier(.34,1.56,.64,1) both; }
+
+  @keyframes noteIn { from{opacity:0;transform:scale(.82)} to{opacity:1;transform:scale(1)} }
+  .note.deleting { animation:noteOut .15s ease both; }
+  @keyframes noteOut { to{opacity:0;transform:scale(.85)} }
+
+  .note-handle { height:28px; border-radius:10px 10px 0 0; display:flex;
+    align-items:center; justify-content:flex-end; padding:0 7px;
+    cursor:grab; background:rgba(0,0,0,.07); flex-shrink:0; }
+  .note-handle:active { cursor:grabbing; }
+
+  .note-delete { width:18px; height:18px; border:none; background:rgba(0,0,0,.12);
+    border-radius:50%; cursor:pointer; font-size:11px; color:rgba(14,14,13,.55);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s,background .15s; padding:0; }
+  .note:hover .note-delete { opacity:1; }
+  .note-delete:hover { background:rgba(0,0,0,.25); color:var(--ink); }
+
+  .note-text { flex:1; padding:9px 11px 4px; font-size:13px; line-height:1.55;
+    color:var(--ink); outline:none; word-break:break-word; white-space:pre-wrap;
+    cursor:text; font-family:'DM Sans',sans-serif; overflow-y:auto; }
+  .note-text:empty::before { content:attr(data-placeholder);
+    color:rgba(14,14,13,.3); pointer-events:none; }
+
+  .note-resize-bar { display:flex; justify-content:space-between; align-items:flex-end;
+    padding:2px 4px 4px; flex-shrink:0; height:18px; }
+  .note-resize-handle { width:14px; height:14px; display:flex; align-items:center;
+    justify-content:center; opacity:0; transition:opacity .15s; flex-shrink:0; border-radius:3px; }
+  .note-resize-handle.left  { cursor:sw-resize; }
+  .note-resize-handle.right { cursor:se-resize; }
+  .note:hover .note-resize-handle { opacity:.55; }
+  .note-resize-handle:hover { opacity:1 !important; }
+  .note-resize-handle svg { display:block; pointer-events:none; }
+
+  /* ── REMOTE CURSORS LAYER ── */
+  #cursors-layer { position:fixed; top:0; left:0; pointer-events:none; z-index:20; }
+
+  .remote-cursor { position:absolute; display:flex; align-items:center; gap:5px;
+    transform:translate(0,-2px); transition:left .06s linear, top .06s linear; }
+  .remote-cursor svg { filter:drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+  .cursor-name { font-size:11px; font-weight:500; padding:2px 8px; border-radius:100px;
+    color:#fff; white-space:nowrap; font-family:'DM Sans',sans-serif; }
+
+  /* ── TOPBAR ── */
+  .topbar { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:100;
+    background:var(--white); border:.5px solid rgba(14,14,13,.12); border-radius:100px;
+    padding:7px 14px; display:flex; align-items:center; gap:3px;
+    box-shadow:0 4px 24px rgba(14,14,13,.08); white-space:nowrap; }
+
+  .topbar-logo { font-size:13px; font-weight:500; color:var(--ink); letter-spacing:-.02em;
+    padding-right:10px; border-right:.5px solid rgba(14,14,13,.12); margin-right:6px; }
+
+  .tool-btn { width:32px; height:32px; border:none; background:transparent;
+    border-radius:8px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:var(--ink3); transition:background .15s,color .15s; flex-shrink:0; }
+  .tool-btn:hover  { background:var(--paper); color:var(--ink); }
+  .tool-btn.active { background:var(--ink); color:var(--white); }
+
+  .divider { width:.5px; height:20px; background:rgba(14,14,13,.12); margin:0 5px; flex-shrink:0; }
+
+  .color-swatch { width:20px; height:20px; border-radius:50%; border:1.5px solid rgba(14,14,13,.15);
+    cursor:pointer; flex-shrink:0; transition:transform .15s; }
+  .color-swatch:hover { transform:scale(1.15); }
+  .color-swatch.active { box-shadow:0 0 0 2px var(--white),0 0 0 3.5px var(--ink); }
+
+  .size-btn { width:30px; height:30px; border:none; background:transparent;
+    border-radius:8px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:background .15s; flex-shrink:0; }
+  .size-btn:hover  { background:var(--paper); }
+  .size-btn.active { background:var(--paper2); }
+  .size-dot { background:var(--ink); border-radius:50%; pointer-events:none; }
+
+  /* share & status */
+  .share-btn { font-size:12px; font-weight:500; font-family:'DM Sans',sans-serif;
+    color:var(--ink2); background:var(--paper); border:.5px solid rgba(14,14,13,.12);
+    border-radius:100px; padding:5px 12px; cursor:pointer; transition:background .15s;
+    margin-left:4px; flex-shrink:0; }
+  .share-btn:hover { background:var(--paper2); }
+
+  .user-count { font-size:11px; color:var(--ink3); display:flex; align-items:center;
+    gap:5px; padding:0 4px; flex-shrink:0; }
+  .user-dot { width:7px; height:7px; border-radius:50%; background:#22c55e;
+    flex-shrink:0; }
+  .user-dot.offline { background:var(--ink3); }
+
+  /* ── ZOOM HUD ── */
+  .zoom-hud { position:fixed; bottom:24px; right:24px; z-index:100;
+    background:var(--white); border:.5px solid rgba(14,14,13,.12); border-radius:100px;
+    padding:6px 12px; display:flex; align-items:center; gap:6px;
+    box-shadow:0 2px 8px rgba(14,14,13,.06); font-size:12px; color:var(--ink2); }
+  .zoom-btn { width:20px; height:20px; border:none; background:transparent;
+    border-radius:5px; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; color:var(--ink2); font-size:15px; line-height:1;
+    transition:background .15s; }
+  .zoom-btn:hover { background:var(--paper); }
+
+  /* ── BACK ── */
+  .back-btn { position:fixed; top:16px; left:16px; z-index:100;
+    background:var(--white); border:.5px solid rgba(14,14,13,.12); border-radius:100px;
+    padding:8px 14px; font-size:13px; color:var(--ink2); text-decoration:none;
+    box-shadow:0 2px 8px rgba(14,14,13,.06); transition:color .2s; }
+  .back-btn:hover { color:var(--ink); }
+
+  /* ── HINT ── */
+  .hint { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100;
+    background:rgba(14,14,13,.72); color:var(--paper); font-size:12px; padding:6px 14px;
+    border-radius:100px; pointer-events:none; opacity:1; transition:opacity .5s; white-space:nowrap; }
+  .hint.hidden { opacity:0; }
+
+  /* ── ERASER RING ── */
+  #eraser-ring { position:fixed; border:1.5px solid rgba(14,14,13,.45); border-radius:50%;
+    pointer-events:none; display:none; transform:translate(-50%,-50%); z-index:200; }
+
+  /* ── NAME MODAL ── */
+  .name-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
+    backdrop-filter:blur(6px); z-index:500; display:flex; align-items:center;
+    justify-content:center; }
+  .name-modal-inner { background:var(--white); border-radius:20px;
+    padding:36px 32px; width:340px; max-width:90vw;
+    box-shadow:0 24px 64px rgba(14,14,13,.18); text-align:center; }
+  .name-modal-logo { font-size:22px; font-weight:500; color:var(--ink);
+    letter-spacing:-.02em; margin-bottom:8px; }
+  .name-modal-sub { font-size:14px; color:var(--ink3); margin-bottom:24px; }
+  .name-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
+    padding:12px 14px; font-size:15px; font-family:'DM Sans',sans-serif;
+    color:var(--ink); outline:none; margin-bottom:12px; transition:border-color .2s; }
+  .name-input:focus { border-color:var(--ink); }
+  .name-submit { width:100%; background:var(--ink); color:var(--white);
+    border:none; border-radius:100px; padding:12px; font-size:14px;
+    font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer;
+    transition:background .2s; }
+  .name-submit:hover { background:var(--ink2); }
+
+  /* ── TOAST ── */
+  .toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%) translateY(10px);
+    background:var(--ink); color:var(--paper); font-size:13px; padding:8px 18px;
+    border-radius:100px; z-index:300; opacity:0; transition:opacity .25s,transform .25s;
+    pointer-events:none; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn">← 홈</a>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar" id="topbar">
+  <span class="topbar-logo">Freedom AI</span>
+
+  <button class="tool-btn" id="tool-hand" title="이동 (H)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M5.5 1.5v5.5M8 3v4M10.5 4.5v2M3 4.5v3.5l1 4h6.5l1.5-4V6.5a.9.9 0 00-1.8 0V4.5a.9.9 0 00-1.8 0V3a.9.9 0 00-1.8 0V1.5a.9.9 0 00-1.8 0z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button class="tool-btn active" id="tool-pen" title="펜 (P)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M2 13l3.5-1 6.5-6.5-2.5-2.5L3 9.5 2 13z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9.5 3l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <button class="tool-btn" id="tool-eraser" title="지우개 (E)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M2 12h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M9 3.5L12 6.5 7 12H4L2 10l7-6.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button class="tool-btn" id="tool-sticky" title="포스트잇 (S)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <rect x="2" y="2" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M9 9l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M9 9v3h3L9 9z" fill="currentColor" opacity=".35"/>
+      <path d="M5 5h5M5 7.5h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <!-- 펜 옵션 -->
+  <div id="pen-options" style="display:flex;align-items:center;gap:3px;">
+    <div class="divider"></div>
+    <div class="color-swatch active" data-color="#0e0e0d" style="background:#0e0e0d;"></div>
+    <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;"></div>
+    <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6;"></div>
+    <div class="color-swatch" data-color="#22c55e" style="background:#22c55e;"></div>
+    <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;"></div>
+    <div class="divider"></div>
+    <button class="size-btn active" data-size="0"><div class="size-dot" style="width:3px;height:3px;"></div></button>
+    <button class="size-btn" data-size="1"><div class="size-dot" style="width:6px;height:6px;"></div></button>
+    <button class="size-btn" data-size="2"><div class="size-dot" style="width:11px;height:11px;"></div></button>
+  </div>
+
+  <!-- 포스트잇 색상 옵션 -->
+  <div id="sticky-options" style="display:none;align-items:center;gap:3px;">
+    <div class="divider"></div>
+    <div class="color-swatch sticky-swatch active" data-scolor="#fef08a" style="background:#fef08a;"></div>
+    <div class="color-swatch sticky-swatch" data-scolor="#fbcfe8" style="background:#fbcfe8;"></div>
+    <div class="color-swatch sticky-swatch" data-scolor="#bbf7d0" style="background:#bbf7d0;"></div>
+    <div class="color-swatch sticky-swatch" data-scolor="#bae6fd" style="background:#bae6fd;"></div>
+    <div class="color-swatch sticky-swatch" data-scolor="#fed7aa" style="background:#fed7aa;"></div>
+  </div>
+
+  <div class="divider" style="margin-left:6px;"></div>
+  <button class="share-btn" id="btn-share">🔗 공유</button>
+  <div class="user-count" id="user-count">
+    <div class="user-dot offline" id="conn-dot"></div>
+    <span id="conn-label">연결 중…</span>
+  </div>
+</div>
+
+<!-- ── ZOOM HUD ── -->
+<div class="zoom-hud">
+  <button class="zoom-btn" id="btn-zoom-out">−</button>
+  <span id="zoom-label">100%</span>
+  <button class="zoom-btn" id="btn-zoom-in">+</button>
+  <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;">초기화</button>
+</div>
+
+<div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · H: 이동 · Ctrl+Z: 실행취소</div>
+<div id="eraser-ring"></div>
+
+<!-- ── NAME MODAL ── -->
+<div class="name-modal" id="name-modal">
+  <div class="name-modal-inner">
+    <div class="name-modal-logo">Freedom AI</div>
+    <div class="name-modal-sub">함께할 이름을 알려주세요</div>
+    <form id="name-form">
+      <input class="name-input" id="name-input" type="text" placeholder="예) 홍길동" maxlength="20" autocomplete="off">
+      <button class="name-submit" type="submit">입장하기 →</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── CURSORS LAYER (screen space) ── -->
+<div id="cursors-layer"></div>
+
+<!-- ── NOTES LAYER (world space) ── -->
+<div id="notes-layer"></div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════════
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s)  { return String(s).replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+// ═══════════════════════════════════════════════════════════════
+//  DOM
+// ═══════════════════════════════════════════════════════════════
+const canvas      = document.getElementById('canvas');
+const ctx         = canvas.getContext('2d');
+const notesLayer  = document.getElementById('notes-layer');
+const cursorsLayer= document.getElementById('cursors-layer');
+const zoomLabel   = document.getElementById('zoom-label');
+const eraserRing  = document.getElementById('eraser-ring');
+const connDot     = document.getElementById('conn-dot');
+const connLabel   = document.getElementById('conn-label');
+
+const drawCanvas = document.createElement('canvas');
+const dCtx       = drawCanvas.getContext('2d');
+
+// ═══════════════════════════════════════════════════════════════
+//  VIEWPORT
+// ═══════════════════════════════════════════════════════════════
+let offsetX = 0, offsetY = 0, scale = 1;
+const MIN_SCALE = 0.05, MAX_SCALE = 20;
+
+function s2w(sx, sy) { return { x:(sx-offsetX)/scale, y:(sy-offsetY)/scale }; }
+function w2s(wx, wy) { return { x: wx*scale+offsetX,  y: wy*scale+offsetY  }; }
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL STATE
+// ═══════════════════════════════════════════════════════════════
+let activeTool  = 'pen';
+let penColor    = '#0e0e0d';
+let stickyColor = '#fef08a';
+const PEN_SIZES    = [2, 5, 12];
+const ERASER_SIZES = [20, 40, 80];
+let sizeIndex = 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  STROKE STATE
+// ═══════════════════════════════════════════════════════════════
+let strokes        = [];
+let currentStroke  = null;
+let isPanning      = false, panStartX = 0, panStartY = 0;
+let isDrawing      = false;
+const myStrokeIds  = new Set();
+const remoteInProgress = new Map(); // strokeId → stroke (other users drawing)
+let pendingPoints   = [];
+let strokeFlushTimer= null;
+
+// ═══════════════════════════════════════════════════════════════
+//  NOTE STATE
+// ═══════════════════════════════════════════════════════════════
+const NOTE_W = 160, NOTE_H = 130, MIN_NOTE_W = 100, MIN_NOTE_H = 80;
+let notes = [];
+
+const RESIZE_R = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8L8 1M4.5 8L8 4.5M8 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+const RESIZE_L = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M8 8L1 1M4.5 8L1 4.5M1 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+
+// ═══════════════════════════════════════════════════════════════
+//  WEBSOCKET STATE
+// ═══════════════════════════════════════════════════════════════
+let ws         = null;
+let myUserId   = null;
+let myColor    = '#8b5cf6';
+let roomId     = '';
+let userName   = '';
+let userOnline = 0; // count of all users including self
+const remoteCursors = new Map(); // userId → { el, wx, wy }
+let lastCursorSend  = 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════════════
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
+  drawGrid();
+  ctx.restore();
+
+  replayStrokes();
+  ctx.drawImage(drawCanvas, 0, 0);
+
+  notesLayer.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+  updateAllRemoteCursors();
+  zoomLabel.textContent = Math.round(scale * 100) + '%';
+}
+
+function drawGrid() {
+  const gs = 48;
+  const L = -offsetX/scale, T = -offsetY/scale;
+  const R = (canvas.width-offsetX)/scale, B = (canvas.height-offsetY)/scale;
+  const sx = Math.floor(L/gs)*gs, sy = Math.floor(T/gs)*gs;
+
+  ctx.strokeStyle = 'rgba(14,14,13,.06)'; ctx.lineWidth = 1/scale;
+  ctx.beginPath();
+  for (let x=sx; x<=R; x+=gs){ ctx.moveTo(x,T); ctx.lineTo(x,B); }
+  for (let y=sy; y<=B; y+=gs){ ctx.moveTo(L,y); ctx.lineTo(R,y); }
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(184,146,74,.35)'; ctx.lineWidth = 1.5/scale;
+  ctx.beginPath();
+  ctx.moveTo(-24,0); ctx.lineTo(24,0);
+  ctx.moveTo(0,-24); ctx.lineTo(0,24);
+  ctx.stroke();
+}
+
+function replayStrokes() {
+  dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  dCtx.save();
+  dCtx.translate(offsetX, offsetY);
+  dCtx.scale(scale, scale);
+  const all = [...strokes, ...remoteInProgress.values()];
+  if (currentStroke) all.push(currentStroke);
+  all.forEach(s => renderStroke(dCtx, s));
+  dCtx.restore();
+}
+
+function renderStroke(c, s) {
+  const pts = s.points; if (!pts.length) return;
+  c.save();
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  if (s.tool === 'eraser') {
+    c.globalCompositeOperation = 'destination-out';
+    c.strokeStyle = c.fillStyle = 'rgba(0,0,0,1)';
+  } else {
+    c.globalCompositeOperation = 'source-over';
+    c.strokeStyle = c.fillStyle = s.color;
+  }
+  c.lineWidth = s.width;
+  if (pts.length === 1) {
+    c.beginPath(); c.arc(pts[0].x, pts[0].y, s.width/2, 0, Math.PI*2); c.fill();
+  } else {
+    c.beginPath(); c.moveTo(pts[0].x, pts[0].y);
+    for (let i=1; i<pts.length; i++) {
+      if (i < pts.length-1) {
+        const mx=(pts[i].x+pts[i+1].x)/2, my=(pts[i].y+pts[i+1].y)/2;
+        c.quadraticCurveTo(pts[i].x,pts[i].y,mx,my);
+      } else c.lineTo(pts[i].x,pts[i].y);
+    }
+    c.stroke();
+  }
+  c.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ZOOM
+// ═══════════════════════════════════════════════════════════════
+function zoomAt(x, y, factor) {
+  const ns = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale*factor));
+  offsetX = x - (x-offsetX)*(ns/scale);
+  offsetY = y - (y-offsetY)*(ns/scale);
+  scale = ns; draw();
+}
+function centerView() { offsetX=canvas.width/2; offsetY=canvas.height/2; scale=1; draw(); }
+
+function resize() {
+  canvas.width = drawCanvas.width = window.innerWidth;
+  canvas.height = drawCanvas.height = window.innerHeight;
+  draw();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CURSOR
+// ═══════════════════════════════════════════════════════════════
+function updateCursor(panning) {
+  const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell' };
+  canvas.style.cursor = map[activeTool] || 'default';
+}
+function updateEraserRing(sx, sy) {
+  if (activeTool !== 'eraser') { eraserRing.style.display='none'; return; }
+  const r = (ERASER_SIZES[sizeIndex]/2)*scale;
+  Object.assign(eraserRing.style, { display:'block', width:r*2+'px', height:r*2+'px', left:sx+'px', top:sy+'px' });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DRAWING
+// ═══════════════════════════════════════════════════════════════
+function startDraw(sx, sy) {
+  isDrawing = true;
+  const wp = s2w(sx, sy);
+  const id = genId();
+  myStrokeIds.add(id);
+  currentStroke = { id, tool:activeTool, color:penColor,
+    width: activeTool==='pen' ? PEN_SIZES[sizeIndex] : ERASER_SIZES[sizeIndex],
+    points:[wp] };
+  wsSend({ type:'stroke_start', stroke: currentStroke });
+  draw();
+}
+
+function flushPoints() {
+  if (currentStroke && pendingPoints.length) {
+    wsSend({ type:'stroke_add', strokeId:currentStroke.id, points:[...pendingPoints] });
+    pendingPoints = [];
+  }
+  strokeFlushTimer = null;
+}
+
+function continueDraw(sx, sy) {
+  if (!isDrawing || !currentStroke) return;
+  const wp = s2w(sx, sy);
+  currentStroke.points.push(wp);
+  pendingPoints.push(wp);
+  if (!strokeFlushTimer) strokeFlushTimer = setTimeout(flushPoints, 16);
+  draw();
+}
+
+function stopDraw() {
+  if (!isDrawing || !currentStroke) return;
+  flushPoints();
+  wsSend({ type:'stroke_end', strokeId:currentStroke.id });
+  strokes.push(currentStroke);
+  currentStroke = null; isDrawing = false;
+  draw();
+}
+
+function undo() {
+  for (let i=strokes.length-1; i>=0; i--) {
+    if (myStrokeIds.has(strokes[i].id)) {
+      const [rm] = strokes.splice(i,1);
+      myStrokeIds.delete(rm.id);
+      wsSend({ type:'stroke_undo', strokeId:rm.id });
+      draw(); return;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  NOTES
+// ═══════════════════════════════════════════════════════════════
+function addNote(wx, wy) {
+  const note = { id:genId(), x:wx, y:wy, w:NOTE_W, h:NOTE_H, color:stickyColor, text:'' };
+  notes.push(note);
+  buildNoteEl(note, true);
+  wsSend({ type:'note_add', note });
+}
+
+function buildNoteEl(note, autoFocus=false) {
+  const el = document.createElement('div');
+  el.className = 'note';
+  el.dataset.id = note.id;
+  el.style.cssText = `left:${note.x}px;top:${note.y}px;width:${note.w}px;height:${note.h}px;background:${note.color};`;
+  el.innerHTML = `
+    <div class="note-handle"><button class="note-delete" title="삭제">×</button></div>
+    <div class="note-text" contenteditable="true" spellcheck="false"
+         data-placeholder="내용을 입력하세요">${esc(note.text||'')}</div>
+    <div class="note-resize-bar">
+      <div class="note-resize-handle left"  data-dir="left">${RESIZE_L}</div>
+      <div class="note-resize-handle right" data-dir="right">${RESIZE_R}</div>
+    </div>`;
+  note.el = el;
+  notesLayer.appendChild(el);
+  setupNoteEvents(note);
+  if (autoFocus) requestAnimationFrame(() => el.querySelector('.note-text').focus());
+}
+
+function setupNoteEvents(note) {
+  const el   = note.el;
+  const hndl = el.querySelector('.note-handle');
+  const del  = el.querySelector('.note-delete');
+  const txt  = el.querySelector('.note-text');
+
+  el.addEventListener('mousedown',  e => e.stopPropagation());
+  el.addEventListener('touchstart', e => e.stopPropagation(), { passive:true });
+
+  hndl.addEventListener('mousedown', e => { e.stopPropagation(); if(e.target!==del) startNoteDrag(note,e.clientX,e.clientY); });
+  hndl.addEventListener('touchstart',e => { e.stopPropagation(); if(e.touches.length===1) startNoteDrag(note,e.touches[0].clientX,e.touches[0].clientY,true); }, {passive:true});
+
+  del.addEventListener('click', e => { e.stopPropagation(); deleteNote(note); });
+
+  // resize handles
+  el.querySelectorAll('.note-resize-handle').forEach(h => {
+    h.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); startNoteResize(note,h.dataset.dir,e.clientX,e.clientY); });
+    h.addEventListener('touchstart',e => { e.stopPropagation(); if(e.touches.length===1) startNoteResize(note,h.dataset.dir,e.touches[0].clientX,e.touches[0].clientY,true); }, {passive:true});
+  });
+
+  // text sync
+  let textTimer = null;
+  txt.addEventListener('input', () => {
+    note.text = txt.innerText;
+    clearTimeout(textTimer);
+    textTimer = setTimeout(() => wsSend({ type:'note_text', noteId:note.id, text:note.text }), 400);
+  });
+}
+
+function startNoteDrag(note, sx0, sy0, isTouch=false) {
+  const ox=note.x, oy=note.y;
+  note.el.querySelector('.note-handle').style.cursor='grabbing';
+  let sendTimer=null;
+
+  function onMove(sx,sy) {
+    note.x = ox+(sx-sx0)/scale; note.y = oy+(sy-sy0)/scale;
+    note.el.style.left=note.x+'px'; note.el.style.top=note.y+'px';
+    clearTimeout(sendTimer);
+    sendTimer = setTimeout(() => wsSend({ type:'note_move', noteId:note.id, x:note.x, y:note.y }), 40);
+  }
+  function cleanup() {
+    note.el.querySelector('.note-handle').style.cursor='';
+    wsSend({ type:'note_move', noteId:note.id, x:note.x, y:note.y });
+    document.removeEventListener('mousemove', mm);
+    document.removeEventListener('mouseup',   cleanup);
+    document.removeEventListener('touchmove', tm);
+    document.removeEventListener('touchend',  cleanup);
+  }
+  const mm = e => onMove(e.clientX,e.clientY);
+  const tm = e => { if(e.touches.length===1) onMove(e.touches[0].clientX,e.touches[0].clientY); };
+  if (isTouch) { document.addEventListener('touchmove',tm,{passive:true}); document.addEventListener('touchend',cleanup,{passive:true}); }
+  else         { document.addEventListener('mousemove',mm); document.addEventListener('mouseup',cleanup); }
+}
+
+function startNoteResize(note, dir, sx0, sy0, isTouch=false) {
+  const ow=note.w, oh=note.h, ox=note.x;
+  let sendTimer=null;
+
+  function onMove(sx,sy) {
+    const dx=(sx-sx0)/scale, dy=(sy-sy0)/scale;
+    if (dir==='right') { note.w=Math.max(MIN_NOTE_W,ow+dx); }
+    else { const nw=Math.max(MIN_NOTE_W,ow-dx); note.x=ox+(ow-nw); note.w=nw; }
+    note.h=Math.max(MIN_NOTE_H,oh+dy);
+    note.el.style.left=note.x+'px'; note.el.style.width=note.w+'px'; note.el.style.height=note.h+'px';
+    clearTimeout(sendTimer);
+    sendTimer=setTimeout(()=>wsSend({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h }),40);
+  }
+  function cleanup() {
+    wsSend({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h });
+    document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',cleanup);
+    document.removeEventListener('touchmove',tm); document.removeEventListener('touchend',cleanup);
+  }
+  const mm=e=>onMove(e.clientX,e.clientY);
+  const tm=e=>{ if(e.touches.length===1) onMove(e.touches[0].clientX,e.touches[0].clientY); };
+  if (isTouch) { document.addEventListener('touchmove',tm,{passive:true}); document.addEventListener('touchend',cleanup,{passive:true}); }
+  else         { document.addEventListener('mousemove',mm); document.addEventListener('mouseup',cleanup); }
+}
+
+function deleteNote(note) {
+  note.el.classList.add('deleting');
+  note.el.addEventListener('animationend', ()=>note.el.remove(), {once:true});
+  notes = notes.filter(n=>n.id!==note.id);
+  wsSend({ type:'note_delete', noteId:note.id });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  REMOTE CURSORS
+// ═══════════════════════════════════════════════════════════════
+function addRemoteCursor(userId, name, color) {
+  if (remoteCursors.has(userId)) return;
+  const el = document.createElement('div');
+  el.className = 'remote-cursor';
+  el.style.cssText = 'position:absolute;opacity:0;transition:left .06s linear,top .06s linear,opacity .3s;';
+  el.innerHTML = `
+    <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+      <path d="M2 2l11 7-5 1.5L6 18 2 2z" fill="${color}" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
+    </svg>
+    <span class="cursor-name" style="background:${color};">${esc(name)}</span>`;
+  cursorsLayer.appendChild(el);
+  remoteCursors.set(userId, { el, wx:null, wy:null });
+}
+
+function removeRemoteCursor(userId) {
+  const c = remoteCursors.get(userId);
+  if (c) { c.el.remove(); remoteCursors.delete(userId); }
+}
+
+function updateAllRemoteCursors() {
+  remoteCursors.forEach(c => {
+    if (c.wx == null) return;
+    const s = w2s(c.wx, c.wy);
+    c.el.style.left = s.x + 'px';
+    c.el.style.top  = s.y + 'px';
+  });
+}
+
+function updateUserCount() {
+  const n = remoteCursors.size + 1; // +1 for self
+  document.getElementById('conn-label').textContent = `${n}명 접속 중`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WEBSOCKET
+// ═══════════════════════════════════════════════════════════════
+function wsSend(msg) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+}
+
+function initWs() {
+  const proto = location.protocol==='https:' ? 'wss:' : 'ws:';
+  const url   = `${proto}//${location.host}/?room=${roomId}&name=${encodeURIComponent(userName)}`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    connDot.classList.remove('offline');
+    connLabel.textContent = '연결됨';
+  };
+
+  ws.onclose = () => {
+    connDot.classList.add('offline');
+    connLabel.textContent = '연결 끊김';
+    setTimeout(initWs, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+
+  ws.onmessage = ({ data }) => {
+    let m; try { m = JSON.parse(data); } catch { return; }
+    handleWsMessage(m);
+  };
+}
+
+function handleWsMessage(m) {
+  switch (m.type) {
+
+    case 'init': {
+      myUserId = m.userId;
+      myColor  = m.color;
+      // 초기 획 로드
+      strokes = m.state.strokes || [];
+      // 초기 포스트잇 로드
+      notes = [];
+      notesLayer.innerHTML = '';
+      (m.state.notes || []).forEach(n => { notes.push(n); buildNoteEl(n, false); });
+      // 현재 접속자 커서 생성
+      (m.users || []).forEach(u => addRemoteCursor(u.id, u.name, u.color));
+      updateUserCount();
+      draw();
+      break;
+    }
+
+    case 'user_join':
+      addRemoteCursor(m.id, m.name, m.color);
+      updateUserCount();
+      showToast(`${esc(m.name)}님이 입장했어요`);
+      break;
+
+    case 'user_leave':
+      removeRemoteCursor(m.userId);
+      updateUserCount();
+      break;
+
+    case 'cursor': {
+      const c = remoteCursors.get(m.userId);
+      if (c) {
+        c.wx = m.x; c.wy = m.y;
+        const s = w2s(m.x, m.y);
+        Object.assign(c.el.style, { left:s.x+'px', top:s.y+'px', opacity:'1' });
+      }
+      break;
+    }
+
+    // ── 획 ──
+    case 'stroke_start':
+      remoteInProgress.set(m.stroke.id, { ...m.stroke });
+      draw();
+      break;
+
+    case 'stroke_add': {
+      const s = remoteInProgress.get(m.strokeId) || strokes.find(s=>s.id===m.strokeId);
+      if (s) s.points.push(...(m.points||[]));
+      draw();
+      break;
+    }
+
+    case 'stroke_end': {
+      const s = remoteInProgress.get(m.strokeId);
+      if (s) { remoteInProgress.delete(m.strokeId); strokes.push(s); }
+      draw();
+      break;
+    }
+
+    case 'stroke_undo': {
+      const i = strokes.findIndex(s=>s.id===m.strokeId);
+      if (i !== -1) strokes.splice(i,1);
+      draw();
+      break;
+    }
+
+    // ── 포스트잇 ──
+    case 'note_add': {
+      if (notes.find(n=>n.id===m.note.id)) break;
+      notes.push(m.note);
+      buildNoteEl(m.note, false);
+      break;
+    }
+
+    case 'note_move': {
+      const n = notes.find(n=>n.id===m.noteId);
+      if (n) { n.x=m.x; n.y=m.y; n.el.style.left=m.x+'px'; n.el.style.top=m.y+'px'; }
+      break;
+    }
+
+    case 'note_resize': {
+      const n = notes.find(n=>n.id===m.noteId);
+      if (n) { n.x=m.x; n.w=m.w; n.h=m.h;
+        n.el.style.left=m.x+'px'; n.el.style.width=m.w+'px'; n.el.style.height=m.h+'px'; }
+      break;
+    }
+
+    case 'note_text': {
+      const n = notes.find(n=>n.id===m.noteId);
+      if (n) {
+        n.text = m.text;
+        const t = n.el?.querySelector('.note-text');
+        if (t && document.activeElement !== t) t.innerText = m.text;
+      }
+      break;
+    }
+
+    case 'note_delete': {
+      const n = notes.find(n=>n.id===m.noteId);
+      if (n) { n.el?.remove(); notes=notes.filter(x=>x.id!==m.noteId); }
+      break;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MOUSE / TOUCH / KEYBOARD
+// ═══════════════════════════════════════════════════════════════
+canvas.addEventListener('mousedown', e => {
+  e.preventDefault();
+  if (activeTool==='hand')   { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); }
+  else if (activeTool==='pen'||activeTool==='eraser') startDraw(e.clientX,e.clientY);
+});
+
+canvas.addEventListener('mousemove', e => {
+  updateEraserRing(e.clientX,e.clientY);
+  // send cursor (world space, throttled)
+  const now = Date.now();
+  if (now-lastCursorSend>33) {
+    const wp = s2w(e.clientX,e.clientY);
+    wsSend({ type:'cursor', x:wp.x, y:wp.y });
+    lastCursorSend=now;
+  }
+  if (activeTool==='hand'&&isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; draw(); }
+  else continueDraw(e.clientX,e.clientY);
+});
+
+canvas.addEventListener('mouseup',    () => { isPanning=false; stopDraw(); updateCursor(false); });
+canvas.addEventListener('mouseleave', () => { eraserRing.style.display='none'; if(activeTool==='hand') isPanning=false; });
+
+canvas.addEventListener('click', e => {
+  if (activeTool!=='sticky') return;
+  const wp=s2w(e.clientX,e.clientY);
+  addNote(wp.x-NOTE_W/2, wp.y-NOTE_H/2);
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoomAt(e.clientX,e.clientY, e.deltaY>0?1/1.1:1.1);
+}, { passive:false });
+
+// touch
+let lastTouchDist=null, tapStart=null;
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length===1) {
+    const t=e.touches[0];
+    if (activeTool==='hand') { isPanning=true; panStartX=t.clientX-offsetX; panStartY=t.clientY-offsetY; }
+    else if (activeTool==='sticky') tapStart={x:t.clientX,y:t.clientY};
+    else startDraw(t.clientX,t.clientY);
+  } else if (e.touches.length===2) {
+    stopDraw(); isPanning=false;
+    lastTouchDist=touchDist(e.touches);
+  }
+}, {passive:false});
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length===1) {
+    const t=e.touches[0];
+    if (activeTool==='hand'&&isPanning) { offsetX=t.clientX-panStartX; offsetY=t.clientY-panStartY; draw(); }
+    else if (activeTool!=='sticky') continueDraw(t.clientX,t.clientY);
+  } else if (e.touches.length===2&&lastTouchDist) {
+    const d=touchDist(e.touches);
+    const mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
+    const my=(e.touches[0].clientY+e.touches[1].clientY)/2;
+    zoomAt(mx,my,d/lastTouchDist); lastTouchDist=d;
+  }
+}, {passive:false});
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (e.touches.length<2) lastTouchDist=null;
+  if (e.touches.length===0) {
+    isPanning=false; stopDraw();
+    if (activeTool==='sticky'&&tapStart) {
+      const ct=e.changedTouches[0];
+      if (Math.hypot(ct.clientX-tapStart.x,ct.clientY-tapStart.y)<10) {
+        const wp=s2w(tapStart.x,tapStart.y);
+        addNote(wp.x-NOTE_W/2,wp.y-NOTE_H/2);
+      }
+      tapStart=null;
+    }
+  }
+}, {passive:false});
+
+function touchDist(t) { return Math.hypot(t[1].clientX-t[0].clientX,t[1].clientY-t[0].clientY); }
+
+document.addEventListener('keydown', e => {
+  if (e.target.closest('.note-text,.name-input')) return;
+  const k=e.key;
+  if (k==='0') { centerView(); return; }
+  if (k==='+'||k==='=') { zoomAt(canvas.width/2,canvas.height/2,1.2); return; }
+  if (k==='-')           { zoomAt(canvas.width/2,canvas.height/2,1/1.2); return; }
+  if (k==='h'||k==='H') { setTool('hand');   return; }
+  if (k==='p'||k==='P') { setTool('pen');    return; }
+  if (k==='e'||k==='E') { setTool('eraser'); return; }
+  if (k==='s'||k==='S') { setTool('sticky'); return; }
+  if ((e.ctrlKey||e.metaKey)&&k==='z') { e.preventDefault(); undo(); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOL SWITCH
+// ═══════════════════════════════════════════════════════════════
+function setTool(tool) {
+  activeTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tool-'+tool)?.classList.add('active');
+  document.getElementById('pen-options').style.display    = (tool==='pen'||tool==='eraser') ? 'flex':'none';
+  document.getElementById('sticky-options').style.display = tool==='sticky' ? 'flex':'none';
+  if (tool!=='eraser') eraserRing.style.display='none';
+  updateCursor(false);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOOLBAR EVENTS
+// ═══════════════════════════════════════════════════════════════
+['hand','pen','eraser','sticky'].forEach(t =>
+  document.getElementById('tool-'+t).addEventListener('click', ()=>setTool(t)));
+
+document.querySelectorAll('.color-swatch:not(.sticky-swatch)').forEach(el => {
+  el.addEventListener('click', () => {
+    penColor = el.dataset.color;
+    document.querySelectorAll('.color-swatch:not(.sticky-swatch)').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+    if (activeTool!=='pen') setTool('pen');
+  });
+});
+
+document.querySelectorAll('.sticky-swatch').forEach(el => {
+  el.addEventListener('click', () => {
+    stickyColor = el.dataset.scolor;
+    document.querySelectorAll('.sticky-swatch').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+
+document.querySelectorAll('.size-btn').forEach(el => {
+  el.addEventListener('click', () => {
+    sizeIndex = parseInt(el.dataset.size);
+    document.querySelectorAll('.size-btn').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+
+document.getElementById('btn-zoom-in').addEventListener('click',    ()=>zoomAt(canvas.width/2,canvas.height/2,1.2));
+document.getElementById('btn-zoom-out').addEventListener('click',   ()=>zoomAt(canvas.width/2,canvas.height/2,1/1.2));
+document.getElementById('btn-zoom-reset').addEventListener('click', centerView);
+
+document.getElementById('btn-share').addEventListener('click', () => {
+  navigator.clipboard.writeText(location.href).then(() => showToast('링크를 복사했어요! 팀원에게 공유하세요 🎉'));
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 2500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+function getRoomId() {
+  const p = new URLSearchParams(location.search);
+  let r = p.get('room');
+  if (!r) { r = Math.random().toString(36).slice(2,8); history.replaceState(null,'',`?room=${r}`); }
+  return r;
+}
+
+function getUserName() {
+  return new Promise(resolve => {
+    const stored = localStorage.getItem('fa_name');
+    if (stored) { document.getElementById('name-modal').style.display='none'; resolve(stored); return; }
+    document.getElementById('name-modal').style.display='flex';
+    document.getElementById('name-input').focus();
+    document.getElementById('name-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('name-input').value.trim() || '익명';
+      localStorage.setItem('fa_name', name);
+      document.getElementById('name-modal').style.display='none';
+      resolve(name);
+    }, { once:true });
+  });
+}
+
+async function main() {
+  roomId   = getRoomId();
+  userName = await getUserName();
+
+  setTimeout(() => document.getElementById('hint').classList.add('hidden'), 4500);
+  window.addEventListener('resize', resize);
+  resize();
+  centerView();
+  setTool('pen');
+  initWs();
+}
+
+main();
+</script>
+</body>
+</html>
