@@ -64,21 +64,41 @@ function bakeForSave(state) {
   return { strokes, notes: state.notes || [] };
 }
 
-// 실시간 지우개 적용: 지우개 스트로크를 state에서 제거하고 삭제된 ID 목록 반환
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// 실시간 지우개 적용: 닿은 점만 제거하고 스트로크를 분할
 function applyErasure(state, eraserStroke) {
   const r2 = (eraserStroke.width / 2) ** 2;
   const ePts = eraserStroke.points;
   const deletedIds = [eraserStroke.id];
+  const newStrokes = [];
 
   state.strokes = state.strokes.filter(s => {
     if (s.id === eraserStroke.id) return false;
     if (s.tool === 'eraser') return true;
-    const hit = s.points.some(p => ePts.some(ep => (p.x - ep.x) ** 2 + (p.y - ep.y) ** 2 <= r2));
-    if (hit) { deletedIds.push(s.id); return false; }
-    return true;
+
+    const hitMask = s.points.map(p =>
+      ePts.some(ep => (p.x - ep.x) ** 2 + (p.y - ep.y) ** 2 <= r2)
+    );
+    if (!hitMask.some(Boolean)) return true; // 닿지 않음 — 유지
+
+    // 닿은 점 제거 후 연속 구간을 새 스트로크로 분할
+    deletedIds.push(s.id);
+    let seg = [];
+    for (let i = 0; i < s.points.length; i++) {
+      if (!hitMask[i]) {
+        seg.push(s.points[i]);
+      } else {
+        if (seg.length >= 1) newStrokes.push({ ...s, id: genId(), points: seg });
+        seg = [];
+      }
+    }
+    if (seg.length >= 1) newStrokes.push({ ...s, id: genId(), points: seg });
+    return false;
   });
 
-  return deletedIds;
+  state.strokes.push(...newStrokes);
+  return { deletedIds, newStrokes };
 }
 
 // ── 방 관리 ─────────────────────────────────────────────────────────────
@@ -210,11 +230,15 @@ function handle(m, user, room, ws) {
     case 'stroke_end': {
       const s = room.state.strokes.find(s => s.id === m.strokeId);
       if (s?.tool === 'eraser') {
-        // 지우개: 겹치는 펜 스트로크 삭제 후 모든 클라이언트에 알림
-        const deletedIds = applyErasure(room.state, s);
+        const { deletedIds, newStrokes } = applyErasure(room.state, s);
         scheduleSave();
         for (const id of deletedIds) {
           bcast(room, null, { type: 'stroke_delete', strokeId: id });
+        }
+        // 분할된 조각 스트로크를 모든 클라이언트에 전송
+        for (const ns of newStrokes) {
+          bcast(room, null, { type: 'stroke_start', stroke: ns });
+          bcast(room, null, { type: 'stroke_end', strokeId: ns.id });
         }
       } else {
         scheduleSave();
