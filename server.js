@@ -256,7 +256,8 @@ function handle(m, user, room, ws) {
     case 'note_move': {
       if (typeof m.x !== 'number' || typeof m.y !== 'number') return;
       const n = room.state.notes.find(n => n.id === m.noteId);
-      if (n) { n.x = m.x; n.y = m.y; }
+      if (!n) return;
+      n.x = m.x; n.y = m.y;
       scheduleSave();
       bcast(room, ws, { type: 'note_move', noteId: m.noteId, x: m.x, y: m.y });
       break;
@@ -282,8 +283,10 @@ function handle(m, user, room, ws) {
       break;
     }
     case 'note_delete': {
-      // 소유자만 삭제 가능
-      const idx = room.state.notes.findIndex(n => n.id === m.noteId && n.userId === uid);
+      // userId 없는 구버전 노트 포함, 본인 노트만 삭제 가능
+      const idx = room.state.notes.findIndex(
+        n => n.id === m.noteId && (!n.userId || n.userId === uid)
+      );
       if (idx !== -1) {
         room.state.notes.splice(idx, 1);
         scheduleSave();
