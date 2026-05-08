@@ -834,6 +834,10 @@ function handleWsMessage(m) {
       strokes = m.state.strokes || [];
       notes = [];
       notesLayer.innerHTML = '';
+      // 재연결 시 이전 커서 완전 초기화 (ghost 아바타 방지)
+      cursorsLayer.innerHTML = '';
+      remoteCursors.clear();
+      avatarStack.innerHTML = '';
       (m.state.notes || []).forEach(n => { notes.push(n); buildNoteEl(n, false); });
       (m.users || []).forEach(u => addRemoteCursor(u.id, u.name, u.color));
       invalidateStrokesCache(); draw();
