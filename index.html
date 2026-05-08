@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Freedom AI — 무한 캔버스 협업 툴</title>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
@@ -974,5 +975,31 @@
   </div>
 </footer>
 
+<script>
+const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.googleusercontent.com';
+
+document.querySelector('.btn-ghost').addEventListener('click', () => {
+  if (!window.google?.accounts?.oauth2) {
+    alert('Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    return;
+  }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'openid profile email',
+    callback: async (res) => {
+      if (res.error) return;
+      try {
+        const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: 'Bearer ' + res.access_token }
+        }).then(r => r.json());
+        localStorage.setItem('fa_user', JSON.stringify({ name: info.name, email: info.email, picture: info.picture }));
+        location.href = 'app.html';
+      } catch (e) { console.error(e); }
+    },
+    error_callback: () => {},
+  });
+  client.requestAccessToken({ prompt: 'select_account' });
+});
+</script>
 </body>
 </html>
