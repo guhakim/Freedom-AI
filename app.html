@@ -6,6 +6,7 @@
 <title>Freedom AI — 캔버스</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -162,6 +163,59 @@
     transition:background .2s; }
   .name-submit:hover { background:var(--ink2); }
 
+  /* ── AVATAR STACK ── */
+  #avatar-stack { display:flex; align-items:center; padding:0 2px; margin-left:2px; }
+  .avatar { width:28px; height:28px; border-radius:50%; border:2px solid var(--white);
+    display:flex; align-items:center; justify-content:center; font-size:11px;
+    font-weight:600; color:#fff; cursor:default; flex-shrink:0;
+    margin-left:-7px; position:relative; transition:transform .15s; animation:avatarIn .2s ease; }
+  .avatar:first-child { margin-left:0; }
+  .avatar:hover { transform:scale(1.18); z-index:1; }
+  @keyframes avatarIn { from{opacity:0;transform:scale(.6)} to{opacity:1;transform:scale(1)} }
+  .avatar-tip { position:absolute; bottom:calc(100% + 8px); left:50%;
+    transform:translateX(-50%); background:var(--ink); color:var(--paper);
+    font-size:11px; padding:3px 9px; border-radius:100px; white-space:nowrap;
+    pointer-events:none; opacity:0; transition:opacity .15s; }
+  .avatar:hover .avatar-tip { opacity:1; }
+
+  /* ── OFFLINE BADGE ── */
+  #offline-badge { font-size:11px; color:var(--ink3); display:none; align-items:center;
+    gap:4px; padding:0 4px; flex-shrink:0; }
+  #offline-badge .off-dot { width:6px; height:6px; border-radius:50%;
+    background:var(--ink3); flex-shrink:0; }
+
+  /* ── SHARE MODAL ── */
+  #share-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
+    backdrop-filter:blur(6px); z-index:500; display:none; align-items:center;
+    justify-content:center; }
+  #share-modal.open { display:flex; }
+  .share-inner { background:var(--white); border-radius:20px; padding:30px 28px;
+    width:380px; max-width:92vw; box-shadow:0 24px 64px rgba(14,14,13,.18); }
+  .share-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .share-title { font-size:17px; font-weight:500; color:var(--ink); letter-spacing:-.02em; }
+  .share-close { width:28px; height:28px; border:none; background:var(--paper);
+    border-radius:50%; cursor:pointer; font-size:16px; color:var(--ink3);
+    display:flex; align-items:center; justify-content:center; transition:background .15s; line-height:1; }
+  .share-close:hover { background:var(--paper2); color:var(--ink); }
+  .share-desc { font-size:13px; color:var(--ink3); margin-bottom:14px; line-height:1.5; }
+  .share-url-row { display:flex; gap:8px; margin-bottom:20px; }
+  .share-url-input { flex:1; border:.5px solid rgba(14,14,13,.15); border-radius:10px;
+    padding:10px 12px; font-size:12px; font-family:'DM Sans',sans-serif;
+    color:var(--ink2); outline:none; background:var(--paper);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .share-copy-btn { background:var(--ink); color:var(--white); border:none;
+    border-radius:10px; padding:10px 18px; font-size:13px; font-weight:500;
+    font-family:'DM Sans',sans-serif; cursor:pointer; white-space:nowrap;
+    transition:background .2s; flex-shrink:0; }
+  .share-copy-btn:hover { background:var(--ink2); }
+  .share-copy-btn.copied { background:#22c55e; }
+  .share-members-title { font-size:11px; font-weight:500; color:var(--ink3);
+    text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+  #share-members-list { display:flex; flex-direction:column; gap:8px; }
+  .share-member { display:flex; align-items:center; gap:10px; }
+  .share-member-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .share-member-name { font-size:13px; color:var(--ink2); }
+
   /* ── TOAST ── */
   .toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%) translateY(10px);
     background:var(--ink); color:var(--paper); font-size:13px; padding:8px 18px;
@@ -230,10 +284,8 @@
 
   <div class="divider" style="margin-left:6px;"></div>
   <button class="share-btn" id="btn-share">🔗 공유</button>
-  <div class="user-count" id="user-count">
-    <div class="user-dot offline" id="conn-dot"></div>
-    <span id="conn-label">연결 중…</span>
-  </div>
+  <div id="avatar-stack"></div>
+  <div id="offline-badge"><div class="off-dot"></div><span>오프라인</span></div>
 </div>
 
 <!-- ── ZOOM HUD ── -->
@@ -247,15 +299,50 @@
 <div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 
-<!-- ── NAME MODAL ── -->
+<!-- ── LOGIN MODAL ── -->
 <div class="name-modal" id="name-modal">
   <div class="name-modal-inner">
     <div class="name-modal-logo">Freedom AI</div>
-    <div class="name-modal-sub">함께할 이름을 알려주세요</div>
+    <div class="name-modal-sub">시작하려면 로그인하세요</div>
+    <div id="login-status" style="font-size:12px;color:#ef4444;text-align:center;min-height:16px;margin-bottom:4px;"></div>
+    <button id="google-btn" type="button" style="
+      width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+      border:1.5px solid rgba(14,14,13,.15);border-radius:100px;padding:11px 16px;
+      background:#fff;cursor:pointer;font-size:14px;font-weight:500;
+      font-family:'DM Sans',sans-serif;color:#3c4043;margin-top:8px;
+      transition:background .15s,box-shadow .15s;">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+      Google로 로그인
+    </button>
+    <div id="google-signin-btn" style="display:none;"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0 12px;">
+      <div style="flex:1;height:.5px;background:rgba(14,14,13,.1);"></div>
+      <span style="font-size:11px;color:var(--ink3);">또는</span>
+      <div style="flex:1;height:.5px;background:rgba(14,14,13,.1);"></div>
+    </div>
     <form id="name-form">
-      <input class="name-input" id="name-input" type="text" placeholder="예) 홍길동" maxlength="20" autocomplete="off">
-      <button class="name-submit" type="submit">입장하기 →</button>
+      <input class="name-input" id="name-input" type="text" placeholder="이름을 입력하세요" maxlength="20" autocomplete="off">
+      <button class="name-submit" type="submit">이름으로 시작하기 →</button>
     </form>
+  </div>
+</div>
+
+<!-- ── SHARE MODAL ── -->
+<div id="share-modal">
+  <div class="share-inner">
+    <div class="share-header">
+      <div class="share-title">팀원 초대</div>
+      <button class="share-close" id="share-modal-close">×</button>
+    </div>
+    <div class="share-desc">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
+    <div class="share-url-row">
+      <input class="share-url-input" id="share-url-input" readonly>
+      <button class="share-copy-btn" id="share-copy-btn">복사</button>
+    </div>
+    <div id="share-members-section" style="display:none;">
+      <div class="share-members-title">지금 함께하는 팀원</div>
+      <div id="share-members-list"></div>
+    </div>
   </div>
 </div>
 
@@ -283,11 +370,16 @@ const notesLayer  = document.getElementById('notes-layer');
 const cursorsLayer= document.getElementById('cursors-layer');
 const zoomLabel   = document.getElementById('zoom-label');
 const eraserRing  = document.getElementById('eraser-ring');
-const connDot     = document.getElementById('conn-dot');
-const connLabel   = document.getElementById('conn-label');
+const avatarStack  = document.getElementById('avatar-stack');
+const offlineBadge = document.getElementById('offline-badge');
 
 const drawCanvas = document.createElement('canvas');
 const dCtx       = drawCanvas.getContext('2d');
+
+const committedCanvas = document.createElement('canvas');
+const cCtx            = committedCanvas.getContext('2d');
+let committedValid = false;
+let rafPending     = false;
 
 // ═══════════════════════════════════════════════════════════════
 //  VIEWPORT
@@ -344,6 +436,14 @@ let lastCursorSend  = 0;
 // ═══════════════════════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════════════════════
+function invalidateStrokesCache() { committedValid = false; }
+
+function requestDraw() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; draw(); });
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
@@ -380,14 +480,27 @@ function drawGrid() {
 }
 
 function replayStrokes() {
+  if (!committedValid) {
+    committedCanvas.width  = drawCanvas.width;
+    committedCanvas.height = drawCanvas.height;
+    cCtx.clearRect(0, 0, committedCanvas.width, committedCanvas.height);
+    cCtx.save();
+    cCtx.translate(offsetX, offsetY);
+    cCtx.scale(scale, scale);
+    strokes.forEach(s => renderStroke(cCtx, s));
+    cCtx.restore();
+    committedValid = true;
+  }
   dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-  dCtx.save();
-  dCtx.translate(offsetX, offsetY);
-  dCtx.scale(scale, scale);
-  const all = [...strokes, ...remoteInProgress.values()];
-  if (currentStroke) all.push(currentStroke);
-  all.forEach(s => renderStroke(dCtx, s));
-  dCtx.restore();
+  dCtx.drawImage(committedCanvas, 0, 0);
+  if (currentStroke || remoteInProgress.size) {
+    dCtx.save();
+    dCtx.translate(offsetX, offsetY);
+    dCtx.scale(scale, scale);
+    remoteInProgress.forEach(s => renderStroke(dCtx, s));
+    if (currentStroke) renderStroke(dCtx, currentStroke);
+    dCtx.restore();
+  }
 }
 
 function renderStroke(c, s) {
@@ -424,14 +537,14 @@ function zoomAt(x, y, factor) {
   const ns = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale*factor));
   offsetX = x - (x-offsetX)*(ns/scale);
   offsetY = y - (y-offsetY)*(ns/scale);
-  scale = ns; draw();
+  scale = ns; invalidateStrokesCache(); draw();
 }
-function centerView() { offsetX=canvas.width/2; offsetY=canvas.height/2; scale=1; draw(); }
+function centerView() { offsetX=canvas.width/2; offsetY=canvas.height/2; scale=1; invalidateStrokesCache(); draw(); }
 
 function resize() {
   canvas.width = drawCanvas.width = window.innerWidth;
   canvas.height = drawCanvas.height = window.innerHeight;
-  draw();
+  invalidateStrokesCache(); draw();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -476,16 +589,21 @@ function continueDraw(sx, sy) {
   currentStroke.points.push(wp);
   pendingPoints.push(wp);
   if (!strokeFlushTimer) strokeFlushTimer = setTimeout(flushPoints, 16);
-  draw();
+  requestDraw();
 }
 
 function stopDraw() {
   if (!isDrawing || !currentStroke) return;
   flushPoints();
   wsSend({ type:'stroke_end', strokeId:currentStroke.id });
-  strokes.push(currentStroke);
+  // 지우개 스트로크는 서버가 처리(stroke_delete로 응답)하므로 로컬에 저장하지 않음
+  if (currentStroke.tool !== 'eraser') {
+    strokes.push(currentStroke);
+  } else {
+    myStrokeIds.delete(currentStroke.id);
+  }
   currentStroke = null; isDrawing = false;
-  draw();
+  invalidateStrokesCache(); draw();
 }
 
 function undo() {
@@ -494,7 +612,7 @@ function undo() {
       const [rm] = strokes.splice(i,1);
       myStrokeIds.delete(rm.id);
       wsSend({ type:'stroke_undo', strokeId:rm.id });
-      draw(); return;
+      invalidateStrokesCache(); draw(); return;
     }
   }
 }
@@ -627,12 +745,13 @@ function addRemoteCursor(userId, name, color) {
     </svg>
     <span class="cursor-name" style="background:${color};">${esc(name)}</span>`;
   cursorsLayer.appendChild(el);
-  remoteCursors.set(userId, { el, wx:null, wy:null });
+  remoteCursors.set(userId, { el, wx:null, wy:null, name, color });
+  renderAvatarStack();
 }
 
 function removeRemoteCursor(userId) {
   const c = remoteCursors.get(userId);
-  if (c) { c.el.remove(); remoteCursors.delete(userId); }
+  if (c) { c.el.remove(); remoteCursors.delete(userId); renderAvatarStack(); }
 }
 
 function updateAllRemoteCursors() {
@@ -644,9 +763,16 @@ function updateAllRemoteCursors() {
   });
 }
 
-function updateUserCount() {
-  const n = remoteCursors.size + 1; // +1 for self
-  document.getElementById('conn-label').textContent = `${n}명 접속 중`;
+function renderAvatarStack() {
+  avatarStack.innerHTML = '';
+  remoteCursors.forEach(c => {
+    const initial = [...(c.name || '?')][0].toUpperCase();
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.style.background = c.color;
+    av.innerHTML = `${initial}<div class="avatar-tip">${esc(c.name)}</div>`;
+    avatarStack.appendChild(av);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -662,13 +788,11 @@ function initWs() {
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    connDot.classList.remove('offline');
-    connLabel.textContent = '연결됨';
+    offlineBadge.style.display = 'none';
   };
 
   ws.onclose = () => {
-    connDot.classList.add('offline');
-    connLabel.textContent = '연결 끊김';
+    offlineBadge.style.display = 'flex';
     setTimeout(initWs, 3000);
   };
 
@@ -686,28 +810,22 @@ function handleWsMessage(m) {
     case 'init': {
       myUserId = m.userId;
       myColor  = m.color;
-      // 초기 획 로드
       strokes = m.state.strokes || [];
-      // 초기 포스트잇 로드
       notes = [];
       notesLayer.innerHTML = '';
       (m.state.notes || []).forEach(n => { notes.push(n); buildNoteEl(n, false); });
-      // 현재 접속자 커서 생성
       (m.users || []).forEach(u => addRemoteCursor(u.id, u.name, u.color));
-      updateUserCount();
-      draw();
+      invalidateStrokesCache(); draw();
       break;
     }
 
     case 'user_join':
       addRemoteCursor(m.id, m.name, m.color);
-      updateUserCount();
       showToast(`${esc(m.name)}님이 입장했어요`);
       break;
 
     case 'user_leave':
       removeRemoteCursor(m.userId);
-      updateUserCount();
       break;
 
     case 'cursor': {
@@ -723,27 +841,37 @@ function handleWsMessage(m) {
     // ── 획 ──
     case 'stroke_start':
       remoteInProgress.set(m.stroke.id, { ...m.stroke });
-      draw();
+      requestDraw();
       break;
 
     case 'stroke_add': {
       const s = remoteInProgress.get(m.strokeId) || strokes.find(s=>s.id===m.strokeId);
       if (s) s.points.push(...(m.points||[]));
-      draw();
+      requestDraw();
       break;
     }
 
     case 'stroke_end': {
       const s = remoteInProgress.get(m.strokeId);
       if (s) { remoteInProgress.delete(m.strokeId); strokes.push(s); }
-      draw();
+      invalidateStrokesCache(); draw();
       break;
     }
 
     case 'stroke_undo': {
       const i = strokes.findIndex(s=>s.id===m.strokeId);
       if (i !== -1) strokes.splice(i,1);
-      draw();
+      invalidateStrokesCache(); draw();
+      break;
+    }
+
+    // 서버 주도 삭제 (지우개 적용 결과)
+    case 'stroke_delete': {
+      remoteInProgress.delete(m.strokeId);
+      const i = strokes.findIndex(s=>s.id===m.strokeId);
+      if (i !== -1) strokes.splice(i,1);
+      myStrokeIds.delete(m.strokeId);
+      invalidateStrokesCache(); draw();
       break;
     }
 
@@ -804,7 +932,7 @@ canvas.addEventListener('mousemove', e => {
     wsSend({ type:'cursor', x:wp.x, y:wp.y });
     lastCursorSend=now;
   }
-  if (activeTool==='hand'&&isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; draw(); }
+  if (activeTool==='hand'&&isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
   else continueDraw(e.clientX,e.clientY);
 });
 
@@ -842,7 +970,7 @@ canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   if (e.touches.length===1) {
     const t=e.touches[0];
-    if (activeTool==='hand'&&isPanning) { offsetX=t.clientX-panStartX; offsetY=t.clientY-panStartY; draw(); }
+    if (activeTool==='hand'&&isPanning) { offsetX=t.clientX-panStartX; offsetY=t.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
     else if (activeTool!=='sticky') continueDraw(t.clientX,t.clientY);
   } else if (e.touches.length===2&&lastTouchDist) {
     const d=touchDist(e.touches);
@@ -931,9 +1059,45 @@ document.getElementById('btn-zoom-in').addEventListener('click',    ()=>zoomAt(c
 document.getElementById('btn-zoom-out').addEventListener('click',   ()=>zoomAt(canvas.width/2,canvas.height/2,1/1.2));
 document.getElementById('btn-zoom-reset').addEventListener('click', centerView);
 
-document.getElementById('btn-share').addEventListener('click', () => {
-  navigator.clipboard.writeText(location.href).then(() => showToast('링크를 복사했어요! 팀원에게 공유하세요 🎉'));
+document.getElementById('btn-share').addEventListener('click', openShareModal);
+
+document.getElementById('share-modal-close').addEventListener('click', closeShareModal);
+document.getElementById('share-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('share-modal')) closeShareModal();
 });
+document.getElementById('share-copy-btn').addEventListener('click', () => {
+  const btn = document.getElementById('share-copy-btn');
+  navigator.clipboard.writeText(location.href).then(() => {
+    btn.textContent = '복사됨!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
+  });
+});
+
+function openShareModal() {
+  document.getElementById('share-url-input').value = location.href;
+  const sec  = document.getElementById('share-members-section');
+  const list = document.getElementById('share-members-list');
+  list.innerHTML = '';
+  if (remoteCursors.size > 0) {
+    sec.style.display = 'block';
+    remoteCursors.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'share-member';
+      div.innerHTML = `<div class="share-member-dot" style="background:${c.color}"></div>
+        <span class="share-member-name">${esc(c.name)}</span>`;
+      list.appendChild(div);
+    });
+  } else {
+    sec.style.display = 'none';
+  }
+  document.getElementById('share-modal').classList.add('open');
+}
+
+function closeShareModal() {
+  document.getElementById('share-modal').classList.remove('open');
+  const btn = document.getElementById('share-copy-btn');
+  btn.textContent = '복사'; btn.classList.remove('copied');
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  TOAST
@@ -956,25 +1120,79 @@ function getRoomId() {
   return r;
 }
 
-function getUserName() {
+const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.googleusercontent.com';
+
+// 팝업 방식 Google 로그인 (redirect_uri 등록 불필요)
+function startGoogleLogin(resolveCallback) {
+  const statusEl = document.getElementById('login-status');
+  statusEl.textContent = '';
+
+  if (!window.google?.accounts?.oauth2) {
+    statusEl.textContent = 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.';
+    return;
+  }
+
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'openid profile email',
+    error_callback: (err) => {
+      if (err.type === 'popup_closed') return;
+      statusEl.textContent = 'Google 로그인 오류가 발생했습니다.';
+      console.error('Google OAuth error:', err);
+    },
+    callback: async (tokenResponse) => {
+      if (tokenResponse.error) {
+        statusEl.textContent = 'Google 로그인 실패: ' + tokenResponse.error;
+        return;
+      }
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+        });
+        if (!res.ok) throw new Error(res.status);
+        const info = await res.json();
+        const user = { name: info.name, email: info.email, picture: info.picture };
+        localStorage.setItem('fa_user', JSON.stringify(user));
+        document.getElementById('name-modal').style.display = 'none';
+        resolveCallback(user);
+      } catch (e) {
+        statusEl.textContent = '로그인 처리 중 오류가 발생했습니다.';
+        console.error(e);
+      }
+    },
+  });
+
+  client.requestAccessToken({ prompt: 'select_account' });
+}
+
+function getGoogleUser() {
   return new Promise(resolve => {
-    const stored = localStorage.getItem('fa_name');
-    if (stored) { document.getElementById('name-modal').style.display='none'; resolve(stored); return; }
-    document.getElementById('name-modal').style.display='flex';
-    document.getElementById('name-input').focus();
+    // 저장된 유저 확인
+    const stored = localStorage.getItem('fa_user');
+    if (stored) { resolve(JSON.parse(stored)); return; }
+
+    // 로그인 모달 표시
+    const modal = document.getElementById('name-modal');
+    modal.style.display = 'flex';
+
+    document.getElementById('google-btn').addEventListener('click', () => startGoogleLogin(resolve));
+
+    // 이름 입력 폴백
     document.getElementById('name-form').addEventListener('submit', e => {
       e.preventDefault();
       const name = document.getElementById('name-input').value.trim() || '익명';
-      localStorage.setItem('fa_name', name);
-      document.getElementById('name-modal').style.display='none';
-      resolve(name);
-    }, { once:true });
+      const user = { name, email: '', picture: '' };
+      localStorage.setItem('fa_user', JSON.stringify(user));
+      modal.style.display = 'none';
+      resolve(user);
+    }, { once: true });
   });
 }
 
 async function main() {
-  roomId   = getRoomId();
-  userName = await getUserName();
+  roomId = getRoomId();
+  const gUser = await getGoogleUser();
+  userName = gUser.name;
 
   setTimeout(() => document.getElementById('hint').classList.add('hidden'), 4500);
   window.addEventListener('resize', resize);
