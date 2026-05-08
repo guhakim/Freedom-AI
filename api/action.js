@@ -1,6 +1,23 @@
 'use strict';
-const { kv }  = require('@vercel/kv');
-const Pusher  = require('pusher');
+const Pusher = require('pusher');
+
+async function getKv() {
+  try { return require('@vercel/kv').kv; } catch { return null; }
+}
+async function kvGet(key) {
+  try {
+    const kv = await getKv();
+    if (!kv || !process.env.KV_REST_API_URL) return null;
+    return await kv.get(key);
+  } catch { return null; }
+}
+async function kvSet(key, val) {
+  try {
+    const kv = await getKv();
+    if (!kv || !process.env.KV_REST_API_URL) return;
+    await kv.set(key, val);
+  } catch { /* ignore */ }
+}
 
 const MAX_STROKES  = 1000;
 const MAX_NOTE_TXT = 10_000;
@@ -63,7 +80,7 @@ module.exports = async (req, res) => {
   const kvKey   = `fa:room:${roomId}`;
   const excl    = socketId ? { socket_id: socketId } : undefined;
 
-  let state = (await kv.get(kvKey)) || { strokes: [], notes: [] };
+  let state = (await kvGet(kvKey)) || { strokes: [], notes: [] };
 
   switch (action.type) {
 
@@ -77,7 +94,7 @@ module.exports = async (req, res) => {
         const es = state.strokes.find(s => s.id === strokeId);
         if (!es) break;
         const { deletedIds, newStrokes } = applyErasure(state, es);
-        await kv.set(kvKey, state);
+        await kvSet(kvKey, state);
         for (const id of deletedIds)
           await pusher.trigger(channel, 'stroke_delete', { strokeId: id });
         for (const ns of newStrokes)
@@ -89,7 +106,7 @@ module.exports = async (req, res) => {
             && VALID_COLOR.test(stroke.color)) {
           state.strokes.push({ ...stroke, userId });
         }
-        await kv.set(kvKey, state);
+        await kvSet(kvKey, state);
         await pusher.trigger(channel, 'stroke_end', { strokeId, stroke }, excl);
       }
       break;
@@ -100,7 +117,7 @@ module.exports = async (req, res) => {
       const idx = state.strokes.findIndex(s => s.id === strokeId && s.userId === userId);
       if (idx !== -1) {
         state.strokes.splice(idx, 1);
-        await kv.set(kvKey, state);
+        await kvSet(kvKey, state);
         await pusher.trigger(channel, 'stroke_undo', { strokeId }, excl);
       }
       break;
@@ -120,7 +137,7 @@ module.exports = async (req, res) => {
         userId,
       };
       state.notes.push(n);
-      await kv.set(kvKey, state);
+      await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_add', { note: n }, excl);
       break;
     }
@@ -130,7 +147,7 @@ module.exports = async (req, res) => {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.x = action.x; n.y = action.y;
-      await kv.set(kvKey, state);
+      await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_move', { noteId: action.noteId, x: n.x, y: n.y }, excl);
       break;
     }
@@ -141,7 +158,7 @@ module.exports = async (req, res) => {
       if (typeof action.x === 'number') n.x = action.x;
       n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w ?? n.w));
       n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, action.h ?? n.h));
-      await kv.set(kvKey, state);
+      await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_resize', { noteId: action.noteId, x: n.x, w: n.w, h: n.h }, excl);
       break;
     }
@@ -150,7 +167,7 @@ module.exports = async (req, res) => {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.text = String(action.text ?? '').slice(0, MAX_NOTE_TXT);
-      await kv.set(kvKey, state);
+      await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_text', { noteId: action.noteId, text: n.text }, excl);
       break;
     }
@@ -161,7 +178,7 @@ module.exports = async (req, res) => {
       );
       if (idx === -1) break;
       state.notes.splice(idx, 1);
-      await kv.set(kvKey, state);
+      await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_delete', { noteId: action.noteId }, excl);
       break;
     }
