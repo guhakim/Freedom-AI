@@ -598,8 +598,8 @@ function flushPoints() {
 function continueDraw(sx, sy) {
   if (!isDrawing || !currentStroke) return;
   if (currentStroke.tool === 'eraser') {
-    // 드래그 중에는 현재 위치만 업데이트 (점 누적 없음)
-    currentStroke.points[0] = s2w(sx, sy);
+    // 드래그 경로를 로컬에 누적 (서버 전송은 mouseup 때 일괄)
+    currentStroke.points.push(s2w(sx, sy));
     requestDraw();
     return;
   }
@@ -613,8 +613,12 @@ function continueDraw(sx, sy) {
 function stopDraw() {
   if (!isDrawing || !currentStroke) return;
   if (currentStroke.tool === 'eraser') {
-    // 클릭 완료 시점에 한 번만 서버로 전송
-    wsSend({ type:'stroke_start', stroke: currentStroke });
+    // mouseup 시점에 누적된 전체 경로를 서버로 일괄 전송
+    const allPts = currentStroke.points;
+    wsSend({ type:'stroke_start', stroke: { ...currentStroke, points: allPts.slice(0, 10) } });
+    for (let i = 10; i < allPts.length; i += 500) {
+      wsSend({ type:'stroke_add', strokeId: currentStroke.id, points: allPts.slice(i, i + 500) });
+    }
     wsSend({ type:'stroke_end', strokeId: currentStroke.id });
     currentStroke = null; isDrawing = false;
     invalidateStrokesCache(); draw();
