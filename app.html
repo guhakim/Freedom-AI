@@ -153,6 +153,15 @@
   .name-modal-logo { font-size:22px; font-weight:500; color:var(--ink);
     letter-spacing:-.02em; margin-bottom:8px; }
   .name-modal-sub { font-size:14px; color:var(--ink3); margin-bottom:24px; }
+  .modal-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
+    padding:12px 14px; font-size:15px; font-family:'DM Sans',sans-serif;
+    color:var(--ink); outline:none; margin-bottom:12px; transition:border-color .2s; }
+  .modal-input:focus { border-color:var(--ink); }
+  .modal-submit { width:100%; background:var(--ink); color:var(--white);
+    border:none; border-radius:100px; padding:12px; font-size:14px;
+    font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer;
+    transition:background .2s; }
+  .modal-submit:hover { background:var(--ink2); }
 
   /* ── AVATAR STACK ── */
   #avatar-stack { display:flex; align-items:center; padding:0 2px; margin-left:2px; }
@@ -306,6 +315,19 @@
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
       Google로 로그인
     </button>
+  </div>
+</div>
+
+<!-- ── PROJECT MODAL ── -->
+<div class="name-modal" id="project-modal" style="display:none;">
+  <div class="name-modal-inner">
+    <div class="name-modal-logo">Freedom AI</div>
+    <div class="name-modal-sub">프로젝트 이름을 입력하세요</div>
+    <form id="project-form">
+      <input class="modal-input" id="project-input" type="text"
+             placeholder="예: 팀 아이디어 회의" maxlength="32" autocomplete="off">
+      <button class="modal-submit" type="submit">입장하기 →</button>
+    </form>
   </div>
 </div>
 
@@ -1095,11 +1117,27 @@ function showToast(msg) {
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
-function getRoomId() {
-  const p = new URLSearchParams(location.search);
-  let r = p.get('room');
-  if (!r) { r = Math.random().toString(36).slice(2,8); history.replaceState(null,'',`?room=${r}`); }
-  return r;
+function getProjectName() {
+  return new Promise(resolve => {
+    // 공유 링크로 진입 시 모달 생략
+    const urlRoom = new URLSearchParams(location.search).get('room');
+    if (urlRoom) { resolve(urlRoom.slice(0, 32)); return; }
+
+    const modal = document.getElementById('project-modal');
+    const input = document.getElementById('project-input');
+    modal.style.display = 'flex';
+    requestAnimationFrame(() => input.focus());
+
+    document.getElementById('project-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const val = input.value.trim();
+      if (!val) return;
+      const rid = val.slice(0, 32);
+      history.replaceState(null, '', `?room=${encodeURIComponent(rid)}`);
+      modal.style.display = 'none';
+      resolve(rid);
+    }, { once: true });
+  });
 }
 
 const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.googleusercontent.com';
@@ -1176,9 +1214,9 @@ function getGoogleUser() {
 }
 
 async function main() {
-  roomId = getRoomId();
   const gUser = await getGoogleUser();
   userName = gUser.name;
+  roomId = await getProjectName();
 
   const logoutBtn = document.getElementById('btn-logout');
   logoutBtn.style.display = 'inline';
