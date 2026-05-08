@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://js.pusher.com/8.4/pusher.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -430,14 +431,14 @@ const RESIZE_R = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path 
 const RESIZE_L = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M8 8L1 1M4.5 8L1 4.5M1 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
 
 // ═══════════════════════════════════════════════════════════════
-//  WEBSOCKET STATE
+//  REALTIME STATE
 // ═══════════════════════════════════════════════════════════════
-let ws         = null;
+let pusher     = null;
+let channel    = null;
 let myUserId   = null;
 let myColor    = '#8b5cf6';
 let roomId     = '';
 let userName   = '';
-let userOnline = 0; // count of all users including self
 const remoteCursors = new Map(); // userId → { el, wx, wy }
 let lastCursorSend  = 0;
 
@@ -583,13 +584,13 @@ function startDraw(sx, sy) {
   }
   myStrokeIds.add(id);
   currentStroke = { id, tool:'pen', color:penColor, width:PEN_SIZES[sizeIndex], points:[wp] };
-  wsSend({ type:'stroke_start', stroke: currentStroke });
+  channel?.trigger('client-stroke_start', { stroke: currentStroke });
   draw();
 }
 
 function flushPoints() {
   if (currentStroke && pendingPoints.length) {
-    wsSend({ type:'stroke_add', strokeId:currentStroke.id, points:[...pendingPoints] });
+    channel?.trigger('client-stroke_add', { strokeId:currentStroke.id, points:[...pendingPoints] });
     pendingPoints = [];
   }
   strokeFlushTimer = null;
@@ -613,22 +614,18 @@ function continueDraw(sx, sy) {
 function stopDraw() {
   if (!isDrawing || !currentStroke) return;
   if (currentStroke.tool === 'eraser') {
-    // mouseup 시점에 누적된 전체 경로를 서버로 일괄 전송
-    const allPts = currentStroke.points;
-    wsSend({ type:'stroke_start', stroke: { ...currentStroke, points: allPts.slice(0, 10) } });
-    for (let i = 10; i < allPts.length; i += 500) {
-      wsSend({ type:'stroke_add', strokeId: currentStroke.id, points: allPts.slice(i, i + 500) });
-    }
-    wsSend({ type:'stroke_end', strokeId: currentStroke.id });
+    const eraserStroke = { ...currentStroke };
     currentStroke = null; isDrawing = false;
     invalidateStrokesCache(); draw();
+    sendAction({ type:'stroke_end', strokeId:eraserStroke.id, stroke:eraserStroke });
     return;
   }
   flushPoints();
-  wsSend({ type:'stroke_end', strokeId:currentStroke.id });
-  strokes.push(currentStroke);
+  const finishedStroke = currentStroke;
+  strokes.push(finishedStroke);
   currentStroke = null; isDrawing = false;
   invalidateStrokesCache(); draw();
+  sendAction({ type:'stroke_end', strokeId:finishedStroke.id, stroke:finishedStroke });
 }
 
 function undo() {
@@ -636,7 +633,7 @@ function undo() {
     if (myStrokeIds.has(strokes[i].id)) {
       const [rm] = strokes.splice(i,1);
       myStrokeIds.delete(rm.id);
-      wsSend({ type:'stroke_undo', strokeId:rm.id });
+      sendAction({ type:'stroke_undo', strokeId:rm.id });
       invalidateStrokesCache(); draw(); return;
     }
   }
@@ -649,7 +646,7 @@ function addNote(wx, wy) {
   const note = { id:genId(), x:wx, y:wy, w:NOTE_W, h:NOTE_H, color:stickyColor, text:'' };
   notes.push(note);
   buildNoteEl(note, true);
-  wsSend({ type:'note_add', note });
+  sendAction({ type:'note_add', note });
 }
 
 function buildNoteEl(note, autoFocus=false) {
@@ -696,7 +693,7 @@ function setupNoteEvents(note) {
   txt.addEventListener('input', () => {
     note.text = txt.innerText;
     clearTimeout(textTimer);
-    textTimer = setTimeout(() => wsSend({ type:'note_text', noteId:note.id, text:note.text }), 400);
+    textTimer = setTimeout(() => sendAction({ type:'note_text', noteId:note.id, text:note.text }), 400);
   });
 }
 
@@ -709,11 +706,11 @@ function startNoteDrag(note, sx0, sy0, isTouch=false) {
     note.x = ox+(sx-sx0)/scale; note.y = oy+(sy-sy0)/scale;
     note.el.style.left=note.x+'px'; note.el.style.top=note.y+'px';
     clearTimeout(sendTimer);
-    sendTimer = setTimeout(() => wsSend({ type:'note_move', noteId:note.id, x:note.x, y:note.y }), 40);
+    sendTimer = setTimeout(() => sendAction({ type:'note_move', noteId:note.id, x:note.x, y:note.y }), 40);
   }
   function cleanup() {
     note.el.querySelector('.note-handle').style.cursor='';
-    wsSend({ type:'note_move', noteId:note.id, x:note.x, y:note.y });
+    sendAction({ type:'note_move', noteId:note.id, x:note.x, y:note.y });
     document.removeEventListener('mousemove', mm);
     document.removeEventListener('mouseup',   cleanup);
     document.removeEventListener('touchmove', tm);
@@ -736,10 +733,10 @@ function startNoteResize(note, dir, sx0, sy0, isTouch=false) {
     note.h=Math.max(MIN_NOTE_H,oh+dy);
     note.el.style.left=note.x+'px'; note.el.style.width=note.w+'px'; note.el.style.height=note.h+'px';
     clearTimeout(sendTimer);
-    sendTimer=setTimeout(()=>wsSend({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h }),40);
+    sendTimer=setTimeout(()=>sendAction({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h }),40);
   }
   function cleanup() {
-    wsSend({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h });
+    sendAction({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h });
     document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',cleanup);
     document.removeEventListener('touchmove',tm); document.removeEventListener('touchend',cleanup);
   }
@@ -753,7 +750,7 @@ function deleteNote(note) {
   note.el.classList.add('deleting');
   note.el.addEventListener('animationend', ()=>note.el.remove(), {once:true});
   notes = notes.filter(n=>n.id!==note.id);
-  wsSend({ type:'note_delete', noteId:note.id });
+  sendAction({ type:'note_delete', noteId:note.id });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -801,146 +798,125 @@ function renderAvatarStack() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  WEBSOCKET
+//  PUSHER / REALTIME
 // ═══════════════════════════════════════════════════════════════
-function wsSend(msg) {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+function sendAction(action) {
+  return fetch('/api/action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      roomId,
+      userId:   myUserId,
+      socketId: pusher?.connection?.socket_id,
+      action,
+    }),
+  });
 }
 
-function initWs() {
-  const proto = location.protocol==='https:' ? 'wss:' : 'ws:';
-  const url   = `${proto}//${location.host}/?room=${roomId}&name=${encodeURIComponent(userName)}`;
-  ws = new WebSocket(url);
+function initPusher(pusherKey, pusherCluster) {
+  pusher = new Pusher(pusherKey, {
+    cluster:      pusherCluster,
+    authEndpoint: '/api/pusher-auth',
+    auth: {
+      params: { user_id: myUserId, user_name: userName, user_color: myColor },
+    },
+  });
 
-  ws.onopen = () => {
+  channel = pusher.subscribe(`presence-room-${roomId}`);
+
+  channel.bind('pusher:subscription_succeeded', members => {
     offlineBadge.style.display = 'none';
-  };
+    members.each(m => {
+      if (m.id !== myUserId) addRemoteCursor(m.id, m.info.name, m.info.color);
+    });
+  });
 
-  ws.onclose = () => {
-    offlineBadge.style.display = 'flex';
-    setTimeout(initWs, 3000);
-  };
+  channel.bind('pusher:member_added', m => {
+    addRemoteCursor(m.id, m.info.name, m.info.color);
+    showToast(`${esc(m.info.name)}님이 입장했어요`);
+  });
 
-  ws.onerror = () => ws.close();
+  channel.bind('pusher:member_removed', m => removeRemoteCursor(m.id));
 
-  ws.onmessage = ({ data }) => {
-    let m; try { m = JSON.parse(data); } catch { return; }
-    handleWsMessage(m);
-  };
-}
+  pusher.connection.bind('disconnected', () => { offlineBadge.style.display = 'flex'; });
+  pusher.connection.bind('connected',    () => { offlineBadge.style.display = 'none'; });
 
-function handleWsMessage(m) {
-  switch (m.type) {
-
-    case 'init': {
-      myUserId = m.userId;
-      myColor  = m.color;
-      strokes = m.state.strokes || [];
-      notes = [];
-      notesLayer.innerHTML = '';
-      // 재연결 시 이전 커서 완전 초기화 (ghost 아바타 방지)
-      cursorsLayer.innerHTML = '';
-      remoteCursors.clear();
-      avatarStack.innerHTML = '';
-      (m.state.notes || []).forEach(n => { notes.push(n); buildNoteEl(n, false); });
-      (m.users || []).forEach(u => addRemoteCursor(u.id, u.name, u.color));
-      invalidateStrokesCache(); draw();
-      break;
+  // ── 커서 (client event) ──
+  channel.bind('client-cursor', data => {
+    const c = remoteCursors.get(data.userId);
+    if (c) {
+      c.wx = data.x; c.wy = data.y;
+      const s = w2s(data.x, data.y);
+      Object.assign(c.el.style, { left:s.x+'px', top:s.y+'px', opacity:'1' });
     }
+  });
 
-    case 'user_join':
-      addRemoteCursor(m.id, m.name, m.color);
-      showToast(`${esc(m.name)}님이 입장했어요`);
-      break;
+  // ── 획 미리보기 (client events) ──
+  channel.bind('client-stroke_start', data => {
+    remoteInProgress.set(data.stroke.id, { ...data.stroke });
+    requestDraw();
+  });
 
-    case 'user_leave':
-      removeRemoteCursor(m.userId);
-      break;
+  channel.bind('client-stroke_add', data => {
+    const s = remoteInProgress.get(data.strokeId) || strokes.find(s=>s.id===data.strokeId);
+    if (s) s.points.push(...(data.points||[]));
+    requestDraw();
+  });
 
-    case 'cursor': {
-      const c = remoteCursors.get(m.userId);
-      if (c) {
-        c.wx = m.x; c.wy = m.y;
-        const s = w2s(m.x, m.y);
-        Object.assign(c.el.style, { left:s.x+'px', top:s.y+'px', opacity:'1' });
-      }
-      break;
+  // ── 획 확정/삭제 (server events) ──
+  channel.bind('stroke_end', data => {
+    let s = remoteInProgress.get(data.strokeId);
+    if (s) { remoteInProgress.delete(data.strokeId); }
+    else if (data.stroke) { s = data.stroke; }
+    if (s) strokes.push(s);
+    invalidateStrokesCache(); draw();
+  });
+
+  channel.bind('stroke_delete', data => {
+    remoteInProgress.delete(data.strokeId);
+    const i = strokes.findIndex(s=>s.id===data.strokeId);
+    if (i !== -1) strokes.splice(i,1);
+    myStrokeIds.delete(data.strokeId);
+    invalidateStrokesCache(); draw();
+  });
+
+  channel.bind('stroke_undo', data => {
+    const i = strokes.findIndex(s=>s.id===data.strokeId);
+    if (i !== -1) strokes.splice(i,1);
+    invalidateStrokesCache(); draw();
+  });
+
+  // ── 포스트잇 (server events) ──
+  channel.bind('note_add', data => {
+    if (notes.find(n=>n.id===data.note.id)) return;
+    notes.push(data.note);
+    buildNoteEl(data.note, false);
+  });
+
+  channel.bind('note_move', data => {
+    const n = notes.find(n=>n.id===data.noteId);
+    if (n) { n.x=data.x; n.y=data.y; n.el.style.left=data.x+'px'; n.el.style.top=data.y+'px'; }
+  });
+
+  channel.bind('note_resize', data => {
+    const n = notes.find(n=>n.id===data.noteId);
+    if (n) { n.x=data.x; n.w=data.w; n.h=data.h;
+      n.el.style.left=data.x+'px'; n.el.style.width=data.w+'px'; n.el.style.height=data.h+'px'; }
+  });
+
+  channel.bind('note_text', data => {
+    const n = notes.find(n=>n.id===data.noteId);
+    if (n) {
+      n.text = data.text;
+      const t = n.el?.querySelector('.note-text');
+      if (t && document.activeElement !== t) t.innerText = data.text;
     }
+  });
 
-    // ── 획 ──
-    case 'stroke_start':
-      remoteInProgress.set(m.stroke.id, { ...m.stroke });
-      requestDraw();
-      break;
-
-    case 'stroke_add': {
-      const s = remoteInProgress.get(m.strokeId) || strokes.find(s=>s.id===m.strokeId);
-      if (s) s.points.push(...(m.points||[]));
-      requestDraw();
-      break;
-    }
-
-    case 'stroke_end': {
-      const s = remoteInProgress.get(m.strokeId);
-      if (s) { remoteInProgress.delete(m.strokeId); strokes.push(s); }
-      invalidateStrokesCache(); draw();
-      break;
-    }
-
-    case 'stroke_undo': {
-      const i = strokes.findIndex(s=>s.id===m.strokeId);
-      if (i !== -1) strokes.splice(i,1);
-      invalidateStrokesCache(); draw();
-      break;
-    }
-
-    // 서버 주도 삭제 (지우개 적용 결과)
-    case 'stroke_delete': {
-      remoteInProgress.delete(m.strokeId);
-      const i = strokes.findIndex(s=>s.id===m.strokeId);
-      if (i !== -1) strokes.splice(i,1);
-      myStrokeIds.delete(m.strokeId);
-      invalidateStrokesCache(); draw();
-      break;
-    }
-
-    // ── 포스트잇 ──
-    case 'note_add': {
-      if (notes.find(n=>n.id===m.note.id)) break;
-      notes.push(m.note);
-      buildNoteEl(m.note, false);
-      break;
-    }
-
-    case 'note_move': {
-      const n = notes.find(n=>n.id===m.noteId);
-      if (n) { n.x=m.x; n.y=m.y; n.el.style.left=m.x+'px'; n.el.style.top=m.y+'px'; }
-      break;
-    }
-
-    case 'note_resize': {
-      const n = notes.find(n=>n.id===m.noteId);
-      if (n) { n.x=m.x; n.w=m.w; n.h=m.h;
-        n.el.style.left=m.x+'px'; n.el.style.width=m.w+'px'; n.el.style.height=m.h+'px'; }
-      break;
-    }
-
-    case 'note_text': {
-      const n = notes.find(n=>n.id===m.noteId);
-      if (n) {
-        n.text = m.text;
-        const t = n.el?.querySelector('.note-text');
-        if (t && document.activeElement !== t) t.innerText = m.text;
-      }
-      break;
-    }
-
-    case 'note_delete': {
-      const n = notes.find(n=>n.id===m.noteId);
-      if (n) { n.el?.remove(); notes=notes.filter(x=>x.id!==m.noteId); }
-      break;
-    }
-  }
+  channel.bind('note_delete', data => {
+    const n = notes.find(n=>n.id===data.noteId);
+    if (n) { n.el?.remove(); notes=notes.filter(x=>x.id!==data.noteId); }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -958,7 +934,7 @@ canvas.addEventListener('mousemove', e => {
   const now = Date.now();
   if (now-lastCursorSend>33) {
     const wp = s2w(e.clientX,e.clientY);
-    wsSend({ type:'cursor', x:wp.x, y:wp.y });
+    channel?.trigger('client-cursor', { userId:myUserId, x:wp.x, y:wp.y });
     lastCursorSend=now;
   }
   if (activeTool==='hand'&&isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
@@ -1275,6 +1251,25 @@ async function main() {
   userName = gUser.name;
   roomId = await getProjectName();
 
+  // 방 입장 & Pusher 설정 수신
+  const joinRes = await fetch('/api/join', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ roomId, name: userName }),
+  });
+  const { userId, color, state, pusherKey, pusherCluster } = await joinRes.json();
+
+  myUserId = userId;
+  myColor  = color;
+  strokes  = state.strokes || [];
+  notes    = [];
+  notesLayer.innerHTML  = '';
+  cursorsLayer.innerHTML = '';
+  remoteCursors.clear();
+  avatarStack.innerHTML = '';
+  (state.notes || []).forEach(n => { notes.push(n); buildNoteEl(n, false); });
+  invalidateStrokesCache();
+
   const logoutBtn = document.getElementById('btn-logout');
   logoutBtn.style.display = 'inline';
   logoutBtn.addEventListener('click', () => {
@@ -1287,7 +1282,8 @@ async function main() {
   resize();
   centerView();
   setTool('pen');
-  initWs();
+  draw();
+  initPusher(pusherKey, pusherCluster);
 }
 
 main();
