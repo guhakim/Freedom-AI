@@ -286,6 +286,7 @@
   <button class="share-btn" id="btn-share">🔗 공유</button>
   <div id="avatar-stack"></div>
   <div id="offline-badge"><div class="off-dot"></div><span>오프라인</span></div>
+  <button id="btn-logout" style="display:none;font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0 4px;font-family:'DM Sans',sans-serif;flex-shrink:0;" title="로그아웃">로그아웃</button>
 </div>
 
 <!-- ── ZOOM HUD ── -->
@@ -1207,6 +1208,13 @@ async function main() {
   roomId = getRoomId();
   const gUser = await getGoogleUser();
   userName = gUser.name;
+
+  const logoutBtn = document.getElementById('btn-logout');
+  logoutBtn.style.display = 'inline';
+  logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('fa_user');
+    location.reload();
+  });
 
   setTimeout(() => document.getElementById('hint').classList.add('hidden'), 4500);
   window.addEventListener('resize', resize);
