@@ -84,21 +84,24 @@ module.exports = async (req, res) => {
 
   switch (action.type) {
 
+    case 'erase_result': {
+      const { deletedIds = [], newStrokes = [] } = action;
+      state.strokes = state.strokes.filter(s => !deletedIds.includes(s.id));
+      state.strokes.push(...newStrokes.map(s => ({ ...s, userId })));
+      await kvSet(kvKey, state);
+      for (const id of deletedIds)
+        await pusher.trigger(channel, 'stroke_delete', { strokeId: id }, excl);
+      for (const ns of newStrokes)
+        await pusher.trigger(channel, 'stroke_end', { strokeId: ns.id, stroke: ns }, excl);
+      break;
+    }
+
     case 'stroke_end': {
       const { strokeId, stroke } = action;
       if (!stroke) break;
 
-      if (stroke.tool === 'eraser') {
-        if (!state.strokes.find(s => s.id === strokeId))
-          state.strokes.push({ ...stroke, userId });
-        const es = state.strokes.find(s => s.id === strokeId);
-        if (!es) break;
-        const { deletedIds, newStrokes } = applyErasure(state, es);
-        await kvSet(kvKey, state);
-        for (const id of deletedIds)
-          await pusher.trigger(channel, 'stroke_delete', { strokeId: id });
-        for (const ns of newStrokes)
-          await pusher.trigger(channel, 'stroke_end', { strokeId: ns.id, stroke: ns });
+      if (false) { // eraser now handled by erase_result
+        break;
       } else {
         if (!state.strokes.find(s => s.id === strokeId)
             && state.strokes.length < MAX_STROKES

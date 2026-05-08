@@ -611,13 +611,41 @@ function continueDraw(sx, sy) {
   requestDraw();
 }
 
+function applyErasureLocal(eraserStroke) {
+  const r2   = (eraserStroke.width / 2) ** 2;
+  const ePts = eraserStroke.points;
+  const deletedIds = [];
+  const newStrokes = [];
+  const remaining  = [];
+
+  for (const s of strokes) {
+    if (s.tool === 'eraser') { remaining.push(s); continue; }
+    const hitMask = s.points.map(p =>
+      ePts.some(ep => (p.x-ep.x)**2 + (p.y-ep.y)**2 <= r2)
+    );
+    if (!hitMask.some(Boolean)) { remaining.push(s); continue; }
+    deletedIds.push(s.id);
+    let seg = [];
+    for (let i = 0; i < s.points.length; i++) {
+      if (!hitMask[i]) { seg.push(s.points[i]); }
+      else { if (seg.length) newStrokes.push({ ...s, id:genId(), points:seg }); seg = []; }
+    }
+    if (seg.length) newStrokes.push({ ...s, id:genId(), points:seg });
+  }
+  strokes = [...remaining, ...newStrokes];
+  deletedIds.forEach(id => myStrokeIds.delete(id));
+  newStrokes.forEach(s => myStrokeIds.add(s.id));
+  return { deletedIds, newStrokes };
+}
+
 function stopDraw() {
   if (!isDrawing || !currentStroke) return;
   if (currentStroke.tool === 'eraser') {
     const eraserStroke = { ...currentStroke };
     currentStroke = null; isDrawing = false;
+    const { deletedIds, newStrokes } = applyErasureLocal(eraserStroke);
     invalidateStrokesCache(); draw();
-    sendAction({ type:'stroke_end', strokeId:eraserStroke.id, stroke:eraserStroke });
+    sendAction({ type:'erase_result', eraserId:eraserStroke.id, deletedIds, newStrokes });
     return;
   }
   flushPoints();
