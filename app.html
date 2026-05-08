@@ -575,10 +575,14 @@ function startDraw(sx, sy) {
   isDrawing = true;
   const wp = s2w(sx, sy);
   const id = genId();
+  if (activeTool === 'eraser') {
+    // 서버 전송은 mouseup 시점에 한 번만 — 드래그 중에는 로컬 미리보기만
+    currentStroke = { id, tool:'eraser', width:ERASER_SIZES[sizeIndex], points:[wp] };
+    draw();
+    return;
+  }
   myStrokeIds.add(id);
-  currentStroke = { id, tool:activeTool, color:penColor,
-    width: activeTool==='pen' ? PEN_SIZES[sizeIndex] : ERASER_SIZES[sizeIndex],
-    points:[wp] };
+  currentStroke = { id, tool:'pen', color:penColor, width:PEN_SIZES[sizeIndex], points:[wp] };
   wsSend({ type:'stroke_start', stroke: currentStroke });
   draw();
 }
@@ -593,6 +597,12 @@ function flushPoints() {
 
 function continueDraw(sx, sy) {
   if (!isDrawing || !currentStroke) return;
+  if (currentStroke.tool === 'eraser') {
+    // 드래그 중에는 현재 위치만 업데이트 (점 누적 없음)
+    currentStroke.points[0] = s2w(sx, sy);
+    requestDraw();
+    return;
+  }
   const wp = s2w(sx, sy);
   currentStroke.points.push(wp);
   pendingPoints.push(wp);
@@ -602,14 +612,17 @@ function continueDraw(sx, sy) {
 
 function stopDraw() {
   if (!isDrawing || !currentStroke) return;
+  if (currentStroke.tool === 'eraser') {
+    // 클릭 완료 시점에 한 번만 서버로 전송
+    wsSend({ type:'stroke_start', stroke: currentStroke });
+    wsSend({ type:'stroke_end', strokeId: currentStroke.id });
+    currentStroke = null; isDrawing = false;
+    invalidateStrokesCache(); draw();
+    return;
+  }
   flushPoints();
   wsSend({ type:'stroke_end', strokeId:currentStroke.id });
-  // 지우개 스트로크는 서버가 처리(stroke_delete로 응답)하므로 로컬에 저장하지 않음
-  if (currentStroke.tool !== 'eraser') {
-    strokes.push(currentStroke);
-  } else {
-    myStrokeIds.delete(currentStroke.id);
-  }
+  strokes.push(currentStroke);
   currentStroke = null; isDrawing = false;
   invalidateStrokesCache(); draw();
 }
