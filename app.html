@@ -1132,12 +1132,25 @@ function startGoogleLogin(resolveCallback) {
     return;
   }
 
+  let popupOpenTime = 0;
   const client = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: 'openid profile email',
     error_callback: (err) => {
-      if (err.type === 'popup_closed') return;
-      statusEl.textContent = 'Google 로그인 오류가 발생했습니다.';
+      if (err.type === 'popup_closed') {
+        // 팝업이 2초 이내에 닫히면 origin_mismatch 등 오류로 판단
+        if (Date.now() - popupOpenTime < 2000) {
+          statusEl.innerHTML =
+            `현재 주소(<b>${location.origin}</b>)가 Google에 미등록 상태입니다.<br>` +
+            `Google Cloud Console → Authorized JavaScript origins 에 추가해주세요.`;
+        }
+        return;
+      }
+      if (err.type === 'popup_failed_to_open') {
+        statusEl.textContent = '팝업이 차단되었습니다. 브라우저 팝업 차단을 해제해주세요.';
+        return;
+      }
+      statusEl.textContent = 'Google 로그인 오류: ' + (err.type || err);
       console.error('Google OAuth error:', err);
     },
     callback: async (tokenResponse) => {
@@ -1162,6 +1175,7 @@ function startGoogleLogin(resolveCallback) {
     },
   });
 
+  popupOpenTime = Date.now();
   client.requestAccessToken({ prompt: 'select_account' });
 }
 
