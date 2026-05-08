@@ -966,7 +966,7 @@ canvas.addEventListener('mousemove', e => {
 });
 
 canvas.addEventListener('mouseup',    () => { isPanning=false; stopDraw(); updateCursor(false); });
-canvas.addEventListener('mouseleave', () => { eraserRing.style.display='none'; if(activeTool==='hand') isPanning=false; });
+canvas.addEventListener('mouseleave', () => { eraserRing.style.display='none'; isPanning=false; stopDraw(); });
 
 canvas.addEventListener('click', e => {
   if (activeTool!=='sticky') return;
@@ -1028,7 +1028,7 @@ canvas.addEventListener('touchend', e => {
 function touchDist(t) { return Math.hypot(t[1].clientX-t[0].clientX,t[1].clientY-t[0].clientY); }
 
 document.addEventListener('keydown', e => {
-  if (e.target.closest('.note-text,.name-input')) return;
+  if (e.target.closest('.note-text,.modal-input')) return;
   const k=e.key;
   if (k==='0') { centerView(); return; }
   if (k==='+'||k==='=') { zoomAt(canvas.width/2,canvas.height/2,1.2); return; }
