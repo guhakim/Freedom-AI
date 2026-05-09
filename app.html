@@ -174,7 +174,7 @@
     padding:8px 12px 4px; letter-spacing:.04em; text-transform:uppercase;
     border-top:.5px solid rgba(14,14,13,.1); margin-top:4px; display:flex; align-items:center; gap:4px; }
   .trash-row { opacity:.6; }
-  .trash-row .sidebar-item { color:var(--ink3); text-decoration:line-through; cursor:default; font-size:12px; }
+  .trash-row .sidebar-item { color:var(--ink3); text-decoration:line-through; cursor:pointer; font-size:12px; }
   .trash-row:hover { background:none; }
   .trash-row:hover .sidebar-del { opacity:1; }
 
@@ -1792,7 +1792,6 @@ async function main() {
           if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
-          localStorage.removeItem('fa:room:' + name.slice(0, 32));
           const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
           if (!trash.includes(name)) trash.unshift(name);
           localStorage.setItem('fa_trash', JSON.stringify(trash.slice(0, 20)));
@@ -1815,16 +1814,23 @@ async function main() {
       items.forEach(name => {
         const row = document.createElement('div');
         row.className = 'sidebar-row trash-row';
-        const label = document.createElement('span');
+        const label = document.createElement('button');
         label.className = 'sidebar-item';
         label.textContent = name;
-        label.title = name;
+        label.title = '클릭하여 내용 보기';
+        label.addEventListener('click', () => {
+          sessionStorage.setItem('fa_sidebar_nav', '1');
+          history.replaceState(null, '', `?room=${encodeURIComponent(name.slice(0,32))}`);
+          location.reload();
+        });
         const del = document.createElement('button');
         del.className = 'sidebar-del';
         del.title = '영구 삭제';
         del.innerHTML = '×';
         del.addEventListener('click', e => {
           e.stopPropagation();
+          if (!confirm('정말 삭제가 됩니다. 다시 되돌릴 수 없습니다.')) return;
+          localStorage.removeItem('fa:room:' + name.slice(0, 32));
           const t = JSON.parse(localStorage.getItem('fa_trash') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_trash', JSON.stringify(t));
           buildTrash();
@@ -1853,8 +1859,6 @@ async function main() {
         const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
         const updated  = [val, ...projects.filter(p => p !== val)].slice(0, 5);
         localStorage.setItem('fa_projects', JSON.stringify(updated));
-        const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
-        localStorage.setItem('fa_trash', JSON.stringify(trash.filter(p => p !== val)));
         newForm.style.display = 'none';
         sessionStorage.setItem('fa_sidebar_nav', '1');
         history.replaceState(null, '', `?room=${encodeURIComponent(val.slice(0,32))}`);
