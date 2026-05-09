@@ -7,6 +7,14 @@
       "maxDuration": 60
     }
   },
+  "headers": [
+    {
+      "source": "/app.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/", "destination": "/index.html" }
   ]
