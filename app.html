@@ -155,12 +155,20 @@
     color:var(--ink); background:var(--white); outline:none; box-sizing:border-box; }
   #sidebar-new-input:focus { border-color:var(--ink); }
   #sidebar-list { display:flex; flex-direction:column; padding:0 6px 6px; gap:2px; }
-  .sidebar-item { font-size:13px; color:var(--ink); background:none; border:none;
+  .sidebar-row { display:flex; align-items:center; border-radius:8px; transition:background .15s; }
+  .sidebar-row:hover { background:var(--paper); }
+  .sidebar-row.active { background:var(--paper2); }
+  .sidebar-item { flex:1; font-size:13px; color:var(--ink); background:none; border:none;
     border-radius:8px; padding:7px 8px; text-align:left; cursor:pointer;
-    font-family:'DM Sans',sans-serif; transition:background .15s;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
-  .sidebar-item:hover { background:var(--paper); }
-  .sidebar-item.active { background:var(--paper2); font-weight:500; }
+    font-family:'DM Sans',sans-serif;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .sidebar-row.active .sidebar-item { font-weight:500; }
+  .sidebar-del { width:22px; height:22px; border:none; background:none; cursor:pointer;
+    color:var(--ink3); flex-shrink:0; border-radius:5px; margin-right:4px;
+    font-size:16px; line-height:1; opacity:0; transition:opacity .15s,color .15s;
+    display:flex; align-items:center; justify-content:center; padding:0; }
+  .sidebar-row:hover .sidebar-del { opacity:1; }
+  .sidebar-del:hover { color:#e53e3e; }
 
   /* ── AI TRANSFORM MODAL ── */
   #ai-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
@@ -1749,8 +1757,11 @@ async function main() {
       sidebar.style.display = 'block';
       list.innerHTML = '';
       projects.forEach(name => {
+        const row = document.createElement('div');
+        row.className = 'sidebar-row' + (name.slice(0,32) === roomId ? ' active' : '');
+
         const btn = document.createElement('button');
-        btn.className = 'sidebar-item' + (name.slice(0,32) === roomId ? ' active' : '');
+        btn.className = 'sidebar-item';
         btn.textContent = name;
         btn.title = name;
         btn.addEventListener('click', () => {
@@ -1759,7 +1770,26 @@ async function main() {
           history.replaceState(null, '', `?room=${encodeURIComponent(rid)}`);
           location.reload();
         });
-        list.appendChild(btn);
+
+        const del = document.createElement('button');
+        del.className = 'sidebar-del';
+        del.title = '삭제';
+        del.innerHTML = '×';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
+          const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
+          localStorage.setItem('fa_projects', JSON.stringify(updated));
+          if (name.slice(0, 32) === roomId) {
+            location.href = location.pathname;
+          } else {
+            buildList();
+          }
+        });
+
+        row.appendChild(btn);
+        row.appendChild(del);
+        list.appendChild(row);
       });
     }
     buildList();
