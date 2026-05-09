@@ -134,6 +134,54 @@
     box-shadow:0 2px 8px rgba(14,14,13,.06); transition:color .2s; }
   .back-btn:hover { color:var(--ink); }
 
+  /* ── SIDEBAR ── */
+  #sidebar { position:fixed; left:16px; top:72px; z-index:100;
+    background:var(--white); border:.5px solid rgba(14,14,13,.12); border-radius:14px;
+    box-shadow:0 4px 16px rgba(14,14,13,.08); width:160px;
+    overflow:hidden; transition:opacity .2s; }
+  #sidebar-header { font-size:11px; font-weight:500; color:var(--ink3);
+    padding:10px 12px 6px; letter-spacing:.03em; text-transform:uppercase;
+    display:flex; align-items:center; justify-content:space-between; }
+  #sidebar-add-btn { width:18px; height:18px; border:none; background:none; cursor:pointer;
+    color:var(--ink3); font-size:17px; line-height:1; border-radius:5px;
+    display:flex; align-items:center; justify-content:center; padding:0;
+    transition:background .15s, color .15s; }
+  #sidebar-add-btn:hover { background:var(--paper2); color:var(--ink); }
+  #sidebar-new-form { display:none; padding:0 6px 6px; }
+  #sidebar-new-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:8px;
+    padding:6px 8px; font-size:13px; font-family:'DM Sans',sans-serif;
+    color:var(--ink); background:var(--white); outline:none; box-sizing:border-box; }
+  #sidebar-new-input:focus { border-color:var(--ink); }
+  #sidebar-list { display:flex; flex-direction:column; padding:0 6px 6px; gap:2px; }
+  .sidebar-item { font-size:13px; color:var(--ink); background:none; border:none;
+    border-radius:8px; padding:7px 8px; text-align:left; cursor:pointer;
+    font-family:'DM Sans',sans-serif; transition:background .15s;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
+  .sidebar-item:hover { background:var(--paper); }
+  .sidebar-item.active { background:var(--paper2); font-weight:500; }
+
+  /* ── SELECT TOOL ── */
+  #select-box { position:fixed; border:1.5px solid #3b82f6; background:rgba(59,130,246,.08);
+    border-radius:3px; pointer-events:none; display:none; z-index:50; }
+  .note.sel-active    { outline:2px solid #3b82f6; outline-offset:2px; }
+  .canvas-img.sel-active { outline:2px solid #3b82f6; outline-offset:2px; }
+
+  /* ── CANVAS IMAGE ── */
+  .canvas-img { position:absolute; cursor:move; pointer-events:auto;
+    border-radius:6px; box-shadow:0 2px 10px rgba(14,14,13,.15);
+    user-select:none; }
+  .canvas-img img { display:block; width:100%; height:100%;
+    border-radius:6px; pointer-events:none; draggable:false; }
+  .canvas-img-del { position:absolute; top:-7px; right:-7px; width:18px; height:18px;
+    border:none; background:var(--ink); border-radius:50%; cursor:pointer;
+    font-size:12px; color:#fff; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s; padding:0; z-index:2; line-height:1; }
+  .canvas-img:hover .canvas-img-del { opacity:1; }
+  .canvas-img-del:hover { background:#ef4444; }
+  .canvas-img-resize { position:absolute; bottom:-5px; right:-5px; width:14px; height:14px;
+    cursor:se-resize; z-index:2; }
+  .canvas-img-resize svg { display:block; pointer-events:none; }
+
   /* ── HINT ── */
   .hint { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100;
     background:rgba(14,14,13,.72); color:var(--paper); font-size:12px; padding:6px 14px;
@@ -229,6 +277,18 @@
 
 <a href="index.html" class="back-btn">← 홈</a>
 
+<!-- ── SIDEBAR ── -->
+<div id="sidebar" style="display:none;">
+  <div id="sidebar-header">
+    <span>최근 프로젝트</span>
+    <button id="sidebar-add-btn" title="새 프로젝트">+</button>
+  </div>
+  <div id="sidebar-new-form">
+    <input id="sidebar-new-input" type="text" placeholder="프로젝트 이름" maxlength="32"/>
+  </div>
+  <div id="sidebar-list"></div>
+</div>
+
 <!-- ── TOPBAR ── -->
 <div class="topbar" id="topbar">
   <span class="topbar-logo">Freedom AI</span>
@@ -256,6 +316,11 @@
       <path d="M9 9l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
       <path d="M9 9v3h3L9 9z" fill="currentColor" opacity=".35"/>
       <path d="M5 5h5M5 7.5h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>
+  </button>
+  <button class="tool-btn" id="tool-select" title="선택 (V)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M3 2l9 5.5-4 1L6 13 3 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
     </svg>
   </button>
 
@@ -300,6 +365,7 @@
 
 <div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
+<div id="select-box"></div>
 
 <!-- ── LOGIN MODAL ── -->
 <div class="name-modal" id="name-modal" style="display:none;">
@@ -425,7 +491,8 @@ let strokeFlushTimer= null;
 //  NOTE STATE
 // ═══════════════════════════════════════════════════════════════
 const NOTE_W = 160, NOTE_H = 130, MIN_NOTE_W = 100, MIN_NOTE_H = 80;
-let notes = [];
+let notes  = [];
+let images = [];
 
 const RESIZE_R = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8L8 1M4.5 8L8 4.5M8 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
 const RESIZE_L = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M8 8L1 1M4.5 8L1 4.5M1 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
@@ -519,6 +586,8 @@ function renderStroke(c, s) {
   if (s.tool === 'eraser') {
     c.globalCompositeOperation = 'destination-out';
     c.strokeStyle = c.fillStyle = 'rgba(0,0,0,1)';
+    c.shadowColor = 'rgba(0,0,0,1)';
+    c.shadowBlur  = Math.max(6, s.width * 0.5);
   } else {
     c.globalCompositeOperation = 'source-over';
     c.strokeStyle = c.fillStyle = s.color;
@@ -560,7 +629,7 @@ function resize() {
 //  CURSOR
 // ═══════════════════════════════════════════════════════════════
 function updateCursor(panning) {
-  const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell' };
+  const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell', select:'default' };
   canvas.style.cursor = map[activeTool] || 'default';
 }
 function updateEraserRing(sx, sy) {
@@ -705,7 +774,11 @@ function setupNoteEvents(note) {
   el.addEventListener('mousedown',  e => e.stopPropagation());
   el.addEventListener('touchstart', e => e.stopPropagation(), { passive:true });
 
-  hndl.addEventListener('mousedown', e => { e.stopPropagation(); if(e.target!==del) startNoteDrag(note,e.clientX,e.clientY); });
+  hndl.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    if (activeTool==='select' && selectedIds.has(note.id)) { startSelMove(e.clientX,e.clientY); return; }
+    if (e.target!==del) startNoteDrag(note,e.clientX,e.clientY);
+  });
   hndl.addEventListener('touchstart',e => { e.stopPropagation(); if(e.touches.length===1) startNoteDrag(note,e.touches[0].clientX,e.touches[0].clientY,true); }, {passive:true});
 
   del.addEventListener('click', e => { e.stopPropagation(); deleteNote(note); });
@@ -828,7 +901,162 @@ function renderAvatarStack() {
 // ═══════════════════════════════════════════════════════════════
 //  PUSHER / REALTIME
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+//  IMAGE SUPPORT
+// ═══════════════════════════════════════════════════════════════
+function genImgId() { return 'img_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+function compressImage(blob) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      const MAX = 1200;
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > MAX || h > MAX) {
+        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+        else        { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve({ src: c.toDataURL('image/jpeg', 0.82), w, h });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); };
+    img.src = url;
+  });
+}
+
+function addImageToCanvas(src, natW, natH, screenX, screenY) {
+  const MAX_W = 480;
+  let w = natW, h = natH;
+  if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+  const x = (screenX - offsetX) / scale - w / 2;
+  const y = (screenY - offsetY) / scale - h / 2;
+  const img = { id: genImgId(), src, x, y, w, h, userId: myUserId };
+  images.push(img);
+  buildImageEl(img);
+  scheduleLocalSave();
+}
+
+function buildImageEl(img) {
+  const el = document.createElement('div');
+  el.className = 'canvas-img';
+  el.dataset.id = img.id;
+  el.style.cssText = `left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
+  el.innerHTML = `
+    <img src="${img.src}" draggable="false">
+    <button class="canvas-img-del" title="삭제">×</button>
+    <div class="canvas-img-resize">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </div>`;
+  img.el = el;
+  // 이미지는 노트보다 아래(DOM 맨 앞에 삽입)
+  notesLayer.insertBefore(el, notesLayer.firstChild);
+  setupImageEvents(img);
+}
+
+function setupImageEvents(img) {
+  const el  = img.el;
+  const del = el.querySelector('.canvas-img-del');
+  const rsz = el.querySelector('.canvas-img-resize');
+
+  el.addEventListener('mousedown',  e => e.stopPropagation());
+  el.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+
+  // 드래그 이동
+  el.addEventListener('mousedown', e => {
+    if (e.target === del || e.target === rsz || rsz.contains(e.target)) return;
+    e.stopPropagation();
+    if (activeTool==='select' && selectedIds.has(img.id)) { startSelMove(e.clientX,e.clientY); return; }
+    const ox = img.x, oy = img.y, sx0 = e.clientX, sy0 = e.clientY;
+    const mm = e => {
+      img.x = ox + (e.clientX - sx0) / scale;
+      img.y = oy + (e.clientY - sy0) / scale;
+      el.style.left = img.x + 'px'; el.style.top = img.y + 'px';
+    };
+    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup', mu);
+  });
+
+  // 리사이즈 (우하단 핸들)
+  rsz.addEventListener('mousedown', e => {
+    e.stopPropagation(); e.preventDefault();
+    const ox = img.x, ow = img.w, oh = img.h, sx0 = e.clientX;
+    const ar = oh / ow;
+    const mm = e => {
+      const dw = (e.clientX - sx0) / scale;
+      img.w = Math.max(60, ow + dw);
+      img.h = Math.round(img.w * ar);
+      el.style.width = img.w + 'px'; el.style.height = img.h + 'px';
+    };
+    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup', mu);
+  });
+
+  // 삭제
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    el.remove();
+    images = images.filter(i => i.id !== img.id);
+    scheduleLocalSave();
+  });
+}
+
+// 붙여넣기 (Ctrl+V)
+document.addEventListener('paste', e => {
+  if (e.target.isContentEditable || e.target.tagName === 'INPUT') return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const blob = item.getAsFile();
+      if (!blob) continue;
+      compressImage(blob).then(({ src, w, h }) => {
+        addImageToCanvas(src, w, h, window.innerWidth / 2, window.innerHeight / 2);
+      });
+      break;
+    }
+  }
+});
+
+// 드래그 & 드롭
+document.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); });
+document.addEventListener('drop', e => {
+  e.preventDefault(); e.stopPropagation();
+  const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (!files.length) return;
+  compressImage(files[0]).then(({ src, w, h }) => {
+    addImageToCanvas(src, w, h, e.clientX, e.clientY);
+  });
+});
+
+let _saveTimer = null;
+function scheduleLocalSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    if (!roomId) return;
+    try {
+      const data = {
+        strokes,
+        notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', userId:n.userId })),
+        images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
+      };
+      localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
+    } catch(e) {}
+  }, 600);
+}
+
 function sendAction(action) {
+  scheduleLocalSave();
   return fetch('/api/action', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -948,10 +1176,89 @@ function initPusher(pusherKey, pusherCluster) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  SELECT TOOL
+// ═══════════════════════════════════════════════════════════════
+const selBox     = document.getElementById('select-box');
+const selectedIds = new Set();
+let selDrag = null; // {sx0,sy0} rubber-band start
+
+function getSelectableItems() {
+  return [
+    ...notes.map(n  => ({ id:n.id,  el:n.el,  x:n.x,  y:n.y,  w:n.w,  h:n.h  })),
+    ...images.map(i => ({ id:i.id,  el:i.el,  x:i.x,  y:i.y,  w:i.w,  h:i.h  })),
+  ];
+}
+
+function applySelHighlight() {
+  getSelectableItems().forEach(it => {
+    it.el?.classList.toggle('sel-active', selectedIds.has(it.id));
+  });
+}
+
+function clearSelection() { selectedIds.clear(); applySelHighlight(); }
+
+function selectInRect(sx0,sy0,sx1,sy1) {
+  const x0=Math.min(sx0,sx1), x1=Math.max(sx0,sx1);
+  const y0=Math.min(sy0,sy1), y1=Math.max(sy0,sy1);
+  // convert screen rect to world coords
+  const wx0=(x0-offsetX)/scale, wy0=(y0-offsetY)/scale;
+  const wx1=(x1-offsetX)/scale, wy1=(y1-offsetY)/scale;
+  selectedIds.clear();
+  getSelectableItems().forEach(it => {
+    const ix1=it.x+it.w, iy1=it.y+it.h;
+    if (it.x<wx1 && ix1>wx0 && it.y<wy1 && iy1>wy0) selectedIds.add(it.id);
+  });
+  applySelHighlight();
+}
+
+// 선택 항목 전체 이동
+function startSelMove(sx0, sy0) {
+  const snapshot = getSelectableItems()
+    .filter(it => selectedIds.has(it.id))
+    .map(it => ({ it, ox:it.x, oy:it.y }));
+  const mm = e => {
+    const dx=(e.clientX-sx0)/scale, dy=(e.clientY-sy0)/scale;
+    snapshot.forEach(({ it, ox, oy }) => {
+      const obj = notes.find(n=>n.id===it.id) || images.find(i=>i.id===it.id);
+      if (!obj) return;
+      obj.x = ox+dx; obj.y = oy+dy;
+      it.el.style.left = obj.x+'px'; it.el.style.top = obj.y+'px';
+    });
+  };
+  const mu = () => {
+    document.removeEventListener('mousemove', mm);
+    document.removeEventListener('mouseup',   mu);
+    scheduleLocalSave();
+  };
+  document.addEventListener('mousemove', mm);
+  document.addEventListener('mouseup',   mu);
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  MOUSE / TOUCH / KEYBOARD
 // ═══════════════════════════════════════════════════════════════
 canvas.addEventListener('mousedown', e => {
   e.preventDefault();
+  if (activeTool==='select') {
+    clearSelection();
+    selDrag = { sx0:e.clientX, sy0:e.clientY };
+    selBox.style.cssText = `display:block;left:${e.clientX}px;top:${e.clientY}px;width:0;height:0;`;
+    const mm = e => {
+      const x=Math.min(e.clientX,selDrag.sx0), y=Math.min(e.clientY,selDrag.sy0);
+      const w=Math.abs(e.clientX-selDrag.sx0), h=Math.abs(e.clientY-selDrag.sy0);
+      selBox.style.cssText = `display:block;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+    };
+    const mu = e => {
+      selBox.style.display='none';
+      document.removeEventListener('mousemove', mm);
+      document.removeEventListener('mouseup',   mu);
+      selectInRect(selDrag.sx0, selDrag.sy0, e.clientX, e.clientY);
+      selDrag = null;
+    };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup',   mu);
+    return;
+  }
   if (activeTool==='hand')   { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); }
   else if (activeTool==='pen'||activeTool==='eraser') startDraw(e.clientX,e.clientY);
 });
@@ -1041,6 +1348,7 @@ document.addEventListener('keydown', e => {
   if (k==='p'||k==='P') { setTool('pen');    return; }
   if (k==='e'||k==='E') { setTool('eraser'); return; }
   if (k==='s'||k==='S') { setTool('sticky'); return; }
+  if (k==='v'||k==='V') { setTool('select'); return; }
   if ((e.ctrlKey||e.metaKey)&&k==='z') { e.preventDefault(); undo(); }
 });
 
@@ -1048,6 +1356,7 @@ document.addEventListener('keydown', e => {
 //  TOOL SWITCH
 // ═══════════════════════════════════════════════════════════════
 function setTool(tool) {
+  if (tool !== 'select') clearSelection();
   activeTool = tool;
   document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tool-'+tool)?.classList.add('active');
@@ -1060,7 +1369,7 @@ function setTool(tool) {
 // ═══════════════════════════════════════════════════════════════
 //  TOOLBAR EVENTS
 // ═══════════════════════════════════════════════════════════════
-['hand','pen','eraser','sticky'].forEach(t =>
+['hand','pen','eraser','sticky','select'].forEach(t =>
   document.getElementById('tool-'+t).addEventListener('click', ()=>setTool(t)));
 
 document.querySelectorAll('.color-swatch:not(.sticky-swatch)').forEach(el => {
@@ -1247,6 +1556,7 @@ function startGoogleLogin(resolveCallback) {
         const info = await res.json();
         const user = { name: info.name, email: info.email, picture: info.picture };
         localStorage.setItem('fa_user', JSON.stringify(user));
+        localStorage.setItem('fa_google_token', tokenResponse.access_token);
         document.getElementById('name-modal').style.display = 'none';
         resolveCallback(user);
       } catch (e) {
@@ -1262,14 +1572,16 @@ function startGoogleLogin(resolveCallback) {
 
 function getGoogleUser() {
   return new Promise(resolve => {
-    // 저장된 유저 확인
+    // 사이드바 프로젝트 전환 시 로그인 건너뜀
+    const skip = sessionStorage.getItem('fa_sidebar_nav');
     const stored = localStorage.getItem('fa_user');
-    if (stored) { resolve(JSON.parse(stored)); return; }
-
-    // 로그인 모달 표시
+    if (skip && stored) {
+      sessionStorage.removeItem('fa_sidebar_nav');
+      resolve(JSON.parse(stored));
+      return;
+    }
     const modal = document.getElementById('name-modal');
     modal.style.display = 'flex';
-
     document.getElementById('google-btn').addEventListener('click', () => startGoogleLogin(resolve));
   });
 }
@@ -1289,20 +1601,89 @@ async function main() {
 
   myUserId = userId;
   myColor  = color;
-  strokes  = state.strokes || [];
+
+  // 서버 state가 비어있으면 localStorage fallback
+  let resolvedState = state;
+  if (!state.strokes?.length && !state.notes?.length) {
+    try {
+      const local = localStorage.getItem('fa:room:' + roomId);
+      if (local) resolvedState = JSON.parse(local);
+    } catch(e) {}
+  }
+
+  strokes  = resolvedState.strokes || [];
   notes    = [];
+  images   = [];
   notesLayer.innerHTML  = '';
   cursorsLayer.innerHTML = '';
   remoteCursors.clear();
   avatarStack.innerHTML = '';
-  (state.notes || []).forEach(n => { notes.push(n); buildNoteEl(n, false); });
+  // 이미지를 먼저 (노트 아래에 표시)
+  (resolvedState.images || []).forEach(i => { images.push(i); buildImageEl(i); });
+  (resolvedState.notes  || []).forEach(n => { notes.push(n);  buildNoteEl(n, false); });
   invalidateStrokesCache();
+
+  // 사이드바 렌더
+  (function renderSidebar() {
+    const sidebar  = document.getElementById('sidebar');
+    const list     = document.getElementById('sidebar-list');
+    const addBtn   = document.getElementById('sidebar-add-btn');
+    const newForm  = document.getElementById('sidebar-new-form');
+    const newInput = document.getElementById('sidebar-new-input');
+
+    function buildList() {
+      const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+      sidebar.style.display = 'block';
+      list.innerHTML = '';
+      projects.forEach(name => {
+        const btn = document.createElement('button');
+        btn.className = 'sidebar-item' + (name.slice(0,32) === roomId ? ' active' : '');
+        btn.textContent = name;
+        btn.title = name;
+        btn.addEventListener('click', () => {
+          const rid = name.slice(0, 32);
+          sessionStorage.setItem('fa_sidebar_nav', '1');
+          history.replaceState(null, '', `?room=${encodeURIComponent(rid)}`);
+          location.reload();
+        });
+        list.appendChild(btn);
+      });
+    }
+    buildList();
+
+    // + 버튼: 인라인 입력창 토글
+    addBtn.addEventListener('click', () => {
+      const open = newForm.style.display === 'block';
+      newForm.style.display = open ? 'none' : 'block';
+      if (!open) { newInput.value = ''; newInput.focus(); }
+    });
+
+    // Enter로 새 프로젝트 생성
+    newInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const val = newInput.value.trim();
+        if (!val) return;
+        const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+        const updated  = [val, ...projects.filter(p => p !== val)].slice(0, 5);
+        localStorage.setItem('fa_projects', JSON.stringify(updated));
+        newForm.style.display = 'none';
+        sessionStorage.setItem('fa_sidebar_nav', '1');
+        history.replaceState(null, '', `?room=${encodeURIComponent(val.slice(0,32))}`);
+        location.reload();
+      }
+      if (e.key === 'Escape') { newForm.style.display = 'none'; }
+    });
+  })();
 
   const logoutBtn = document.getElementById('btn-logout');
   logoutBtn.style.display = 'inline';
   logoutBtn.addEventListener('click', () => {
+    const token = localStorage.getItem('fa_google_token');
+    if (token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(token, () => {});
+    if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
     localStorage.removeItem('fa_user');
-    location.reload();
+    localStorage.removeItem('fa_google_token');
+    location.href = location.pathname;
   });
 
   setTimeout(() => document.getElementById('hint').classList.add('hidden'), 4500);
