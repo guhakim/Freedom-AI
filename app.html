@@ -1780,11 +1780,7 @@ async function main() {
           if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
-          if (name.slice(0, 32) === roomId) {
-            location.href = location.pathname;
-          } else {
-            buildList();
-          }
+          buildList();
         });
 
         row.appendChild(btn);
