@@ -2,6 +2,11 @@
   "version": 2,
   "framework": null,
   "outputDirectory": ".",
+  "functions": {
+    "api/ai-transform.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/", "destination": "/index.html" }
   ]

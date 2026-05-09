@@ -81,7 +81,8 @@
     box-shadow:0 4px 24px rgba(14,14,13,.08); white-space:nowrap; }
 
   .topbar-logo { font-size:13px; font-weight:500; color:var(--ink); letter-spacing:-.02em;
-    padding-right:10px; border-right:.5px solid rgba(14,14,13,.12); margin-right:6px; }
+    padding-right:10px; border-right:.5px solid rgba(14,14,13,.12); margin-right:6px;
+    cursor:grab; user-select:none; }
 
   .tool-btn { width:32px; height:32px; border:none; background:transparent;
     border-radius:8px; display:flex; align-items:center; justify-content:center;
@@ -141,7 +142,8 @@
     overflow:hidden; transition:opacity .2s; }
   #sidebar-header { font-size:11px; font-weight:500; color:var(--ink3);
     padding:10px 12px 6px; letter-spacing:.03em; text-transform:uppercase;
-    display:flex; align-items:center; justify-content:space-between; }
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:grab; user-select:none; }
   #sidebar-add-btn { width:18px; height:18px; border:none; background:none; cursor:pointer;
     color:var(--ink3); font-size:17px; line-height:1; border-radius:5px;
     display:flex; align-items:center; justify-content:center; padding:0;
@@ -159,6 +161,31 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%; }
   .sidebar-item:hover { background:var(--paper); }
   .sidebar-item.active { background:var(--paper2); font-weight:500; }
+
+  /* ── AI TRANSFORM MODAL ── */
+  #ai-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
+    backdrop-filter:blur(6px); z-index:600; display:none;
+    align-items:center; justify-content:center; }
+  #ai-modal.open { display:flex; }
+  #ai-modal-inner { background:var(--white); border-radius:20px;
+    padding:28px 28px 24px; width:340px; display:flex; flex-direction:column; gap:16px; }
+  #ai-modal-title { font-size:16px; font-weight:500; color:var(--ink); }
+  #ai-modal-sub { font-size:13px; color:var(--ink3); margin-top:-8px; }
+  #ai-prompt-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
+    padding:10px 12px; font-size:14px; font-family:'DM Sans',sans-serif;
+    color:var(--ink); outline:none; resize:none; box-sizing:border-box; }
+  #ai-prompt-input:focus { border-color:var(--ink); }
+  #ai-modal-btns { display:flex; gap:8px; }
+  #ai-cancel-btn { flex:1; padding:10px; border:.5px solid rgba(14,14,13,.2);
+    border-radius:10px; background:none; cursor:pointer; font-size:14px;
+    font-family:'DM Sans',sans-serif; color:var(--ink2); transition:background .15s; }
+  #ai-cancel-btn:hover { background:var(--paper); }
+  #ai-go-btn { flex:2; padding:10px; background:var(--ink); border:none;
+    border-radius:10px; cursor:pointer; font-size:14px; font-weight:500;
+    font-family:'DM Sans',sans-serif; color:#fff; transition:background .15s; }
+  #ai-go-btn:hover { background:var(--ink2); }
+  #ai-go-btn:disabled { background:var(--ink3); cursor:default; }
+  #ai-status { font-size:12px; color:var(--ink3); text-align:center; min-height:16px; }
 
   /* ── SELECT TOOL ── */
   #select-box { position:fixed; border:1.5px solid #3b82f6; background:rgba(59,130,246,.08);
@@ -366,6 +393,20 @@
 <div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 <div id="select-box"></div>
+
+<!-- ── AI TRANSFORM MODAL ── -->
+<div id="ai-modal">
+  <div id="ai-modal-inner">
+    <div id="ai-modal-title">AI 이미지 변환</div>
+    <div id="ai-modal-sub">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
+    <textarea id="ai-prompt-input" rows="2" placeholder="e.g. watercolor painting style"></textarea>
+    <div id="ai-status"></div>
+    <div id="ai-modal-btns">
+      <button id="ai-cancel-btn">취소</button>
+      <button id="ai-go-btn">✦ AI 변환</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── LOGIN MODAL ── -->
 <div class="name-modal" id="name-modal" style="display:none;">
@@ -1009,7 +1050,79 @@ function setupImageEvents(img) {
     images = images.filter(i => i.id !== img.id);
     scheduleLocalSave();
   });
+
+  // 더블클릭 → AI 변환 모달
+  el.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    openAiModal(img);
+  });
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  AI TRANSFORM
+// ═══════════════════════════════════════════════════════════════
+let _aiTargetImg = null;
+
+function openAiModal(img) {
+  _aiTargetImg = img;
+  document.getElementById('ai-prompt-input').value = '';
+  document.getElementById('ai-status').textContent = '';
+  document.getElementById('ai-go-btn').disabled = false;
+  document.getElementById('ai-modal').classList.add('open');
+  setTimeout(() => document.getElementById('ai-prompt-input').focus(), 50);
+}
+
+function closeAiModal() {
+  document.getElementById('ai-modal').classList.remove('open');
+  _aiTargetImg = null;
+}
+
+async function runAiTransform() {
+  if (!_aiTargetImg) return;
+  const prompt = document.getElementById('ai-prompt-input').value.trim();
+  if (!prompt) { document.getElementById('ai-status').textContent = '프롬프트를 입력해주세요.'; return; }
+
+  const goBtn   = document.getElementById('ai-go-btn');
+  const statusEl = document.getElementById('ai-status');
+  goBtn.disabled = true;
+  statusEl.textContent = '⏳ AI가 이미지를 변환 중입니다... (30~60초 소요)';
+
+  try {
+    const res = await fetch('/api/ai-transform', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: _aiTargetImg.src, prompt }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.error === 'model_loading') {
+        statusEl.textContent = '🔄 ' + data.message;
+        goBtn.disabled = false;
+        return;
+      }
+      throw new Error(data.error || res.status);
+    }
+
+    // 변환 성공: 이미지 교체
+    _aiTargetImg.src = data.imageBase64;
+    _aiTargetImg.el.querySelector('img').src = data.imageBase64;
+    scheduleLocalSave();
+    closeAiModal();
+  } catch (e) {
+    statusEl.textContent = '❌ 오류: ' + e.message;
+    goBtn.disabled = false;
+  }
+}
+
+document.getElementById('ai-cancel-btn').addEventListener('click', closeAiModal);
+document.getElementById('ai-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('ai-modal')) closeAiModal();
+});
+document.getElementById('ai-go-btn').addEventListener('click', runAiTransform);
+document.getElementById('ai-prompt-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAiTransform(); }
+});
 
 // 붙여넣기 (Ctrl+V)
 document.addEventListener('paste', e => {
@@ -1693,8 +1806,51 @@ async function main() {
   setTool('pen');
   draw();
   initPusher(pusherKey, pusherCluster);
+  makeDraggable(document.getElementById('sidebar'), document.getElementById('sidebar-header'));
 }
 
+function makeDraggable(el, handle) {
+  const key = 'fa_pos_' + el.id;
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    try {
+      const p = JSON.parse(saved);
+      el.style.transform = 'none';
+      el.style.left = p.left;
+      el.style.top  = p.top;
+    } catch(_) {}
+  }
+  let ox = 0, oy = 0, on = false;
+  handle.style.cursor = 'grab';
+  handle.addEventListener('mousedown', e => {
+    if (e.button !== 0 || e.target.closest('button,input,a')) return;
+    const r = el.getBoundingClientRect();
+    el.style.transform = 'none';
+    el.style.left = r.left + 'px';
+    el.style.top  = r.top  + 'px';
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    on = true;
+    handle.style.cursor = 'grabbing';
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!on) return;
+    const x = Math.max(0, Math.min(window.innerWidth  - el.offsetWidth,  e.clientX - ox));
+    const y = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, e.clientY - oy));
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!on) return;
+    on = false;
+    handle.style.cursor = 'grab';
+    localStorage.setItem(key, JSON.stringify({left: el.style.left, top: el.style.top}));
+  });
+}
+
+makeDraggable(document.getElementById('topbar'), document.querySelector('.topbar-logo'));
 main();
 </script>
 </body>
