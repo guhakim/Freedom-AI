@@ -170,6 +170,14 @@
   .sidebar-row:hover .sidebar-del { opacity:1; }
   .sidebar-del:hover { color:#e53e3e; }
 
+  #sidebar-trash-header { font-size:10px; font-weight:500; color:var(--ink3);
+    padding:8px 12px 4px; letter-spacing:.04em; text-transform:uppercase;
+    border-top:.5px solid rgba(14,14,13,.1); margin-top:4px; display:flex; align-items:center; gap:4px; }
+  .trash-row { opacity:.6; }
+  .trash-row .sidebar-item { color:var(--ink3); text-decoration:line-through; cursor:default; font-size:12px; }
+  .trash-row:hover { background:none; }
+  .trash-row:hover .sidebar-del { opacity:1; }
+
   /* ── AI TRANSFORM MODAL ── */
   #ai-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
     backdrop-filter:blur(6px); z-index:600; display:none;
@@ -322,6 +330,10 @@
     <input id="sidebar-new-input" type="text" placeholder="프로젝트 이름" maxlength="32"/>
   </div>
   <div id="sidebar-list"></div>
+  <div id="sidebar-trash" style="display:none;">
+    <div id="sidebar-trash-header">🗑 휴지통</div>
+    <div id="sidebar-trash-list"></div>
+  </div>
 </div>
 
 <!-- ── TOPBAR ── -->
@@ -1780,7 +1792,12 @@ async function main() {
           if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
+          localStorage.removeItem('fa:room:' + name.slice(0, 32));
+          const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+          if (!trash.includes(name)) trash.unshift(name);
+          localStorage.setItem('fa_trash', JSON.stringify(trash.slice(0, 20)));
           buildList();
+          buildTrash();
         });
 
         row.appendChild(btn);
@@ -1788,7 +1805,38 @@ async function main() {
         list.appendChild(row);
       });
     }
+    function buildTrash() {
+      const items = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+      const section = document.getElementById('sidebar-trash');
+      const trashList = document.getElementById('sidebar-trash-list');
+      if (!items.length) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      trashList.innerHTML = '';
+      items.forEach(name => {
+        const row = document.createElement('div');
+        row.className = 'sidebar-row trash-row';
+        const label = document.createElement('span');
+        label.className = 'sidebar-item';
+        label.textContent = name;
+        label.title = name;
+        const del = document.createElement('button');
+        del.className = 'sidebar-del';
+        del.title = '영구 삭제';
+        del.innerHTML = '×';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          const t = JSON.parse(localStorage.getItem('fa_trash') || '[]').filter(p => p !== name);
+          localStorage.setItem('fa_trash', JSON.stringify(t));
+          buildTrash();
+        });
+        row.appendChild(label);
+        row.appendChild(del);
+        trashList.appendChild(row);
+      });
+    }
+
     buildList();
+    buildTrash();
 
     // + 버튼: 인라인 입력창 토글
     addBtn.addEventListener('click', () => {
@@ -1805,6 +1853,8 @@ async function main() {
         const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
         const updated  = [val, ...projects.filter(p => p !== val)].slice(0, 5);
         localStorage.setItem('fa_projects', JSON.stringify(updated));
+        const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+        localStorage.setItem('fa_trash', JSON.stringify(trash.filter(p => p !== val)));
         newForm.style.display = 'none';
         sessionStorage.setItem('fa_sidebar_nav', '1');
         history.replaceState(null, '', `?room=${encodeURIComponent(val.slice(0,32))}`);
