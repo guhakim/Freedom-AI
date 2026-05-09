@@ -314,11 +314,31 @@
     border-radius:100px; z-index:300; opacity:0; transition:opacity .25s,transform .25s;
     pointer-events:none; white-space:nowrap; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── MOBILE ── */
+  #mob-sidebar-btn { display:none; position:fixed; top:16px; left:16px; z-index:101;
+    width:36px; height:36px; border:none; background:var(--white); border-radius:50%;
+    box-shadow:0 2px 8px rgba(14,14,13,.1); font-size:18px; cursor:pointer;
+    align-items:center; justify-content:center; color:var(--ink2); }
+  @media (max-width:640px) {
+    .back-btn { display:none; }
+    #mob-sidebar-btn { display:flex; }
+    #sidebar { top:62px; left:8px; width:148px; }
+    #sidebar.mob-hidden { display:none !important; }
+    .topbar { left:8px !important; right:8px !important; transform:none !important;
+      overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+      border-radius:14px; padding:6px 10px; top:10px !important; }
+    .topbar::-webkit-scrollbar { display:none; }
+    .zoom-hud { bottom:12px; right:8px; }
+    .hint { bottom:60px; }
+    .toast { bottom:60px; }
+  }
 </style>
 </head>
 <body>
 
 <a href="index.html" class="back-btn">← 홈</a>
+<button id="mob-sidebar-btn" title="프로젝트 목록">☰</button>
 
 <!-- ── SIDEBAR ── -->
 <div id="sidebar" style="display:none;">
@@ -1047,6 +1067,24 @@ function setupImageEvents(img) {
     document.addEventListener('mouseup', mu);
   });
 
+  // 터치 드래그
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target)) return;
+    e.stopPropagation();
+    const t0 = e.touches[0];
+    const ox = img.x, oy = img.y, sx0 = t0.clientX, sy0 = t0.clientY;
+    const tm = e => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      img.x = ox + (t.clientX - sx0) / scale;
+      img.y = oy + (t.clientY - sy0) / scale;
+      el.style.left = img.x + 'px'; el.style.top = img.y + 'px';
+    };
+    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); };
+    document.addEventListener('touchmove', tm, { passive: true });
+    document.addEventListener('touchend', te, { passive: true });
+  }, { passive: true });
+
   // 리사이즈 (우하단 핸들)
   rsz.addEventListener('mousedown', e => {
     e.stopPropagation(); e.preventDefault();
@@ -1062,6 +1100,24 @@ function setupImageEvents(img) {
     document.addEventListener('mousemove', mm);
     document.addEventListener('mouseup', mu);
   });
+
+  // 터치 리사이즈
+  rsz.addEventListener('touchstart', e => {
+    e.stopPropagation(); e.preventDefault();
+    const t0 = e.touches[0];
+    const ow = img.w, oh = img.h, sx0 = t0.clientX;
+    const ar = oh / ow;
+    const tm = e => {
+      if (e.touches.length !== 1) return;
+      const dw = (e.touches[0].clientX - sx0) / scale;
+      img.w = Math.max(60, ow + dw);
+      img.h = Math.round(img.w * ar);
+      el.style.width = img.w + 'px'; el.style.height = img.h + 'px';
+    };
+    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); };
+    document.addEventListener('touchmove', tm, { passive: false });
+    document.addEventListener('touchend', te, { passive: true });
+  }, { passive: false });
 
   // 삭제
   del.addEventListener('click', e => {
@@ -1426,15 +1482,21 @@ canvas.addEventListener('wheel', e => {
 // touch
 let lastTouchDist=null, tapStart=null;
 
+let touchSelDrag = null;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   if (e.touches.length===1) {
     const t=e.touches[0];
     if (activeTool==='hand') { isPanning=true; panStartX=t.clientX-offsetX; panStartY=t.clientY-offsetY; }
     else if (activeTool==='sticky') tapStart={x:t.clientX,y:t.clientY};
+    else if (activeTool==='select') {
+      clearSelection();
+      touchSelDrag={sx0:t.clientX,sy0:t.clientY};
+      selBox.style.cssText=`display:block;left:${t.clientX}px;top:${t.clientY}px;width:0;height:0;`;
+    }
     else startDraw(t.clientX,t.clientY);
   } else if (e.touches.length===2) {
-    stopDraw(); isPanning=false;
+    stopDraw(); isPanning=false; touchSelDrag=null; selBox.style.display='none';
     lastTouchDist=touchDist(e.touches);
   }
 }, {passive:false});
@@ -1444,6 +1506,11 @@ canvas.addEventListener('touchmove', e => {
   if (e.touches.length===1) {
     const t=e.touches[0];
     if (activeTool==='hand'&&isPanning) { offsetX=t.clientX-panStartX; offsetY=t.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
+    else if (activeTool==='select'&&touchSelDrag) {
+      const x=Math.min(t.clientX,touchSelDrag.sx0), y=Math.min(t.clientY,touchSelDrag.sy0);
+      const w=Math.abs(t.clientX-touchSelDrag.sx0), h=Math.abs(t.clientY-touchSelDrag.sy0);
+      selBox.style.cssText=`display:block;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
+    }
     else if (activeTool!=='sticky') continueDraw(t.clientX,t.clientY);
   } else if (e.touches.length===2&&lastTouchDist) {
     const d=touchDist(e.touches);
@@ -1458,6 +1525,12 @@ canvas.addEventListener('touchend', e => {
   if (e.touches.length<2) lastTouchDist=null;
   if (e.touches.length===0) {
     isPanning=false; stopDraw();
+    if (activeTool==='select'&&touchSelDrag) {
+      const ct=e.changedTouches[0];
+      selBox.style.display='none';
+      selectInRect(touchSelDrag.sx0,touchSelDrag.sy0,ct.clientX,ct.clientY);
+      touchSelDrag=null;
+    }
     if (activeTool==='sticky'&&tapStart) {
       const ct=e.changedTouches[0];
       if (Math.hypot(ct.clientX-tapStart.x,ct.clientY-tapStart.y)<10) {
@@ -1878,6 +1951,17 @@ async function main() {
     localStorage.removeItem('fa_google_token');
     location.href = location.pathname;
   });
+
+  // 모바일 사이드바 토글
+  const mobBtn = document.getElementById('mob-sidebar-btn');
+  const sidebarEl = document.getElementById('sidebar');
+  if (mobBtn) {
+    mobBtn.addEventListener('click', () => {
+      sidebarEl.classList.toggle('mob-hidden');
+    });
+    // 모바일에서 사이드바 초기 숨김
+    if (window.innerWidth <= 640) sidebarEl.classList.add('mob-hidden');
+  }
 
   setTimeout(() => document.getElementById('hint').classList.add('hidden'), 4500);
   window.addEventListener('resize', resize);
