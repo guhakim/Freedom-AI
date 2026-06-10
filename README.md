@@ -4,6 +4,8 @@
 
 🔗 **[freedom-ai-alpha.vercel.app](https://freedom-ai-alpha.vercel.app)**
 
+<img width="1275" height="544" alt="CleanShot 2026-06-10 at 18 49 44" src="https://github.com/user-attachments/assets/8d17a404-eca6-4bed-a142-315c2038f604" />
+
 ---
 
 ## 주요 기능
