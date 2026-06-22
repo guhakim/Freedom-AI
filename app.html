@@ -610,6 +610,7 @@ const PEN_SIZES    = [2, 5, 12];
 const ERASER_SIZES = [20, 40, 80];
 let sizeIndex = 0;
 let spaceHeld = false;
+let lastDeleted = null; // { type:'note'|'image', data:{...} } — 삭제 1회 undo용
 
 // ═══════════════════════════════════════════════════════════════
 //  STROKE STATE
@@ -863,6 +864,23 @@ function stopDraw() {
 }
 
 function undo() {
+  if (lastDeleted) {
+    const ld = lastDeleted;
+    lastDeleted = null;
+    if (ld.type === 'note') {
+      const note = { ...ld.data };
+      notes.push(note);
+      buildNoteEl(note, false);
+      sendAction({ type: 'note_add', note });
+    } else if (ld.type === 'image') {
+      const img = { ...ld.data };
+      images.push(img);
+      buildImageEl(img);
+      scheduleLocalSave();
+      sendAction({ type: 'image_add', image: img });
+    }
+    return;
+  }
   for (let i=strokes.length-1; i>=0; i--) {
     if (myStrokeIds.has(strokes[i].id)) {
       const [rm] = strokes.splice(i,1);
@@ -985,6 +1003,7 @@ function startNoteResize(note, dir, sx0, sy0, isTouch=false) {
 }
 
 function deleteNote(note) {
+  lastDeleted = { type: 'note', data: { id:note.id, x:note.x, y:note.y, w:note.w, h:note.h, color:note.color, text:note.text||'' } };
   note.el.classList.add('deleting');
   note.el.addEventListener('animationend', ()=>note.el.remove(), {once:true});
   notes = notes.filter(n=>n.id!==note.id);
@@ -1179,6 +1198,7 @@ function setupImageEvents(img) {
   // 삭제
   del.addEventListener('click', e => {
     e.stopPropagation();
+    lastDeleted = { type: 'image', data: { id:img.id, src:img.src, x:img.x, y:img.y, w:img.w, h:img.h } };
     el.remove();
     images = images.filter(i => i.id !== img.id);
     scheduleLocalSave();
