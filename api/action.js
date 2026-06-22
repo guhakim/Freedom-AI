@@ -24,6 +24,10 @@ const MAX_NOTE_TXT = 10_000;
 const MIN_NOTE_W = 100, MAX_NOTE_W = 3_000;
 const MIN_NOTE_H = 80,  MAX_NOTE_H = 3_000;
 const VALID_COLOR  = /^#[0-9a-fA-F]{6}$/;
+const MAX_IMAGES   = 20;
+const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
+const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
+const MAX_IMG_SRC  = 2_000_000;
 
 let _pusher;
 function getPusher() {
@@ -147,7 +151,7 @@ module.exports = async (req, res) => {
 
     case 'note_move': {
       if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
-      const n = state.notes.find(n => n.id === action.noteId);
+      const n = state.notes.find(n => n.id === action.noteId && (!n.userId || n.userId === userId));
       if (!n) break;
       n.x = action.x; n.y = action.y;
       await kvSet(kvKey, state);
@@ -156,7 +160,7 @@ module.exports = async (req, res) => {
     }
 
     case 'note_resize': {
-      const n = state.notes.find(n => n.id === action.noteId);
+      const n = state.notes.find(n => n.id === action.noteId && (!n.userId || n.userId === userId));
       if (!n) break;
       if (typeof action.x === 'number') n.x = action.x;
       n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w ?? n.w));
@@ -167,7 +171,7 @@ module.exports = async (req, res) => {
     }
 
     case 'note_text': {
-      const n = state.notes.find(n => n.id === action.noteId);
+      const n = state.notes.find(n => n.id === action.noteId && (!n.userId || n.userId === userId));
       if (!n) break;
       n.text = String(action.text ?? '').slice(0, MAX_NOTE_TXT);
       await kvSet(kvKey, state);
@@ -183,6 +187,63 @@ module.exports = async (req, res) => {
       state.notes.splice(idx, 1);
       await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_delete', { noteId: action.noteId }, excl);
+      break;
+    }
+
+    case 'image_add': {
+      const { image } = action;
+      if (!image?.id) break;
+      if (!state.images) state.images = [];
+      if (state.images.find(i => i.id === image.id)) break;
+      if (state.images.length >= MAX_IMAGES) break;
+      if (typeof image.src !== 'string' || image.src.length > MAX_IMG_SRC) break;
+      if (!image.src.startsWith('data:image/')) break;
+      const img = {
+        id:     image.id,
+        src:    image.src,
+        x:      typeof image.x === 'number' ? image.x : 0,
+        y:      typeof image.y === 'number' ? image.y : 0,
+        w:      Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, image.w || 200)),
+        h:      Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, image.h || 200)),
+        userId,
+      };
+      state.images.push(img);
+      await kvSet(kvKey, state);
+      // src는 Pusher 10KB 한도를 초과하므로 메타데이터만 전송, 수신 측은 /api/room에서 fetch
+      await pusher.trigger(channel, 'image_add', { id: img.id, x: img.x, y: img.y, w: img.w, h: img.h, userId }, excl);
+      break;
+    }
+
+    case 'image_move': {
+      if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
+      if (!state.images) break;
+      const img = state.images.find(i => i.id === action.imageId && (!i.userId || i.userId === userId));
+      if (!img) break;
+      img.x = action.x; img.y = action.y;
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'image_move', { imageId: action.imageId, x: img.x, y: img.y }, excl);
+      break;
+    }
+
+    case 'image_resize': {
+      if (!state.images) break;
+      const img = state.images.find(i => i.id === action.imageId && (!i.userId || i.userId === userId));
+      if (!img) break;
+      img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, action.w ?? img.w));
+      img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, action.h ?? img.h));
+      if (typeof action.x === 'number') img.x = action.x;
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'image_resize', { imageId: action.imageId, x: img.x, w: img.w, h: img.h }, excl);
+      break;
+    }
+
+    case 'image_delete': {
+      if (!state.images) break;
+      const idx = state.images.findIndex(i => i.id === action.imageId && (!i.userId || i.userId === userId));
+      if (idx === -1) break;
+      state.images.splice(idx, 1);
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'image_delete', { imageId: action.imageId }, excl);
       break;
     }
   }

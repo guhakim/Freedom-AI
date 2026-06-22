@@ -609,6 +609,7 @@ let stickyColor = '#fef08a';
 const PEN_SIZES    = [2, 5, 12];
 const ERASER_SIZES = [20, 40, 80];
 let sizeIndex = 0;
+let spaceHeld = false;
 
 // ═══════════════════════════════════════════════════════════════
 //  STROKE STATE
@@ -764,6 +765,7 @@ function resize() {
 //  CURSOR
 // ═══════════════════════════════════════════════════════════════
 function updateCursor(panning) {
+  if (spaceHeld) { canvas.style.cursor = panning ? 'grabbing' : 'grab'; return; }
   const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell', select:'default' };
   canvas.style.cursor = map[activeTool] || 'default';
 }
@@ -1076,6 +1078,7 @@ function addImageToCanvas(src, natW, natH, screenX, screenY) {
   images.push(img);
   buildImageEl(img);
   scheduleLocalSave();
+  sendAction({ type: 'image_add', image: img });
 }
 
 function buildImageEl(img) {
@@ -1116,7 +1119,7 @@ function setupImageEvents(img) {
       img.y = oy + (e.clientY - sy0) / scale;
       el.style.left = img.x + 'px'; el.style.top = img.y + 'px';
     };
-    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); };
+    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); };
     document.addEventListener('mousemove', mm);
     document.addEventListener('mouseup', mu);
   });
@@ -1134,7 +1137,7 @@ function setupImageEvents(img) {
       img.y = oy + (t.clientY - sy0) / scale;
       el.style.left = img.x + 'px'; el.style.top = img.y + 'px';
     };
-    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); };
+    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); };
     document.addEventListener('touchmove', tm, { passive: true });
     document.addEventListener('touchend', te, { passive: true });
   }, { passive: true });
@@ -1150,7 +1153,7 @@ function setupImageEvents(img) {
       img.h = Math.round(img.w * ar);
       el.style.width = img.w + 'px'; el.style.height = img.h + 'px';
     };
-    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); };
+    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); sendAction({ type:'image_resize', imageId:img.id, w:img.w, h:img.h }); };
     document.addEventListener('mousemove', mm);
     document.addEventListener('mouseup', mu);
   });
@@ -1168,7 +1171,7 @@ function setupImageEvents(img) {
       img.h = Math.round(img.w * ar);
       el.style.width = img.w + 'px'; el.style.height = img.h + 'px';
     };
-    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); };
+    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); sendAction({ type:'image_resize', imageId:img.id, w:img.w, h:img.h }); };
     document.addEventListener('touchmove', tm, { passive: false });
     document.addEventListener('touchend', te, { passive: true });
   }, { passive: false });
@@ -1179,6 +1182,7 @@ function setupImageEvents(img) {
     el.remove();
     images = images.filter(i => i.id !== img.id);
     scheduleLocalSave();
+    sendAction({ type: 'image_delete', imageId: img.id });
   });
 
   // 더블클릭 → AI 변환 모달
@@ -1416,6 +1420,45 @@ function initPusher(pusherKey, pusherCluster) {
     const n = notes.find(n=>n.id===data.noteId);
     if (n) { n.el?.remove(); notes=notes.filter(x=>x.id!==data.noteId); }
   });
+
+  // ── 이미지 (server events) ──
+  channel.bind('image_add', async data => {
+    if (images.find(i => i.id === data.id)) return;
+    try {
+      const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}`);
+      const state = await res.json();
+      const img = state.images?.find(i => i.id === data.id);
+      if (img && !images.find(i => i.id === img.id)) {
+        images.push(img);
+        buildImageEl(img);
+        scheduleLocalSave();
+      }
+    } catch(e) {}
+  });
+
+  channel.bind('image_move', data => {
+    const img = images.find(i => i.id === data.imageId);
+    if (img) {
+      img.x = data.x; img.y = data.y;
+      img.el.style.left = data.x + 'px'; img.el.style.top = data.y + 'px';
+      scheduleLocalSave();
+    }
+  });
+
+  channel.bind('image_resize', data => {
+    const img = images.find(i => i.id === data.imageId);
+    if (img) {
+      img.w = data.w; img.h = data.h;
+      if (typeof data.x === 'number') { img.x = data.x; img.el.style.left = data.x + 'px'; }
+      img.el.style.width = data.w + 'px'; img.el.style.height = data.h + 'px';
+      scheduleLocalSave();
+    }
+  });
+
+  channel.bind('image_delete', data => {
+    const img = images.find(i => i.id === data.imageId);
+    if (img) { img.el?.remove(); images = images.filter(i => i.id !== data.imageId); scheduleLocalSave(); }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1482,6 +1525,7 @@ function startSelMove(sx0, sy0) {
 // ═══════════════════════════════════════════════════════════════
 canvas.addEventListener('mousedown', e => {
   e.preventDefault();
+  if (spaceHeld) { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); return; }
   if (activeTool==='select') {
     clearSelection();
     selDrag = { sx0:e.clientX, sy0:e.clientY };
@@ -1502,7 +1546,7 @@ canvas.addEventListener('mousedown', e => {
     document.addEventListener('mouseup',   mu);
     return;
   }
-  if (activeTool==='hand')   { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); }
+  if (activeTool==='hand') { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); }
   else if (activeTool==='pen'||activeTool==='eraser') startDraw(e.clientX,e.clientY);
 });
 
@@ -1515,8 +1559,8 @@ canvas.addEventListener('mousemove', e => {
     channel?.trigger('client-cursor', { userId:myUserId, x:wp.x, y:wp.y });
     lastCursorSend=now;
   }
-  if (activeTool==='hand'&&isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
-  else continueDraw(e.clientX,e.clientY);
+  if (isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
+  else if (!spaceHeld) continueDraw(e.clientX,e.clientY);
 });
 
 canvas.addEventListener('mouseup',    () => { isPanning=false; stopDraw(); updateCursor(false); });
@@ -1599,7 +1643,12 @@ canvas.addEventListener('touchend', e => {
 function touchDist(t) { return Math.hypot(t[1].clientX-t[0].clientX,t[1].clientY-t[0].clientY); }
 
 document.addEventListener('keydown', e => {
-  if (e.target.closest('.note-text,.modal-input')) return;
+  if (e.isComposing || e.target.closest('.note-text,.modal-input')) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!spaceHeld) { spaceHeld = true; updateCursor(false); }
+    return;
+  }
   const k=e.key;
   if (k==='0') { centerView(); return; }
   if (k==='+'||k==='=') { zoomAt(canvas.width/2,canvas.height/2,1.2); return; }
@@ -1610,6 +1659,18 @@ document.addEventListener('keydown', e => {
   if (k==='s'||k==='S') { setTool('sticky'); return; }
   if (k==='v'||k==='V') { setTool('select'); return; }
   if ((e.ctrlKey||e.metaKey)&&k==='z') { e.preventDefault(); undo(); }
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space' && spaceHeld) {
+    spaceHeld = false;
+    isPanning = false;
+    updateCursor(false);
+  }
+});
+
+window.addEventListener('blur', () => {
+  if (spaceHeld) { spaceHeld = false; isPanning = false; updateCursor(false); }
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1864,7 +1925,7 @@ async function main() {
 
   // 서버 state가 비어있으면 localStorage fallback
   let resolvedState = state;
-  if (!state.strokes?.length && !state.notes?.length) {
+  if (!state.strokes?.length && !state.notes?.length && !state.images?.length) {
     try {
       const local = localStorage.getItem('fa:room:' + roomId);
       if (local) resolvedState = JSON.parse(local);

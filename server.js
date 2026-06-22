@@ -11,6 +11,10 @@ const MAX_NOTE_TEXT      = 10_000;
 const MIN_NOTE_W = 100, MAX_NOTE_W = 3_000;
 const MIN_NOTE_H = 80,  MAX_NOTE_H = 3_000;
 const VALID_COLOR = /^#[0-9a-fA-F]{6}$/;
+const MAX_IMAGES  = 20;
+const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
+const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
+const MAX_IMG_SRC = 2_000_000;
 
 // ── 영속성 ──────────────────────────────────────────────────────────────
 const DATA = path.join(__dirname, 'data.json');
@@ -24,7 +28,7 @@ for (const id of Object.keys(disk)) {
 // 빈 룸 제거
 for (const id of Object.keys(disk)) {
   const s = disk[id];
-  if (!s || (!s.strokes?.length && !s.notes?.length)) delete disk[id];
+  if (!s || (!s.strokes?.length && !s.notes?.length && !s.images?.length)) delete disk[id];
 }
 
 let saveTimer;
@@ -35,7 +39,7 @@ function scheduleSave() {
     // 활성 룸: 콘텐츠가 있는 것만 저장 (지우개 소성 적용)
     for (const [id, r] of rooms) {
       const baked = bakeForSave(r.state);
-      if (baked.strokes.length || baked.notes.length) out[id] = baked;
+      if (baked.strokes.length || baked.notes.length || baked.images?.length) out[id] = baked;
     }
     // 메모리에 없는 룸은 기존 disk 데이터 보존 (단, 비어있으면 제외)
     for (const [id, s] of Object.entries(disk)) {
@@ -48,9 +52,9 @@ function scheduleSave() {
 
 // 지우개 스트로크를 소성하여 순수 펜 스트로크만 반환
 function bakeForSave(state) {
-  if (!state) return { strokes: [], notes: [] };
+  if (!state) return { strokes: [], notes: [], images: [] };
   const erasers = (state.strokes || []).filter(s => s.tool === 'eraser');
-  if (!erasers.length) return state;
+  if (!erasers.length) return { ...state, images: state.images || [] };
 
   let strokes = (state.strokes || []).filter(s => s.tool !== 'eraser');
   for (const eraser of erasers) {
@@ -61,7 +65,7 @@ function bakeForSave(state) {
       )
     );
   }
-  return { strokes, notes: state.notes || [] };
+  return { strokes, notes: state.notes || [], images: state.images || [] };
 }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -316,6 +320,60 @@ function handle(m, user, room, ws) {
         scheduleSave();
         bcast(room, ws, { type: 'note_delete', noteId: m.noteId });
       }
+      break;
+    }
+
+    // ── 이미지 ──────────────────────────────────────────────────────────
+    case 'image_add': {
+      if (!m.image?.id) return;
+      if (!room.state.images) room.state.images = [];
+      if (room.state.images.find(i => i.id === m.image.id)) return;
+      if (room.state.images.length >= MAX_IMAGES) return;
+      if (typeof m.image.src !== 'string' || m.image.src.length > MAX_IMG_SRC) return;
+      if (!m.image.src.startsWith('data:image/')) return;
+      const img = {
+        id:     m.image.id,
+        src:    m.image.src,
+        x:      typeof m.image.x === 'number' ? m.image.x : 0,
+        y:      typeof m.image.y === 'number' ? m.image.y : 0,
+        w:      Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, m.image.w || 200)),
+        h:      Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, m.image.h || 200)),
+        userId: uid,
+      };
+      room.state.images.push(img);
+      scheduleSave();
+      bcast(room, ws, { type: 'image_add', ...img });
+      break;
+    }
+
+    case 'image_move': {
+      if (typeof m.x !== 'number' || typeof m.y !== 'number') return;
+      const img = (room.state.images || []).find(i => i.id === m.imageId && (!i.userId || i.userId === uid));
+      if (!img) return;
+      img.x = m.x; img.y = m.y;
+      scheduleSave();
+      bcast(room, ws, { type: 'image_move', imageId: m.imageId, x: img.x, y: img.y });
+      break;
+    }
+
+    case 'image_resize': {
+      const img = (room.state.images || []).find(i => i.id === m.imageId && (!i.userId || i.userId === uid));
+      if (!img) return;
+      img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, m.w ?? img.w));
+      img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, m.h ?? img.h));
+      if (typeof m.x === 'number') img.x = m.x;
+      scheduleSave();
+      bcast(room, ws, { type: 'image_resize', imageId: m.imageId, x: img.x, w: img.w, h: img.h });
+      break;
+    }
+
+    case 'image_delete': {
+      if (!room.state.images) return;
+      const idx = room.state.images.findIndex(i => i.id === m.imageId && (!i.userId || i.userId === uid));
+      if (idx === -1) return;
+      room.state.images.splice(idx, 1);
+      scheduleSave();
+      bcast(room, ws, { type: 'image_delete', imageId: m.imageId });
       break;
     }
   }
