@@ -1750,14 +1750,14 @@ document.getElementById('share-modal').addEventListener('click', e => {
 });
 document.getElementById('share-copy-btn').addEventListener('click', () => {
   const btn = document.getElementById('share-copy-btn');
-  navigator.clipboard.writeText(location.href).then(() => {
+  navigator.clipboard.writeText(decodeURIComponent(location.href)).then(() => {
     btn.textContent = '복사됨!'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
   });
 });
 
 function openShareModal() {
-  document.getElementById('share-url-input').value = location.href;
+  document.getElementById('share-url-input').value = decodeURIComponent(location.href);
   const sec  = document.getElementById('share-members-section');
   const list = document.getElementById('share-members-list');
   list.innerHTML = '';
