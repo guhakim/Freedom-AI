@@ -1780,6 +1780,19 @@ function saveRecentProject(name) {
   const list = JSON.parse(localStorage.getItem('fa_projects') || '[]');
   const updated = [name, ...list.filter(p => p !== name)].slice(0, 5);
   localStorage.setItem('fa_projects', JSON.stringify(updated));
+  pushProjectsToServer(updated);
+}
+
+function pushProjectsToServer(projects) {
+  try {
+    const u = JSON.parse(localStorage.getItem('fa_user') || 'null');
+    if (!u?.email) return;
+    fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: u.email, projects }),
+    }).catch(() => {});
+  } catch(e) {}
 }
 
 function renderRecentProjects(resolveCallback) {
@@ -1910,6 +1923,17 @@ function getGoogleUser() {
 async function main() {
   const gUser = await getGoogleUser();
   userName = gUser.name;
+  if (gUser.email) {
+    try {
+      const r = await fetch(`/api/projects?email=${encodeURIComponent(gUser.email)}`);
+      const { projects: serverProjects } = await r.json();
+      if (serverProjects?.length) {
+        const local = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+        const merged = [...new Set([...serverProjects, ...local])].slice(0, 10);
+        localStorage.setItem('fa_projects', JSON.stringify(merged));
+      }
+    } catch(e) {}
+  }
   roomId = await getProjectName();
 
   // 방 입장 & Pusher 설정 수신
@@ -1980,6 +2004,7 @@ async function main() {
           if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
+          pushProjectsToServer(updated);
           const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
           if (!trash.includes(name)) trash.unshift(name);
           localStorage.setItem('fa_trash', JSON.stringify(trash.slice(0, 20)));
@@ -2047,6 +2072,7 @@ async function main() {
         const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
         const updated  = [val, ...projects.filter(p => p !== val)].slice(0, 5);
         localStorage.setItem('fa_projects', JSON.stringify(updated));
+        pushProjectsToServer(updated);
         newForm.style.display = 'none';
         sessionStorage.setItem('fa_sidebar_nav', '1');
         history.replaceState(null, '', `?room=${encodeURIComponent(val.slice(0,32))}`);
