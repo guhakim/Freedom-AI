@@ -1151,9 +1151,9 @@ function addRemoteCursor(userId, name, color) {
   el.style.cssText = 'position:absolute;opacity:0;transition:left .06s linear,top .06s linear,opacity .3s;';
   el.innerHTML = `
     <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-      <path d="M2 2l11 7-5 1.5L6 18 2 2z" fill="${color}" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M2 2l11 7-5 1.5L6 18 2 2z" fill="${esc(color)}" stroke="white" stroke-width="1.2" stroke-linejoin="round"/>
     </svg>
-    <span class="cursor-name" style="background:${color};">${esc(name)}</span>`;
+    <span class="cursor-name" style="background:${esc(color)};">${esc(name)}</span>`;
   cursorsLayer.appendChild(el);
   remoteCursors.set(userId, { el, wx:null, wy:null, name, color });
   renderAvatarStack();
@@ -1180,7 +1180,7 @@ function renderAvatarStack() {
     const av = document.createElement('div');
     av.className = 'avatar';
     av.style.background = c.color;
-    av.innerHTML = `${initial}<div class="avatar-tip">${esc(c.name)}</div>`;
+    av.innerHTML = `${esc(initial)}<div class="avatar-tip">${esc(c.name)}</div>`;
     avatarStack.appendChild(av);
   });
 }
@@ -2336,7 +2336,7 @@ function openShareModal() {
     remoteCursors.forEach(c => {
       const div = document.createElement('div');
       div.className = 'share-member';
-      div.innerHTML = `<div class="share-member-dot" style="background:${c.color}"></div>
+      div.innerHTML = `<div class="share-member-dot" style="background:${esc(c.color)}"></div>
         <span class="share-member-name">${esc(c.name)}</span>`;
       list.appendChild(div);
     });
