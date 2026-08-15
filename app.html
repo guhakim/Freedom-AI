@@ -2806,6 +2806,7 @@ async function main() {
         del.addEventListener('click', e => {
           e.stopPropagation();
           if (!confirm(window._faLang==='en' ? `Delete project "${name}"?` : `"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
+          const wasActive = name.slice(0, 32) === roomId;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
           pushProjectsToServer(updated);
@@ -2814,6 +2815,15 @@ async function main() {
           localStorage.setItem('fa_trash', JSON.stringify(trash.slice(0, 20)));
           buildList();
           buildTrash();
+
+          // 지금 보고 있던 프로젝트를 삭제한 경우, 캔버스에 삭제된 내용이 계속 남아 보이지 않도록
+          // 남은 프로젝트(있으면) 또는 새 프로젝트 선택 화면으로 이동
+          if (wasActive) {
+            sessionStorage.setItem('fa_sidebar_nav', '1');
+            const next = updated[0];
+            history.replaceState(null, '', next ? `?room=${encodeURIComponent(next.slice(0,32))}` : location.pathname);
+            location.reload();
+          }
         });
 
         row.appendChild(btn);
