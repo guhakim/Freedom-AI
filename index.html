@@ -1277,7 +1277,7 @@ document.querySelector('.btn-ghost').addEventListener('click', () => {
     });
     document.documentElement.lang = lang;
     const toggle = document.getElementById('lang-toggle');
-    if (toggle) toggle.textContent = lang === 'en' ? '한글' : 'EN';
+    if (toggle) toggle.textContent = lang === 'en' ? 'KO' : 'EN';
     try { localStorage.setItem('fa_lang', lang); } catch (e) {}
     window._faLang = lang;
   }
