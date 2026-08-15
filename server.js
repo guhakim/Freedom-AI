@@ -15,6 +15,10 @@ const MAX_IMAGES  = 20;
 const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
 const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
 const MAX_IMG_SRC = 2_000_000;
+const MAX_SHAPES  = 300;
+const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
+const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
+const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
 
 // ── 영속성 ──────────────────────────────────────────────────────────────
 const DATA = path.join(__dirname, 'data.json');
@@ -28,7 +32,7 @@ for (const id of Object.keys(disk)) {
 // 빈 룸 제거
 for (const id of Object.keys(disk)) {
   const s = disk[id];
-  if (!s || (!s.strokes?.length && !s.notes?.length && !s.images?.length)) delete disk[id];
+  if (!s || (!s.strokes?.length && !s.notes?.length && !s.images?.length && !s.shapes?.length)) delete disk[id];
 }
 
 let saveTimer;
@@ -39,7 +43,7 @@ function scheduleSave() {
     // 활성 룸: 콘텐츠가 있는 것만 저장 (지우개 소성 적용)
     for (const [id, r] of rooms) {
       const baked = bakeForSave(r.state);
-      if (baked.strokes.length || baked.notes.length || baked.images?.length) out[id] = baked;
+      if (baked.strokes.length || baked.notes.length || baked.images?.length || baked.shapes?.length) out[id] = baked;
     }
     // 메모리에 없는 룸은 기존 disk 데이터 보존 (단, 비어있으면 제외)
     for (const [id, s] of Object.entries(disk)) {
@@ -52,9 +56,9 @@ function scheduleSave() {
 
 // 지우개 스트로크를 소성하여 순수 펜 스트로크만 반환
 function bakeForSave(state) {
-  if (!state) return { strokes: [], notes: [], images: [] };
+  if (!state) return { strokes: [], notes: [], images: [], shapes: [] };
   const erasers = (state.strokes || []).filter(s => s.tool === 'eraser');
-  if (!erasers.length) return { ...state, images: state.images || [] };
+  if (!erasers.length) return { ...state, images: state.images || [], shapes: state.shapes || [] };
 
   let strokes = (state.strokes || []).filter(s => s.tool !== 'eraser');
   for (const eraser of erasers) {
@@ -65,7 +69,7 @@ function bakeForSave(state) {
       )
     );
   }
-  return { strokes, notes: state.notes || [], images: state.images || [] };
+  return { strokes, notes: state.notes || [], images: state.images || [], shapes: state.shapes || [] };
 }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -111,7 +115,7 @@ const rooms = new Map(); // roomId → { state, clients: Map<ws, user> }
 function getRoom(id) {
   if (!rooms.has(id)) {
     rooms.set(id, {
-      state:   disk[id] ?? { strokes: [], notes: [] },
+      state:   disk[id] ?? { strokes: [], notes: [], images: [], shapes: [] },
       clients: new Map(),
     });
   }
@@ -375,6 +379,58 @@ function handle(m, user, room, ws) {
       room.state.images.splice(idx, 1);
       scheduleSave();
       bcast(room, ws, { type: 'image_delete', imageId: m.imageId });
+      break;
+    }
+
+    // ── 도형 ──────────────────────────────────────────────────────────────
+    case 'shape_add': {
+      if (!m.shape?.id || !VALID_SHAPE_TYPE.has(m.shape.type)) return;
+      if (!room.state.shapes) room.state.shapes = [];
+      if (room.state.shapes.find(s => s.id === m.shape.id)) return;
+      if (room.state.shapes.length >= MAX_SHAPES) return;
+      const s = {
+        id:     m.shape.id,
+        type:   m.shape.type,
+        x:      typeof m.shape.x === 'number' ? m.shape.x : 0,
+        y:      typeof m.shape.y === 'number' ? m.shape.y : 0,
+        w:      Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, m.shape.w || 160)),
+        h:      Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, m.shape.h || 120)),
+        color:  VALID_COLOR.test(m.shape.color) ? m.shape.color : '#0e0e0d',
+        userId: uid,
+      };
+      room.state.shapes.push(s);
+      scheduleSave();
+      bcast(room, ws, { type: 'shape_add', shape: s });
+      break;
+    }
+
+    case 'shape_move': {
+      if (typeof m.x !== 'number' || typeof m.y !== 'number') return;
+      const s = (room.state.shapes || []).find(s => s.id === m.shapeId && (!s.userId || s.userId === uid));
+      if (!s) return;
+      s.x = m.x; s.y = m.y;
+      scheduleSave();
+      bcast(room, ws, { type: 'shape_move', shapeId: m.shapeId, x: s.x, y: s.y });
+      break;
+    }
+
+    case 'shape_resize': {
+      const s = (room.state.shapes || []).find(s => s.id === m.shapeId && (!s.userId || s.userId === uid));
+      if (!s) return;
+      s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, m.w ?? s.w));
+      s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, m.h ?? s.h));
+      scheduleSave();
+      bcast(room, ws, { type: 'shape_resize', shapeId: m.shapeId, w: s.w, h: s.h });
+      break;
+    }
+
+    case 'shape_delete': {
+      if (!room.state.shapes) return;
+      const idx = room.state.shapes.findIndex(s => s.id === m.shapeId && (!s.userId || s.userId === uid));
+      if (idx === -1) return;
+      room.state.shapes.splice(idx, 1);
+      scheduleSave();
+      bcast(room, ws, { type: 'shape_delete', shapeId: m.shapeId });
       break;
     }
   }

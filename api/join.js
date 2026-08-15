@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
 
   const userId = Math.random().toString(36).slice(2, 10);
   let color = COLORS[colorCounter++ % 8];
-  let state = { strokes: [], notes: [] };
+  let state = { strokes: [], notes: [], shapes: [] };
 
   try {
     const kv = await getKv();

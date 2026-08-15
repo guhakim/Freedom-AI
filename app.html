@@ -228,6 +228,26 @@
     cursor:se-resize; z-index:2; }
   .canvas-img-resize svg { display:block; pointer-events:none; }
 
+  /* ── SHAPE ── */
+  .shape { position:absolute; cursor:move; pointer-events:auto; user-select:none;
+    animation:noteIn .18s cubic-bezier(.34,1.56,.64,1) both; }
+  .shape.deleting { animation:noteOut .15s ease both; }
+  .shape.sel-active { outline:2px solid #3b82f6; outline-offset:2px; }
+  .shape svg { display:block; pointer-events:none; overflow:visible; }
+  .shape-delete { position:absolute; top:-7px; right:-7px; width:18px; height:18px;
+    border:none; background:var(--ink); border-radius:50%; cursor:pointer;
+    font-size:12px; color:#fff; display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s; padding:0; z-index:2; line-height:1; }
+  .shape:hover .shape-delete { opacity:1; }
+  .shape-delete:hover { background:#ef4444; }
+  .shape-resize-handle { position:absolute; bottom:-5px; right:-5px; width:14px; height:14px;
+    cursor:se-resize; z-index:2; opacity:0; transition:opacity .15s; }
+  .shape:hover .shape-resize-handle { opacity:.7; }
+  .shape-resize-handle:hover { opacity:1 !important; }
+  .shape-resize-handle svg { pointer-events:none; }
+
+  .shape-type-btn svg { pointer-events:none; }
+
   /* ── HINT ── */
   .hint { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100;
     background:rgba(14,14,13,.72); color:var(--paper); font-size:12px; padding:6px 14px;
@@ -439,6 +459,12 @@
       <path d="M5 5h5M5 7.5h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>
   </button>
+  <button class="tool-btn" id="tool-shape" title="도형 (R)">
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <rect x="1.5" y="1.5" width="7" height="7" rx="1.2" stroke="currentColor" stroke-width="1.2"/>
+      <circle cx="10.5" cy="10.5" r="3" stroke="currentColor" stroke-width="1.2"/>
+    </svg>
+  </button>
   <button class="tool-btn" id="tool-select" title="선택 (V)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M3 2l9 5.5-4 1L6 13 3 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
@@ -469,6 +495,23 @@
     <div class="color-swatch sticky-swatch" data-scolor="#fed7aa" style="background:#fed7aa;"></div>
   </div>
 
+  <!-- 도형 종류 옵션 -->
+  <div id="shape-options" style="display:none;align-items:center;gap:3px;">
+    <div class="divider"></div>
+    <button class="size-btn shape-type-btn active" data-shapetype="rect" title="사각형">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
+    </button>
+    <button class="size-btn shape-type-btn" data-shapetype="ellipse" title="원">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="5.5" ry="4.5" stroke="currentColor" stroke-width="1.3"/></svg>
+    </button>
+    <button class="size-btn shape-type-btn" data-shapetype="triangle" title="삼각형">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><polygon points="7.5,2 2,12.5 13,12.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="size-btn shape-type-btn" data-shapetype="arrow" title="화살표">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5h8M7 4l3.5 3.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
   <div class="divider" style="margin-left:6px;"></div>
   <button class="share-btn" id="btn-share">🔗 공유</button>
   <div id="avatar-stack"></div>
@@ -484,7 +527,7 @@
   <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;">초기화</button>
 </div>
 
-<div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · H: 이동 · Ctrl+Z: 실행취소</div>
+<div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 <div id="select-box"></div>
 
@@ -610,7 +653,7 @@ const PEN_SIZES    = [2, 5, 12];
 const ERASER_SIZES = [20, 40, 80];
 let sizeIndex = 0;
 let spaceHeld = false;
-let lastDeleted = null; // { type:'note'|'image', data:{...} } — 삭제 1회 undo용
+let lastDeleted = null; // { type:'note'|'image'|'shape', data:{...} } — 삭제 1회 undo용
 
 // ═══════════════════════════════════════════════════════════════
 //  STROKE STATE
@@ -630,6 +673,13 @@ let strokeFlushTimer= null;
 const NOTE_W = 160, NOTE_H = 130, MIN_NOTE_W = 100, MIN_NOTE_H = 80;
 let notes  = [];
 let images = [];
+
+// ═══════════════════════════════════════════════════════════════
+//  SHAPE STATE
+// ═══════════════════════════════════════════════════════════════
+const SHAPE_W = 160, SHAPE_H = 120, MIN_SHAPE_W = 40, MIN_SHAPE_H = 40, MAX_SHAPE_W = 3000, MAX_SHAPE_H = 3000;
+let shapes    = [];
+let shapeType = 'rect'; // 'rect' | 'ellipse' | 'triangle' | 'arrow'
 
 const RESIZE_R = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8L8 1M4.5 8L8 4.5M8 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
 const RESIZE_L = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M8 8L1 1M4.5 8L1 4.5M1 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
@@ -767,7 +817,7 @@ function resize() {
 // ═══════════════════════════════════════════════════════════════
 function updateCursor(panning) {
   if (spaceHeld) { canvas.style.cursor = panning ? 'grabbing' : 'grab'; return; }
-  const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell', select:'default' };
+  const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell', shape:'crosshair', select:'default' };
   canvas.style.cursor = map[activeTool] || 'default';
 }
 function updateEraserRing(sx, sy) {
@@ -878,6 +928,12 @@ function undo() {
       buildImageEl(img);
       scheduleLocalSave();
       sendAction({ type: 'image_add', image: img });
+    } else if (ld.type === 'shape') {
+      const shape = { ...ld.data };
+      shapes.push(shape);
+      buildShapeEl(shape);
+      scheduleLocalSave();
+      sendAction({ type: 'shape_add', shape });
     }
     return;
   }
@@ -1213,6 +1269,176 @@ function setupImageEvents(img) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  SHAPES
+// ═══════════════════════════════════════════════════════════════
+function shapeSvgMarkup(type, w, h, color) {
+  w = Math.max(w, 1); h = Math.max(h, 1);
+  const sw = 2.5;
+  const fill = /^#[0-9a-fA-F]{6}$/.test(color) ? color + '2e' : 'rgba(14,14,13,.18)';
+  if (type === 'ellipse') {
+    return `<ellipse cx="${w/2}" cy="${h/2}" rx="${Math.max(0,w/2-sw/2)}" ry="${Math.max(0,h/2-sw/2)}" fill="${fill}" stroke="${color}" stroke-width="${sw}"/>`;
+  }
+  if (type === 'triangle') {
+    return `<polygon points="${w/2},${sw/2} ${sw/2},${h-sw/2} ${w-sw/2},${h-sw/2}" fill="${fill}" stroke="${color}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  }
+  if (type === 'arrow') {
+    const y1=h*0.35, y2=h*0.65, y3=h*0.12, y4=h*0.88, xMid=w*0.6;
+    return `<polygon points="0,${y1} ${xMid},${y1} ${xMid},${y3} ${w-sw/2},${h/2} ${xMid},${y4} ${xMid},${y2} 0,${y2}" fill="${fill}" stroke="${color}" stroke-width="${sw}" stroke-linejoin="round"/>`;
+  }
+  return `<rect x="${sw/2}" y="${sw/2}" width="${Math.max(0,w-sw)}" height="${Math.max(0,h-sw)}" rx="6" fill="${fill}" stroke="${color}" stroke-width="${sw}"/>`;
+}
+
+function updateShapeSvg(shape) {
+  const svg = shape.el.querySelector('svg');
+  const w = Math.max(1, shape.w), h = Math.max(1, shape.h);
+  svg.setAttribute('width', w); svg.setAttribute('height', h); svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = shapeSvgMarkup(shape.type, w, h, shape.color);
+}
+
+function buildShapeEl(shape) {
+  const el = document.createElement('div');
+  el.className = 'shape';
+  el.dataset.id = shape.id;
+  el.style.cssText = `left:${shape.x}px;top:${shape.y}px;width:${shape.w}px;height:${shape.h}px;`;
+  el.innerHTML = `
+    <svg width="${Math.max(1,shape.w)}" height="${Math.max(1,shape.h)}" viewBox="0 0 ${Math.max(1,shape.w)} ${Math.max(1,shape.h)}">${shapeSvgMarkup(shape.type, shape.w, shape.h, shape.color)}</svg>
+    <button class="shape-delete" title="삭제">×</button>
+    <div class="shape-resize-handle">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+    </div>`;
+  shape.el = el;
+  notesLayer.appendChild(el);
+  setupShapeEvents(shape);
+  return el;
+}
+
+function setupShapeEvents(shape) {
+  const el  = shape.el;
+  const del = el.querySelector('.shape-delete');
+  const rsz = el.querySelector('.shape-resize-handle');
+
+  el.addEventListener('mousedown', e => {
+    if (e.target === del || e.target === rsz || rsz.contains(e.target)) return;
+    e.stopPropagation();
+    if (activeTool==='select' && selectedIds.has(shape.id)) { startSelMove(e.clientX,e.clientY); return; }
+    const ox = shape.x, oy = shape.y, sx0 = e.clientX, sy0 = e.clientY;
+    const mm = e => {
+      shape.x = ox + (e.clientX - sx0) / scale;
+      shape.y = oy + (e.clientY - sy0) / scale;
+      el.style.left = shape.x + 'px'; el.style.top = shape.y + 'px';
+    };
+    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); sendAction({ type:'shape_move', shapeId:shape.id, x:shape.x, y:shape.y }); };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup', mu);
+  });
+
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target)) return;
+    e.stopPropagation();
+    const t0 = e.touches[0];
+    const ox = shape.x, oy = shape.y, sx0 = t0.clientX, sy0 = t0.clientY;
+    const tm = e => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      shape.x = ox + (t.clientX - sx0) / scale;
+      shape.y = oy + (t.clientY - sy0) / scale;
+      el.style.left = shape.x + 'px'; el.style.top = shape.y + 'px';
+    };
+    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); sendAction({ type:'shape_move', shapeId:shape.id, x:shape.x, y:shape.y }); };
+    document.addEventListener('touchmove', tm, { passive: true });
+    document.addEventListener('touchend', te, { passive: true });
+  }, { passive: true });
+
+  rsz.addEventListener('mousedown', e => {
+    e.stopPropagation(); e.preventDefault();
+    const ow = shape.w, oh = shape.h, sx0 = e.clientX, sy0 = e.clientY;
+    const mm = e => {
+      shape.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, ow + (e.clientX - sx0) / scale));
+      shape.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, oh + (e.clientY - sy0) / scale));
+      el.style.width = shape.w + 'px'; el.style.height = shape.h + 'px';
+      updateShapeSvg(shape);
+    };
+    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); sendAction({ type:'shape_resize', shapeId:shape.id, w:shape.w, h:shape.h }); };
+    document.addEventListener('mousemove', mm);
+    document.addEventListener('mouseup', mu);
+  });
+
+  rsz.addEventListener('touchstart', e => {
+    e.stopPropagation(); e.preventDefault();
+    const t0 = e.touches[0];
+    const ow = shape.w, oh = shape.h, sx0 = t0.clientX, sy0 = t0.clientY;
+    const tm = e => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      shape.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, ow + (t.clientX - sx0) / scale));
+      shape.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, oh + (t.clientY - sy0) / scale));
+      el.style.width = shape.w + 'px'; el.style.height = shape.h + 'px';
+      updateShapeSvg(shape);
+    };
+    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); sendAction({ type:'shape_resize', shapeId:shape.id, w:shape.w, h:shape.h }); };
+    document.addEventListener('touchmove', tm, { passive: false });
+    document.addEventListener('touchend', te, { passive: true });
+  }, { passive: false });
+
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteShape(shape);
+  });
+}
+
+function deleteShape(shape) {
+  lastDeleted = { type: 'shape', data: { id:shape.id, type:shape.type, x:shape.x, y:shape.y, w:shape.w, h:shape.h, color:shape.color } };
+  shape.el.classList.add('deleting');
+  shape.el.addEventListener('animationend', () => shape.el.remove(), { once:true });
+  shapes = shapes.filter(s => s.id !== shape.id);
+  scheduleLocalSave();
+  sendAction({ type: 'shape_delete', shapeId: shape.id });
+}
+
+function startShapeCreate(sx0, sy0, isTouch=false) {
+  const wp0 = s2w(sx0, sy0);
+  const shape = { id: genId(), type: shapeType, x: wp0.x, y: wp0.y, w: 1, h: 1, color: penColor, userId: myUserId };
+  buildShapeEl(shape);
+  let moved = false;
+
+  function onMove(sx, sy) {
+    const wp = s2w(sx, sy);
+    const x = Math.min(wp0.x, wp.x), y = Math.min(wp0.y, wp.y);
+    const w = Math.abs(wp.x - wp0.x), h = Math.abs(wp.y - wp0.y);
+    if (w > 3 || h > 3) moved = true;
+    shape.x = x; shape.y = y; shape.w = w; shape.h = h;
+    shape.el.style.left = x + 'px'; shape.el.style.top = y + 'px';
+    shape.el.style.width = w + 'px'; shape.el.style.height = h + 'px';
+    updateShapeSvg(shape);
+  }
+
+  function finish() {
+    document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+    document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te);
+    if (!moved) {
+      shape.x = wp0.x - SHAPE_W/2; shape.y = wp0.y - SHAPE_H/2; shape.w = SHAPE_W; shape.h = SHAPE_H;
+    } else {
+      shape.w = Math.max(MIN_SHAPE_W, shape.w); shape.h = Math.max(MIN_SHAPE_H, shape.h);
+    }
+    shape.el.style.left = shape.x + 'px'; shape.el.style.top = shape.y + 'px';
+    shape.el.style.width = shape.w + 'px'; shape.el.style.height = shape.h + 'px';
+    updateShapeSvg(shape);
+    shapes.push(shape);
+    scheduleLocalSave();
+    sendAction({ type:'shape_add', shape: { id:shape.id, type:shape.type, x:shape.x, y:shape.y, w:shape.w, h:shape.h, color:shape.color } });
+  }
+
+  const mm = e => onMove(e.clientX, e.clientY);
+  const mu = () => finish();
+  const tm = e => { if (e.touches.length===1) onMove(e.touches[0].clientX, e.touches[0].clientY); };
+  const te = () => finish();
+  if (isTouch) { document.addEventListener('touchmove', tm, { passive:true }); document.addEventListener('touchend', te, { passive:true }); }
+  else         { document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  AI TRANSFORM
 // ═══════════════════════════════════════════════════════════════
 let _aiTargetImg = null;
@@ -1316,6 +1542,7 @@ function scheduleLocalSave() {
         strokes,
         notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', userId:n.userId })),
         images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
+        shapes: shapes.map(s => ({ id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId })),
       };
       localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
     } catch(e) {}
@@ -1479,6 +1706,34 @@ function initPusher(pusherKey, pusherCluster) {
     const img = images.find(i => i.id === data.imageId);
     if (img) { img.el?.remove(); images = images.filter(i => i.id !== data.imageId); scheduleLocalSave(); }
   });
+
+  // ── 도형 (server events) ──
+  channel.bind('shape_add', data => {
+    if (shapes.find(s => s.id === data.shape.id)) return;
+    shapes.push(data.shape);
+    buildShapeEl(data.shape);
+    scheduleLocalSave();
+  });
+
+  channel.bind('shape_move', data => {
+    const s = shapes.find(s => s.id === data.shapeId);
+    if (s) { s.x = data.x; s.y = data.y; s.el.style.left = data.x+'px'; s.el.style.top = data.y+'px'; scheduleLocalSave(); }
+  });
+
+  channel.bind('shape_resize', data => {
+    const s = shapes.find(s => s.id === data.shapeId);
+    if (s) {
+      s.w = data.w; s.h = data.h;
+      s.el.style.width = data.w+'px'; s.el.style.height = data.h+'px';
+      updateShapeSvg(s);
+      scheduleLocalSave();
+    }
+  });
+
+  channel.bind('shape_delete', data => {
+    const s = shapes.find(s => s.id === data.shapeId);
+    if (s) { s.el?.remove(); shapes = shapes.filter(x => x.id !== data.shapeId); scheduleLocalSave(); }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1492,6 +1747,7 @@ function getSelectableItems() {
   return [
     ...notes.map(n  => ({ id:n.id,  el:n.el,  x:n.x,  y:n.y,  w:n.w,  h:n.h  })),
     ...images.map(i => ({ id:i.id,  el:i.el,  x:i.x,  y:i.y,  w:i.w,  h:i.h  })),
+    ...shapes.map(s => ({ id:s.id,  el:s.el,  x:s.x,  y:s.y,  w:s.w,  h:s.h  })),
   ];
 }
 
@@ -1525,7 +1781,7 @@ function startSelMove(sx0, sy0) {
   const mm = e => {
     const dx=(e.clientX-sx0)/scale, dy=(e.clientY-sy0)/scale;
     snapshot.forEach(({ it, ox, oy }) => {
-      const obj = notes.find(n=>n.id===it.id) || images.find(i=>i.id===it.id);
+      const obj = notes.find(n=>n.id===it.id) || images.find(i=>i.id===it.id) || shapes.find(s=>s.id===it.id);
       if (!obj) return;
       obj.x = ox+dx; obj.y = oy+dy;
       it.el.style.left = obj.x+'px'; it.el.style.top = obj.y+'px';
@@ -1568,6 +1824,7 @@ canvas.addEventListener('mousedown', e => {
   }
   if (activeTool==='hand') { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); }
   else if (activeTool==='pen'||activeTool==='eraser') startDraw(e.clientX,e.clientY);
+  else if (activeTool==='shape') startShapeCreate(e.clientX,e.clientY);
 });
 
 canvas.addEventListener('mousemove', e => {
@@ -1612,6 +1869,7 @@ canvas.addEventListener('touchstart', e => {
       touchSelDrag={sx0:t.clientX,sy0:t.clientY};
       selBox.style.cssText=`display:block;left:${t.clientX}px;top:${t.clientY}px;width:0;height:0;`;
     }
+    else if (activeTool==='shape') startShapeCreate(t.clientX,t.clientY,true);
     else startDraw(t.clientX,t.clientY);
   } else if (e.touches.length===2) {
     stopDraw(); isPanning=false; touchSelDrag=null; selBox.style.display='none';
@@ -1629,7 +1887,7 @@ canvas.addEventListener('touchmove', e => {
       const w=Math.abs(t.clientX-touchSelDrag.sx0), h=Math.abs(t.clientY-touchSelDrag.sy0);
       selBox.style.cssText=`display:block;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
     }
-    else if (activeTool!=='sticky') continueDraw(t.clientX,t.clientY);
+    else if (activeTool!=='sticky' && activeTool!=='shape') continueDraw(t.clientX,t.clientY);
   } else if (e.touches.length===2&&lastTouchDist) {
     const d=touchDist(e.touches);
     const mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
@@ -1677,6 +1935,7 @@ document.addEventListener('keydown', e => {
   if (k==='p'||k==='P') { setTool('pen');    return; }
   if (k==='e'||k==='E') { setTool('eraser'); return; }
   if (k==='s'||k==='S') { setTool('sticky'); return; }
+  if (k==='r'||k==='R') { setTool('shape');  return; }
   if (k==='v'||k==='V') { setTool('select'); return; }
   if ((e.ctrlKey||e.metaKey)&&k==='z') { e.preventDefault(); undo(); }
 });
@@ -1703,6 +1962,7 @@ function setTool(tool) {
   document.getElementById('tool-'+tool)?.classList.add('active');
   document.getElementById('pen-options').style.display    = (tool==='pen'||tool==='eraser') ? 'flex':'none';
   document.getElementById('sticky-options').style.display = tool==='sticky' ? 'flex':'none';
+  document.getElementById('shape-options').style.display  = tool==='shape' ? 'flex':'none';
   if (tool!=='eraser') eraserRing.style.display='none';
   updateCursor(false);
 }
@@ -1710,8 +1970,16 @@ function setTool(tool) {
 // ═══════════════════════════════════════════════════════════════
 //  TOOLBAR EVENTS
 // ═══════════════════════════════════════════════════════════════
-['hand','pen','eraser','sticky','select'].forEach(t =>
+['hand','pen','eraser','sticky','shape','select'].forEach(t =>
   document.getElementById('tool-'+t).addEventListener('click', ()=>setTool(t)));
+
+document.querySelectorAll('.shape-type-btn').forEach(el => {
+  el.addEventListener('click', () => {
+    shapeType = el.dataset.shapetype;
+    document.querySelectorAll('.shape-type-btn').forEach(s=>s.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
 
 document.querySelectorAll('.color-swatch:not(.sticky-swatch)').forEach(el => {
   el.addEventListener('click', () => {
@@ -1730,10 +1998,10 @@ document.querySelectorAll('.sticky-swatch').forEach(el => {
   });
 });
 
-document.querySelectorAll('.size-btn').forEach(el => {
+document.querySelectorAll('.size-btn:not(.shape-type-btn)').forEach(el => {
   el.addEventListener('click', () => {
     sizeIndex = parseInt(el.dataset.size);
-    document.querySelectorAll('.size-btn').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.size-btn:not(.shape-type-btn)').forEach(s=>s.classList.remove('active'));
     el.classList.add('active');
   });
 });
@@ -1979,7 +2247,7 @@ async function main() {
 
   // 서버 state가 비어있으면 localStorage fallback
   let resolvedState = state;
-  if (!state.strokes?.length && !state.notes?.length && !state.images?.length) {
+  if (!state.strokes?.length && !state.notes?.length && !state.images?.length && !state.shapes?.length) {
     try {
       const local = localStorage.getItem('fa:room:' + roomId);
       if (local) resolvedState = JSON.parse(local);
@@ -1989,12 +2257,14 @@ async function main() {
   strokes  = resolvedState.strokes || [];
   notes    = [];
   images   = [];
+  shapes   = [];
   notesLayer.innerHTML  = '';
   cursorsLayer.innerHTML = '';
   remoteCursors.clear();
   avatarStack.innerHTML = '';
-  // 이미지를 먼저 (노트 아래에 표시)
+  // 이미지를 먼저 (노트 아래에 표시), 도형은 그 다음, 노트가 맨 위
   (resolvedState.images || []).forEach(i => { images.push(i); buildImageEl(i); });
+  (resolvedState.shapes || []).forEach(s => { shapes.push(s); buildShapeEl(s); });
   (resolvedState.notes  || []).forEach(n => { notes.push(n);  buildNoteEl(n, false); });
   invalidateStrokesCache();
 

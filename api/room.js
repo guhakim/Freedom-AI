@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
     const state = (kv && process.env.KV_REST_API_URL)
       ? await kv.get(`fa:room:${roomId}`)
       : null;
-    res.json(state || { strokes: [], notes: [], images: [] });
+    res.json(state || { strokes: [], notes: [], images: [], shapes: [] });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

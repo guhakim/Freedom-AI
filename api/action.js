@@ -29,6 +29,10 @@ const MAX_IMAGES   = 20;
 const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
 const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
 const MAX_IMG_SRC  = 2_000_000;
+const MAX_SHAPES   = 300;
+const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
+const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
+const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
 
 let _pusher;
 function getPusher() {
@@ -245,6 +249,61 @@ module.exports = async (req, res) => {
       state.images.splice(idx, 1);
       await kvSet(kvKey, state);
       await pusher.trigger(channel, 'image_delete', { imageId: action.imageId }, excl);
+      break;
+    }
+
+    case 'shape_add': {
+      const { shape } = action;
+      if (!shape?.id) break;
+      if (!state.shapes) state.shapes = [];
+      if (state.shapes.find(s => s.id === shape.id)) break;
+      if (state.shapes.length >= MAX_SHAPES) break;
+      if (!VALID_SHAPE_TYPE.has(shape.type)) break;
+      const s = {
+        id:     shape.id,
+        type:   shape.type,
+        x:      typeof shape.x === 'number' ? shape.x : 0,
+        y:      typeof shape.y === 'number' ? shape.y : 0,
+        w:      Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, shape.w || 160)),
+        h:      Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, shape.h || 120)),
+        color:  VALID_COLOR.test(shape.color) ? shape.color : '#0e0e0d',
+        userId,
+      };
+      state.shapes.push(s);
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'shape_add', { shape: s }, excl);
+      break;
+    }
+
+    case 'shape_move': {
+      if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
+      if (!state.shapes) break;
+      const s = state.shapes.find(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
+      if (!s) break;
+      s.x = action.x; s.y = action.y;
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'shape_move', { shapeId: action.shapeId, x: s.x, y: s.y }, excl);
+      break;
+    }
+
+    case 'shape_resize': {
+      if (!state.shapes) break;
+      const s = state.shapes.find(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
+      if (!s) break;
+      s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w ?? s.w));
+      s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h ?? s.h));
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'shape_resize', { shapeId: action.shapeId, w: s.w, h: s.h }, excl);
+      break;
+    }
+
+    case 'shape_delete': {
+      if (!state.shapes) break;
+      const idx = state.shapes.findIndex(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
+      if (idx === -1) break;
+      state.shapes.splice(idx, 1);
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'shape_delete', { shapeId: action.shapeId }, excl);
       break;
     }
   }
