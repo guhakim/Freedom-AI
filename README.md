@@ -4,7 +4,8 @@
 
 🔗 **[freedom-ai-alpha.vercel.app](https://freedom-ai-alpha.vercel.app)**
 
-<img width="1275" height="544" alt="CleanShot 2026-06-10 at 18 49 44" src="https://github.com/user-attachments/assets/8d17a404-eca6-4bed-a142-315c2038f604" />
+<img width="1276" height="549" alt="CleanShot 2026-08-15 at 23 20 17" src="https://github.com/user-attachments/assets/53c8eccc-3edd-420f-a2b7-01631345ee34" />
+
 
 ---
 
