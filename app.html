@@ -1251,6 +1251,14 @@ function buildImageEl(img) {
   setupImageEvents(img);
 }
 
+function deleteImage(img) {
+  lastDeleted = { type: 'image', data: { id:img.id, src:img.src, x:img.x, y:img.y, w:img.w, h:img.h } };
+  img.el.remove();
+  images = images.filter(i => i.id !== img.id);
+  scheduleLocalSave();
+  sendAction({ type: 'image_delete', imageId: img.id });
+}
+
 function setupImageEvents(img) {
   const el  = img.el;
   const del = el.querySelector('.canvas-img-del');
@@ -1330,11 +1338,7 @@ function setupImageEvents(img) {
   // 삭제
   del.addEventListener('click', e => {
     e.stopPropagation();
-    lastDeleted = { type: 'image', data: { id:img.id, src:img.src, x:img.x, y:img.y, w:img.w, h:img.h } };
-    el.remove();
-    images = images.filter(i => i.id !== img.id);
-    scheduleLocalSave();
-    sendAction({ type: 'image_delete', imageId: img.id });
+    deleteImage(img);
   });
 
   // 더블클릭 → AI 변환 모달
@@ -2013,6 +2017,20 @@ function applySelHighlight() {
 
 function clearSelection() { selectedIds.clear(); applySelHighlight(); }
 
+// 선택된 항목 전체 삭제 (Backspace / Delete)
+function deleteSelected() {
+  if (!selectedIds.size) return;
+  [...selectedIds].forEach(id => {
+    const note = notes.find(n => n.id === id);
+    if (note)  { deleteNote(note);  return; }
+    const img = images.find(i => i.id === id);
+    if (img)   { deleteImage(img);  return; }
+    const shape = shapes.find(s => s.id === id);
+    if (shape) { deleteShape(shape); }
+  });
+  clearSelection();
+}
+
 function selectInRect(sx0,sy0,sx1,sy1) {
   const x0=Math.min(sx0,sx1), x1=Math.max(sx0,sx1);
   const y0=Math.min(sy0,sy1), y1=Math.max(sy0,sy1);
@@ -2192,6 +2210,11 @@ document.addEventListener('keydown', e => {
     return;
   }
   const k=e.key;
+  if ((k==='Backspace'||k==='Delete') && activeTool==='select' && selectedIds.size) {
+    e.preventDefault();
+    deleteSelected();
+    return;
+  }
   if (k==='0') { centerView(); return; }
   if (k==='+'||k==='=') { zoomAt(canvas.width/2,canvas.height/2,1.2); return; }
   if (k==='-')           { zoomAt(canvas.width/2,canvas.height/2,1/1.2); return; }
