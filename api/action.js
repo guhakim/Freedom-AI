@@ -240,7 +240,10 @@ module.exports = async (req, res) => {
     }
 
     case 'note_text': {
-      const n = state.notes.find(n => n.id === action.noteId && (!n.userId || n.userId === userId));
+      // 텍스트 편집은 생성자 제한 없이 누구나 가능(협업 노트 취지) — server.js(로컬 개발 서버)와 동일하게 맞춤.
+      // note_move/resize/delete와 달리 여기 userId 제한을 걸면, UI(contenteditable)는 편집을 허용해놓고
+      // 서버가 조용히 저장·전파를 막아 "내가 쓴 글씨가 상대방에게 안 보이는" 버그가 된다.
+      const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.text = String(action.text ?? '').slice(0, MAX_NOTE_TXT);
       await kvSet(kvKey, state);
