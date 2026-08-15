@@ -647,6 +647,144 @@
     from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+
+  /* ── CONTACT MODAL ── */
+  .contact-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(14,14,13,0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .contact-overlay.open { display: flex; }
+
+  .contact-modal {
+    width: 100%;
+    max-width: 440px;
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    position: relative;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    animation: fadeUp 0.25s ease;
+  }
+
+  .contact-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--paper2);
+    color: var(--ink2);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .contact-close:hover { background: var(--paper3); }
+
+  .contact-modal h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 6px;
+    padding-right: 30px;
+  }
+
+  .contact-modal p.contact-sub {
+    font-size: 14px;
+    color: var(--ink3);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .contact-field { margin-bottom: 16px; }
+
+  .contact-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--ink2);
+    margin-bottom: 6px;
+  }
+
+  .contact-field input,
+  .contact-field textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--white);
+    border: 1px solid var(--paper3);
+    border-radius: 10px;
+    padding: 10px 12px;
+    transition: border-color 0.2s;
+  }
+
+  .contact-field input:focus,
+  .contact-field textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  .contact-field textarea {
+    resize: vertical;
+    min-height: 96px;
+    line-height: 1.5;
+  }
+
+  .contact-error {
+    font-size: 13px;
+    color: #b3392f;
+    margin-bottom: 12px;
+    min-height: 16px;
+  }
+
+  .contact-modal .btn-primary {
+    width: 100%;
+    padding: 11px 22px;
+    font-size: 14px;
+  }
+
+  .contact-modal .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
+  }
+
+  .contact-success {
+    text-align: center;
+    padding: 12px 0 4px;
+  }
+
+  .contact-success .check-mark {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: rgba(184,146,74,0.15);
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .contact-success h3 { margin-bottom: 8px; }
+  .contact-success p { font-size: 14px; color: var(--ink3); line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -950,7 +1088,7 @@
         <h4>지원</h4>
         <a href="#">시작 가이드</a>
         <a href="#">자주 묻는 질문</a>
-        <a href="#">문의하기</a>
+        <a href="#" id="contact-link">문의하기</a>
       </div>
 
       <div class="footer-col">
@@ -972,6 +1110,101 @@
     </div>
   </div>
 </footer>
+
+<!-- ══════════════════════════
+     CONTACT MODAL
+══════════════════════════ -->
+<div class="contact-overlay" id="contact-overlay">
+  <div class="contact-modal">
+    <button class="contact-close" id="contact-close" aria-label="닫기">✕</button>
+
+    <div id="contact-form-view">
+      <h3>문의하기</h3>
+      <p class="contact-sub">궁금한 점이 있으시면 언제든지 문의해주세요</p>
+
+      <form id="contact-form">
+        <div class="contact-field">
+          <label for="contact-name">이름</label>
+          <input type="text" id="contact-name" placeholder="홍길동" maxlength="100" required>
+        </div>
+        <div class="contact-field">
+          <label for="contact-email">이메일</label>
+          <input type="email" id="contact-email" placeholder="example@email.com" maxlength="200" required>
+        </div>
+        <div class="contact-field">
+          <label for="contact-message">문의 내용</label>
+          <textarea id="contact-message" placeholder="문의하실 내용을 작성해주세요" maxlength="5000" required></textarea>
+        </div>
+        <div class="contact-error" id="contact-error"></div>
+        <button type="submit" class="btn-primary" id="contact-submit">문의 보내기</button>
+      </form>
+    </div>
+
+    <div id="contact-success-view" class="contact-success" style="display:none;">
+      <div class="check-mark">✓</div>
+      <h3>문의가 접수되었습니다</h3>
+      <p>빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const overlay = document.getElementById('contact-overlay');
+  const openLink = document.getElementById('contact-link');
+  const closeBtn = document.getElementById('contact-close');
+  const form = document.getElementById('contact-form');
+  const errorEl = document.getElementById('contact-error');
+  const submitBtn = document.getElementById('contact-submit');
+  const formView = document.getElementById('contact-form-view');
+  const successView = document.getElementById('contact-success-view');
+
+  function openModal() {
+    overlay.classList.add('open');
+    formView.style.display = '';
+    successView.style.display = 'none';
+    form.reset();
+    errorEl.textContent = '';
+  }
+  function closeModal() { overlay.classList.remove('open'); }
+
+  openLink.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const message = document.getElementById('contact-message').value.trim();
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '보내는 중...';
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message }),
+      });
+      if (!res.ok) {
+        if (res.status === 429) throw new Error('너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.');
+        throw new Error('문의 전송에 실패했습니다. 다시 시도해주세요.');
+      }
+      formView.style.display = 'none';
+      successView.style.display = '';
+    } catch (err) {
+      errorEl.textContent = err.message;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '문의 보내기';
+    }
+  });
+})();
+</script>
 
 <script>
 fetch('/api/stats', {

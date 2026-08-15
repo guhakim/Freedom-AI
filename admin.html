@@ -20,7 +20,7 @@
   }
   .card {
     width: 100%;
-    max-width: 420px;
+    max-width: 640px;
   }
   h1 {
     font-size: 20px;
@@ -82,6 +82,46 @@
     color: #777;
     line-height: 1.5;
   }
+  h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 32px 0 12px;
+  }
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .contact-item {
+    background: #1a1a20;
+    border: 1px solid #2a2a32;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .contact-item .meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .contact-item .who { font-weight: 600; }
+  .contact-item .email { color: #999; }
+  .contact-item .when { color: #666; font-size: 12px; white-space: nowrap; }
+  .contact-item .msg-body {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .empty {
+    font-size: 13px;
+    color: #666;
+    padding: 12px 0;
+  }
 </style>
 </head>
 <body>
@@ -99,6 +139,11 @@
     <div class="stat"><div class="label">앱 진입 수</div><div class="value" id="v-app">-</div></div>
   </div>
   <div class="note">가입자 수는 Google 로그인 후 프로젝트 목록을 최소 한 번 동기화한 고유 이메일 수 기준입니다.</div>
+
+  <div id="contact-section" style="display:none;">
+    <h2>최근 문의 (<span id="contact-count">0</span>건)</h2>
+    <div class="contact-list" id="contact-list"></div>
+  </div>
 </div>
 <script>
 const keyInput = document.getElementById('key');
@@ -126,9 +171,46 @@ async function load(key) {
     document.getElementById('v-index').textContent = data.pageviewsIndex;
     document.getElementById('v-app').textContent = data.pageviewsApp;
     grid.style.display = 'grid';
+
+    loadContacts(key);
   } catch (e) {
     msg.textContent = '네트워크 오류';
   }
+}
+
+async function loadContacts(key) {
+  const section = document.getElementById('contact-section');
+  const list = document.getElementById('contact-list');
+  const countEl = document.getElementById('contact-count');
+  try {
+    const r = await fetch(`/api/contact?key=${encodeURIComponent(key)}`);
+    if (!r.ok) return;
+    const { submissions } = await r.json();
+    countEl.textContent = submissions.length;
+    list.innerHTML = '';
+    if (!submissions.length) {
+      list.innerHTML = '<div class="empty">아직 접수된 문의가 없습니다.</div>';
+    } else {
+      for (const s of submissions) {
+        const item = document.createElement('div');
+        item.className = 'contact-item';
+        const when = s.createdAt ? new Date(s.createdAt).toLocaleString('ko-KR') : '';
+        item.innerHTML = `
+          <div class="meta">
+            <span><span class="who"></span> · <span class="email"></span></span>
+            <span class="when"></span>
+          </div>
+          <div class="msg-body"></div>
+        `;
+        item.querySelector('.who').textContent = s.name || '(이름 없음)';
+        item.querySelector('.email').textContent = s.email || '';
+        item.querySelector('.when').textContent = when;
+        item.querySelector('.msg-body').textContent = s.message || '';
+        list.appendChild(item);
+      }
+    }
+    section.style.display = '';
+  } catch (e) { /* 문의 목록은 실패해도 통계는 보여줌 */ }
 }
 </script>
 </body>
