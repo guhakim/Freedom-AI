@@ -2,7 +2,7 @@
 
 실시간 협업 무한 캔버스 툴 — 브라우저만 있으면 바로 시작, 링크 공유로 팀과 함께 그립니다.
 
-🔗 **[freedom-ai-alpha.vercel.app](https://freedom-ai-alpha.vercel.app)**
+🔗 *[*[freedom-ai-alpha.vercel.app](https://freedom-ai-alpha.vercel.app)**](https://freedomai-app.vercel.app/index.html)
 
 <img width="1276" height="549" alt="CleanShot 2026-08-15 at 23 20 17" src="https://github.com/user-attachments/assets/53c8eccc-3edd-420f-a2b7-01631345ee34" />
 
