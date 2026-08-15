@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Freedom AI — Stats</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Pretendard, sans-serif;
+    background: #0f0f13;
+    color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 20px;
+  }
+  .gate {
+    display: flex;
+    gap: 8px;
+  }
+  input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: #1a1a20;
+    color: #eee;
+    font-size: 14px;
+  }
+  button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #8b5cf6;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { background: #7c3aed; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .stat {
+    background: #1a1a20;
+    border: 1px solid #2a2a32;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .stat .label {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+  .stat .value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .msg {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #f87171;
+    min-height: 18px;
+  }
+  .note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #777;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Freedom AI 통계</h1>
+  <div class="gate">
+    <input id="key" type="password" placeholder="관리자 키 입력" autocomplete="off">
+    <button id="go">조회</button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="grid" id="grid" style="display:none;">
+    <div class="stat"><div class="label">가입자 수 (고유 이메일)</div><div class="value" id="v-users">-</div></div>
+    <div class="stat"><div class="label">총 방문 수</div><div class="value" id="v-total">-</div></div>
+    <div class="stat"><div class="label">랜딩 페이지 방문</div><div class="value" id="v-index">-</div></div>
+    <div class="stat"><div class="label">앱 진입 수</div><div class="value" id="v-app">-</div></div>
+  </div>
+  <div class="note">가입자 수는 Google 로그인 후 프로젝트 목록을 최소 한 번 동기화한 고유 이메일 수 기준입니다.</div>
+</div>
+<script>
+const keyInput = document.getElementById('key');
+const msg = document.getElementById('msg');
+const grid = document.getElementById('grid');
+
+const saved = sessionStorage.getItem('fa_admin_key');
+if (saved) { keyInput.value = saved; load(saved); }
+
+document.getElementById('go').addEventListener('click', () => load(keyInput.value));
+keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') load(keyInput.value); });
+
+async function load(key) {
+  if (!key) { msg.textContent = '키를 입력해주세요.'; return; }
+  msg.textContent = '조회 중...';
+  try {
+    const r = await fetch(`/api/stats?key=${encodeURIComponent(key)}`);
+    if (r.status === 401) { msg.textContent = '키가 올바르지 않습니다.'; grid.style.display = 'none'; return; }
+    if (!r.ok) { msg.textContent = '조회 실패 (' + r.status + ')'; return; }
+    const data = await r.json();
+    sessionStorage.setItem('fa_admin_key', key);
+    msg.textContent = data.kvConnected ? '' : 'KV 미연결 상태 — 값은 항상 0으로 표시됩니다.';
+    document.getElementById('v-users').textContent = data.users;
+    document.getElementById('v-total').textContent = data.pageviews;
+    document.getElementById('v-index').textContent = data.pageviewsIndex;
+    document.getElementById('v-app').textContent = data.pageviewsApp;
+    grid.style.display = 'grid';
+  } catch (e) {
+    msg.textContent = '네트워크 오류';
+  }
+}
+</script>
+</body>
+</html>

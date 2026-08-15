@@ -49,7 +49,11 @@ Freedom-AI/
 │   ├── action.js        # 캔버스 액션 처리 (획·지우개·포스트잇)
 │   ├── ai-transform.js  # AI 이미지 변환 프록시 (HF_TOKEN 필요)
 │   ├── join.js          # 방 입장 & 초기 상태 반환
-│   └── pusher-auth.js   # Pusher Presence 채널 인증
+│   ├── projects.js      # 프로젝트 목록 동기화 (Google 토큰 검증)
+│   ├── pusher-auth.js   # Pusher Presence 채널 인증
+│   ├── room.js          # 방 상태 조회
+│   └── stats.js         # 가입자/방문 통계 기록·조회
+├── admin.html            # 통계 조회 페이지 (ADMIN_STATS_KEY 필요)
 ├── app.html             # 캔버스 앱 (메인)
 ├── index.html           # 랜딩 페이지
 ├── server.js            # 로컬 개발용 서버
@@ -80,6 +84,9 @@ PUSHER_CLUSTER=your_cluster
 # 선택 (없으면 localStorage로만 저장)
 KV_REST_API_URL=your_kv_url
 KV_REST_API_TOKEN=your_kv_token
+
+# /admin.html 통계 페이지 접근 키
+ADMIN_STATS_KEY=아무_임의_문자열
 ```
 
 ### 3. 서버 실행
@@ -103,6 +110,7 @@ npm run dev     # 파일 변경 감지 자동 재시작
 | `PUSHER_CLUSTER` | Pusher 클러스터 (예: `ap3`) |
 | `KV_REST_API_URL` | Vercel KV URL (선택) |
 | `KV_REST_API_TOKEN` | Vercel KV 토큰 (선택) |
+| `ADMIN_STATS_KEY` | `/admin.html` 통계 페이지 접근 키 |
 
 ### Pusher 설정
 

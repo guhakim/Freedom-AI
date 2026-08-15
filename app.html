@@ -1942,6 +1942,12 @@ function getGoogleUser() {
 }
 
 async function main() {
+  fetch('/api/stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page: 'app' }),
+  }).catch(() => {});
+
   const gUser = await getGoogleUser();
   userName = gUser.name;
   if (gUser.email) {

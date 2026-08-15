@@ -35,6 +35,7 @@ module.exports = async (req, res) => {
     if (!email || typeof email !== 'string') return res.status(400).json({ error: 'email required' });
     if (!(await verifyOwner(req, email))) return res.status(401).json({ error: 'unauthorized' });
     try {
+      if (kvOk) await kv.sadd('fa:stats:users', email.toLowerCase());
       const projects = kvOk ? (await kv.get(`fa:user:projects:${email}`)) || [] : [];
       res.json({ projects });
     } catch(e) {

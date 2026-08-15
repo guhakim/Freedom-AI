@@ -974,6 +974,12 @@
 </footer>
 
 <script>
+fetch('/api/stats', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ page: 'index' }),
+}).catch(() => {});
+
 const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.googleusercontent.com';
 
 document.querySelector('.btn-ghost').addEventListener('click', () => {
