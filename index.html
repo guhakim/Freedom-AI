@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Freedom AI — 무한 캔버스 협업 툴</title>
+<title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
   @font-face {
@@ -121,6 +121,20 @@
   }
 
   .btn-ghost:hover { color: var(--ink); }
+
+  .lang-toggle {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink2);
+    background: var(--paper2);
+    border: 0.5px solid rgba(14,14,13,0.15);
+    border-radius: 100px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s, color 0.2s;
+  }
+  .lang-toggle:hover { background: var(--paper3); color: var(--ink); }
 
   .btn-primary {
     font-size: 14px;
@@ -810,13 +824,14 @@
   </a>
 
   <nav>
-    <a href="#features">기능</a>
-    <a href="#phases">로드맵</a>
-    <a href="#about">소개</a>
+    <a href="#features" data-i18n-en="Features" data-i18n-ko="기능">기능</a>
+    <a href="#phases" data-i18n-en="Roadmap" data-i18n-ko="로드맵">로드맵</a>
+    <a href="#about" data-i18n-en="About" data-i18n-ko="소개">소개</a>
   </nav>
 
   <div class="header-cta">
-    <button class="btn-ghost">로그인</button>
+    <button class="lang-toggle" id="lang-toggle" type="button">EN</button>
+    <button class="btn-ghost" data-i18n-en="Log in" data-i18n-ko="로그인">로그인</button>
   </div>
 </header>
 
@@ -829,17 +844,17 @@
 
     <div class="hero-badge">
       <div class="hero-badge-dot"></div>
-      언제 어디서나 쉽게 — 웹 & 모바일에서 바로
+      <span data-i18n-en="Anywhere, anytime — on web &amp; mobile" data-i18n-ko="언제 어디서나 쉽게 — 웹 & 모바일에서 바로">언제 어디서나 쉽게 — 웹 & 모바일에서 바로</span>
     </div>
 
-    <h1>생각을 <em>함께</em><br>그리는 공간</h1>
+    <h1 data-i18n-en-html="Think <em>together</em><br>in one space" data-i18n-ko-html="생각을 <em>함께</em><br>그리는 공간">생각을 <em>함께</em><br>그리는 공간</h1>
 
-    <p class="hero-desc">
+    <p class="hero-desc" data-i18n-en="Freedom AI is a collaboration tool where teams share ideas in real time on an infinite canvas. All you need is a browser — start from anywhere." data-i18n-ko="Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.">
       Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.
     </p>
 
     <div class="hero-actions">
-      <a href="app.html" class="btn-hero" style="text-decoration:none; display:inline-flex; align-items:center;">지금 시작하기 →</a>
+      <a href="app.html" class="btn-hero" style="text-decoration:none; display:inline-flex; align-items:center;" data-i18n-en="Get started →" data-i18n-ko="지금 시작하기 →">지금 시작하기 →</a>
     </div>
 
     <!-- Canvas mockup -->
@@ -848,15 +863,15 @@
         <div class="canvas-dot"></div>
         <div class="canvas-dot"></div>
         <div class="canvas-dot"></div>
-        <div class="canvas-title">무제 보드 — 3명 작업 중</div>
+        <div class="canvas-title" data-i18n-en="Untitled board — 3 people working" data-i18n-ko="무제 보드 — 3명 작업 중">무제 보드 — 3명 작업 중</div>
       </div>
       <div class="canvas-body">
 
-        <div class="sticky sticky-yellow">🎯 핵심 기능<br>우선 정리하기</div>
-        <div class="sticky sticky-pink">디자인 레퍼런스<br>Miro, FigJam</div>
-        <div class="sticky sticky-green">WebSocket으로<br>실시간 협업!</div>
-        <div class="sticky sticky-blue">Phase 1<br>뼈대부터 시작</div>
-        <div class="sticky sticky-peach">AI 이미지<br>편집 기능 🤖</div>
+        <div class="sticky sticky-yellow" data-i18n-en-html="🎯 Core features<br>sort first" data-i18n-ko-html="🎯 핵심 기능<br>우선 정리하기">🎯 핵심 기능<br>우선 정리하기</div>
+        <div class="sticky sticky-pink" data-i18n-en-html="Design references<br>Miro, FigJam" data-i18n-ko-html="디자인 레퍼런스<br>Miro, FigJam">디자인 레퍼런스<br>Miro, FigJam</div>
+        <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
+        <div class="sticky sticky-blue" data-i18n-en-html="Phase 1<br>build the skeleton" data-i18n-ko-html="Phase 1<br>뼈대부터 시작">Phase 1<br>뼈대부터 시작</div>
+        <div class="sticky sticky-peach" data-i18n-en-html="AI image<br>editing 🤖" data-i18n-ko-html="AI 이미지<br>편집 기능 🤖">AI 이미지<br>편집 기능 🤖</div>
 
         <!-- live cursors -->
         <div class="cursor-dot cursor-a">
@@ -883,8 +898,8 @@
 
     <div class="cards-header">
       <div class="section-kicker">Features</div>
-      <h2 class="section-heading">필요한 것,<br>전부 담았어요</h2>
-      <p class="section-sub">복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.</p>
+      <h2 class="section-heading" data-i18n-en-html="Everything you need,<br>all in one place" data-i18n-ko-html="필요한 것,<br>전부 담았어요">필요한 것,<br>전부 담았어요</h2>
+      <p class="section-sub" data-i18n-en="No complicated setup — open the canvas and start drawing with your team right away." data-i18n-ko="복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.">복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.</p>
     </div>
 
     <div class="cards-grid">
@@ -896,9 +911,9 @@
             <circle cx="11" cy="11" r="3" stroke="rgba(245,243,238,0.6)" stroke-width="1.2"/>
           </svg>
         </div>
-        <h3>무한 캔버스</h3>
-        <p>핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.</p>
-        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Infinite canvas" data-i18n-ko="무한 캔버스">무한 캔버스</h3>
+        <p data-i18n-en="A workspace that expands endlessly with pinch-zoom and panning. No limit to the size of your ideas." data-i18n-ko="핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.">핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -907,9 +922,9 @@
             <path d="M4 18L14 4l4 4L8 18H4v-4l10-10" stroke="#f5f3ee" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>펜 & 지우개</h3>
-        <p>손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.</p>
-        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Pen &amp; eraser" data-i18n-ko="펜 & 지우개">펜 & 지우개</h3>
+        <p data-i18n-en="Draw freely with your finger or stylus, and clean up with the eraser." data-i18n-ko="손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.">손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -920,9 +935,9 @@
             <circle cx="15" cy="15" r="2.5" fill="#f5f3ee" opacity="0.35"/>
           </svg>
         </div>
-        <h3>색상 팔레트</h3>
-        <p>기본 색상부터 HEX 직접 입력까지. 내 감각대로 캔버스를 색칠하세요.</p>
-        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</h3>
+        <p data-i18n-en="From preset colors to direct HEX input. Paint the canvas your way." data-i18n-ko="기본 색상부터 HEX 직접 입력까지. 내 감각대로 캔버스를 색칠하세요.">기본 색상부터 HEX 직접 입력까지. 내 감각대로 캔버스를 색칠하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -933,9 +948,9 @@
             <rect x="3" y="14" width="16" height="4" rx="2" fill="#f5f3ee" opacity="0.3"/>
           </svg>
         </div>
-        <h3>포스트잇</h3>
-        <p>색깔 포스트잇을 자유롭게 붙이고 이동하세요. 아이디에이션의 시작.</p>
-        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Sticky notes" data-i18n-ko="포스트잇">포스트잇</h3>
+        <p data-i18n-en="Place and move colorful sticky notes freely. Where ideation begins." data-i18n-ko="색깔 포스트잇을 자유롭게 붙이고 이동하세요. 아이디에이션의 시작.">색깔 포스트잇을 자유롭게 붙이고 이동하세요. 아이디에이션의 시작.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -947,9 +962,9 @@
             <path d="M7 11h8M11 7v8" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
           </svg>
         </div>
-        <h3>실시간 협업</h3>
-        <p>팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
-        <span class="card-phase phase-1">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Real-time collaboration" data-i18n-ko="실시간 협업">실시간 협업</h3>
+        <p data-i18n-en="See your teammates' cursors live. Collaborate like you're in the same room." data-i18n-ko="팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.">팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -960,9 +975,9 @@
             <path d="M16 16h2M17 15v2" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3>협업 To-Do</h3>
-        <p>캔버스 안에 할 일 목록을 만들고 팀원과 함께 체크해 나가세요.</p>
-        <span class="card-phase phase-2">Phase 2</span>
+        <h3 data-i18n-en="Collaborative to-dos" data-i18n-ko="협업 To-Do">협업 To-Do</h3>
+        <p data-i18n-en="Build task lists right on the canvas and check them off together." data-i18n-ko="캔버스 안에 할 일 목록을 만들고 팀원과 함께 체크해 나가세요.">캔버스 안에 할 일 목록을 만들고 팀원과 함께 체크해 나가세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
       </div>
 
       <div class="card">
@@ -972,9 +987,9 @@
             <path d="M3 13l4-3 3 2 4-4 5 4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3>이미지 드래그</h3>
-        <p>레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.</p>
-        <span class="card-phase phase-2">Phase 2</span>
+        <h3 data-i18n-en="Drag & drop images" data-i18n-ko="이미지 드래그">이미지 드래그</h3>
+        <p data-i18n-en="Drag reference images straight from your browser onto the canvas." data-i18n-ko="레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.">레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
       </div>
 
       <div class="card">
@@ -985,9 +1000,9 @@
             <path d="M17 5l2-2" stroke="#b8924a" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3>AI 이미지 편집</h3>
-        <p>캔버스 위 이미지를 선택해 AI가 변형·생성해드려요. 레퍼런스를 즉시 시각화.</p>
-        <span class="card-phase phase-3">Phase 3 · AI</span>
+        <h3 data-i18n-en="AI image editing" data-i18n-ko="AI 이미지 편집">AI 이미지 편집</h3>
+        <p data-i18n-en="Select an image on the canvas and let AI transform or generate it. Visualize references instantly." data-i18n-ko="캔버스 위 이미지를 선택해 AI가 변형·생성해드려요. 레퍼런스를 즉시 시각화.">캔버스 위 이미지를 선택해 AI가 변형·생성해드려요. 레퍼런스를 즉시 시각화.</p>
+        <span class="card-phase phase-3" data-i18n-en="Phase 3 · AI" data-i18n-ko="Phase 3 · AI">Phase 3 · AI</span>
       </div>
 
       <div class="card">
@@ -999,9 +1014,9 @@
             <path d="M14 16h4M16 14v4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
           </svg>
         </div>
-        <h3>도형 도구</h3>
-        <p>사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.</p>
-        <span class="card-phase phase-2">Phase 2</span>
+        <h3 data-i18n-en="Shape tools" data-i18n-ko="도형 도구">도형 도구</h3>
+        <p data-i18n-en="Insert rectangles, circles, and arrows, and freely adjust their size and color." data-i18n-ko="사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.">사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
       </div>
 
     </div>
@@ -1015,46 +1030,46 @@
 <section class="phase-section" id="phases">
   <div class="section-inner">
     <div class="section-kicker">Roadmap</div>
-    <h2 class="section-heading">기초부터,<br>단계적으로</h2>
-    <p class="section-sub">처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.</p>
+    <h2 class="section-heading" data-i18n-en-html="Building block<br>by block" data-i18n-ko-html="기초부터,<br>단계적으로">기초부터,<br>단계적으로</h2>
+    <p class="section-sub" data-i18n-en="We're not building every feature at once. We build the core first, then stack up from there." data-i18n-ko="처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.">처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.</p>
 
     <div class="phase-list">
       <div class="phase-card">
         <div class="phase-num">01</div>
-        <h3>기초 — 핵심 기능</h3>
-        <p>앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.</p>
+        <h3 data-i18n-en="Foundation — core features" data-i18n-ko="기초 — 핵심 기능">기초 — 핵심 기능</h3>
+        <p data-i18n-en="The features the app is built on. Enough for a team to start using it together." data-i18n-ko="앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.">앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.</p>
         <div class="phase-items">
-          <div class="phase-item">무한 캔버스</div>
-          <div class="phase-item">펜 & 지우개</div>
-          <div class="phase-item">색상 팔레트</div>
-          <div class="phase-item">포스트잇</div>
-          <div class="phase-item">실시간 협업 커서</div>
+          <div class="phase-item" data-i18n-en="Infinite canvas" data-i18n-ko="무한 캔버스">무한 캔버스</div>
+          <div class="phase-item" data-i18n-en="Pen &amp; eraser" data-i18n-ko="펜 & 지우개">펜 & 지우개</div>
+          <div class="phase-item" data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</div>
+          <div class="phase-item" data-i18n-en="Sticky notes" data-i18n-ko="포스트잇">포스트잇</div>
+          <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
         </div>
       </div>
 
       <div class="phase-card">
         <div class="phase-num">02</div>
-        <h3>발전 — 확장 기능</h3>
-        <p>뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
+        <h3 data-i18n-en="Growth — expanded features" data-i18n-ko="발전 — 확장 기능">발전 — 확장 기능</h3>
+        <p data-i18n-en="Once the foundation is stable, we add richer collaboration experiences." data-i18n-ko="뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.">뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
         <div class="phase-items">
-          <div class="phase-item">기본 도형 도구</div>
-          <div class="phase-item">이미지 드래그 & 드롭</div>
-          <div class="phase-item">협업 To-Do List</div>
-          <div class="phase-item">공유 링크 생성</div>
-          <div class="phase-item">모바일 최적화</div>
+          <div class="phase-item" data-i18n-en="Basic shape tools" data-i18n-ko="기본 도형 도구">기본 도형 도구</div>
+          <div class="phase-item" data-i18n-en="Image drag &amp; drop" data-i18n-ko="이미지 드래그 & 드롭">이미지 드래그 & 드롭</div>
+          <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
+          <div class="phase-item" data-i18n-en="Share link generation" data-i18n-ko="공유 링크 생성">공유 링크 생성</div>
+          <div class="phase-item" data-i18n-en="Mobile optimization" data-i18n-ko="모바일 최적화">모바일 최적화</div>
         </div>
       </div>
 
       <div class="phase-card">
         <div class="phase-num">03</div>
-        <h3>고도화 — AI 기능</h3>
-        <p>AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.</p>
+        <h3 data-i18n-en="Advanced — AI features" data-i18n-ko="고도화 — AI 기능">고도화 — AI 기능</h3>
+        <p data-i18n-en="The stage where AI helps you create — going beyond Freeform." data-i18n-ko="AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.">AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.</p>
         <div class="phase-items">
-          <div class="phase-item">AI 이미지 편집·생성</div>
-          <div class="phase-item">AI 아이디어 제안</div>
-          <div class="phase-item">자동 레이아웃 정리</div>
-          <div class="phase-item">버전 히스토리</div>
-          <div class="phase-item">오프라인 지원</div>
+          <div class="phase-item" data-i18n-en="AI image editing &amp; generation" data-i18n-ko="AI 이미지 편집·생성">AI 이미지 편집·생성</div>
+          <div class="phase-item" data-i18n-en="AI idea suggestions" data-i18n-ko="AI 아이디어 제안">AI 아이디어 제안</div>
+          <div class="phase-item" data-i18n-en="Automatic layout cleanup" data-i18n-ko="자동 레이아웃 정리">자동 레이아웃 정리</div>
+          <div class="phase-item" data-i18n-en="Version history" data-i18n-ko="버전 히스토리">버전 히스토리</div>
+          <div class="phase-item" data-i18n-en="Offline support" data-i18n-ko="오프라인 지원">오프라인 지원</div>
         </div>
       </div>
     </div>
@@ -1079,29 +1094,29 @@
           </div>
           <span class="logo-text">Freedom AI</span>
         </a>
-        <p>언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.</p>
+        <p data-i18n-en-html="Anywhere, anytime — on web &amp; mobile.<br>Think together with your team on an infinite canvas." data-i18n-ko-html="언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.">언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.</p>
       </div>
 
       <div class="footer-col">
-        <h4>제품</h4>
-        <a href="#">기능 소개</a>
-        <a href="#">로드맵</a>
-        <a href="#">업데이트</a>
-        <a href="#">요금제</a>
+        <h4 data-i18n-en="Product" data-i18n-ko="제품">제품</h4>
+        <a href="#" data-i18n-en="Features" data-i18n-ko="기능 소개">기능 소개</a>
+        <a href="#" data-i18n-en="Roadmap" data-i18n-ko="로드맵">로드맵</a>
+        <a href="#" data-i18n-en="Updates" data-i18n-ko="업데이트">업데이트</a>
+        <a href="#" data-i18n-en="Pricing" data-i18n-ko="요금제">요금제</a>
       </div>
 
       <div class="footer-col">
-        <h4>지원</h4>
-        <a href="#">시작 가이드</a>
-        <a href="#">자주 묻는 질문</a>
-        <a href="#" id="contact-link">문의하기</a>
+        <h4 data-i18n-en="Support" data-i18n-ko="지원">지원</h4>
+        <a href="#" data-i18n-en="Getting started" data-i18n-ko="시작 가이드">시작 가이드</a>
+        <a href="#" data-i18n-en="FAQ" data-i18n-ko="자주 묻는 질문">자주 묻는 질문</a>
+        <a href="#" id="contact-link" data-i18n-en="Contact us" data-i18n-ko="문의하기">문의하기</a>
       </div>
 
       <div class="footer-col">
-        <h4>회사</h4>
-        <a href="#">소개</a>
-        <a href="#">블로그</a>
-        <a href="#">채용</a>
+        <h4 data-i18n-en="Company" data-i18n-ko="회사">회사</h4>
+        <a href="#" data-i18n-en="About" data-i18n-ko="소개">소개</a>
+        <a href="#" data-i18n-en="Blog" data-i18n-ko="블로그">블로그</a>
+        <a href="#" data-i18n-en="Careers" data-i18n-ko="채용">채용</a>
       </div>
 
     </div>
@@ -1109,9 +1124,9 @@
     <div class="footer-bottom">
       <p>© 2025 Freedom AI. All rights reserved.</p>
       <div class="footer-links">
-        <a href="#">개인정보처리방침</a>
-        <a href="#">이용약관</a>
-        <a href="#">쿠키 설정</a>
+        <a href="#" data-i18n-en="Privacy Policy" data-i18n-ko="개인정보처리방침">개인정보처리방침</a>
+        <a href="#" data-i18n-en="Terms of Service" data-i18n-ko="이용약관">이용약관</a>
+        <a href="#" data-i18n-en="Cookie Settings" data-i18n-ko="쿠키 설정">쿠키 설정</a>
       </div>
     </div>
   </div>
@@ -1125,31 +1140,31 @@
     <button class="contact-close" id="contact-close" aria-label="닫기">✕</button>
 
     <div id="contact-form-view">
-      <h3>문의하기</h3>
-      <p class="contact-sub">궁금한 점이 있으시면 언제든지 문의해주세요</p>
+      <h3 data-i18n-en="Contact us" data-i18n-ko="문의하기">문의하기</h3>
+      <p class="contact-sub" data-i18n-en="If you have any questions, feel free to reach out anytime" data-i18n-ko="궁금한 점이 있으시면 언제든지 문의해주세요">궁금한 점이 있으시면 언제든지 문의해주세요</p>
 
       <form id="contact-form">
         <div class="contact-field">
-          <label for="contact-name">이름</label>
-          <input type="text" id="contact-name" placeholder="홍길동" maxlength="100" required>
+          <label for="contact-name" data-i18n-en="Name" data-i18n-ko="이름">이름</label>
+          <input type="text" id="contact-name" placeholder="홍길동" data-i18n-en-placeholder="Jane Doe" data-i18n-ko-placeholder="홍길동" maxlength="100" required>
         </div>
         <div class="contact-field">
-          <label for="contact-email">이메일</label>
+          <label for="contact-email" data-i18n-en="Email" data-i18n-ko="이메일">이메일</label>
           <input type="email" id="contact-email" placeholder="example@email.com" maxlength="200" required>
         </div>
         <div class="contact-field">
-          <label for="contact-message">문의 내용</label>
-          <textarea id="contact-message" placeholder="문의하실 내용을 작성해주세요" maxlength="5000" required></textarea>
+          <label for="contact-message" data-i18n-en="Message" data-i18n-ko="문의 내용">문의 내용</label>
+          <textarea id="contact-message" placeholder="문의하실 내용을 작성해주세요" data-i18n-en-placeholder="Write your message here" data-i18n-ko-placeholder="문의하실 내용을 작성해주세요" maxlength="5000" required></textarea>
         </div>
         <div class="contact-error" id="contact-error"></div>
-        <button type="submit" class="btn-primary" id="contact-submit">문의 보내기</button>
+        <button type="submit" class="btn-primary" id="contact-submit" data-i18n-en="Send message" data-i18n-ko="문의 보내기">문의 보내기</button>
       </form>
     </div>
 
     <div id="contact-success-view" class="contact-success" style="display:none;">
       <div class="check-mark">✓</div>
-      <h3>문의가 접수되었습니다</h3>
-      <p>빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.</p>
+      <h3 data-i18n-en="Your message has been sent" data-i18n-ko="문의가 접수되었습니다">문의가 접수되었습니다</h3>
+      <p data-i18n-en-html="We'll get back to you as soon as possible.<br>Thank you for reaching out." data-i18n-ko-html="빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.">빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.</p>
     </div>
   </div>
 </div>
@@ -1187,8 +1202,9 @@
     const email = document.getElementById('contact-email').value.trim();
     const message = document.getElementById('contact-message').value.trim();
 
+    const isEn = window._faLang === 'en';
     submitBtn.disabled = true;
-    submitBtn.textContent = '보내는 중...';
+    submitBtn.textContent = isEn ? 'Sending...' : '보내는 중...';
 
     try {
       const res = await fetch('/api/contact', {
@@ -1197,8 +1213,8 @@
         body: JSON.stringify({ name, email, message }),
       });
       if (!res.ok) {
-        if (res.status === 429) throw new Error('너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.');
-        throw new Error('문의 전송에 실패했습니다. 다시 시도해주세요.');
+        if (res.status === 429) throw new Error(isEn ? 'Too many requests. Please try again shortly.' : '너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.');
+        throw new Error(isEn ? 'Failed to send your message. Please try again.' : '문의 전송에 실패했습니다. 다시 시도해주세요.');
       }
       formView.style.display = 'none';
       successView.style.display = '';
@@ -1206,7 +1222,7 @@
       errorEl.textContent = err.message;
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = '문의 보내기';
+      submitBtn.textContent = isEn ? 'Send message' : '문의 보내기';
     }
   });
 })();
@@ -1223,7 +1239,7 @@ const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.goo
 
 document.querySelector('.btn-ghost').addEventListener('click', () => {
   if (!window.google?.accounts?.oauth2) {
-    alert('Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    alert(window._faLang === 'en' ? 'Google library is still loading. Please try again in a moment.' : 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
     return;
   }
   const client = google.accounts.oauth2.initTokenClient({
@@ -1243,6 +1259,37 @@ document.querySelector('.btn-ghost').addEventListener('click', () => {
   });
   client.requestAccessToken({ prompt: 'select_account' });
 });
+</script>
+
+<script>
+(function () {
+  function applyLang(lang) {
+    document.querySelectorAll('[data-i18n-en],[data-i18n-en-html]').forEach(el => {
+      const isHtml = el.hasAttribute('data-i18n-en-html');
+      const val = lang === 'en'
+        ? (isHtml ? el.dataset.i18nEnHtml : el.dataset.i18nEn)
+        : (isHtml ? el.dataset.i18nKoHtml : el.dataset.i18nKo);
+      if (val == null) return;
+      if (isHtml) el.innerHTML = val; else el.textContent = val;
+    });
+    document.querySelectorAll('[data-i18n-en-placeholder]').forEach(el => {
+      el.placeholder = lang === 'en' ? el.dataset.i18nEnPlaceholder : el.dataset.i18nKoPlaceholder;
+    });
+    document.documentElement.lang = lang;
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.textContent = lang === 'en' ? '한글' : 'EN';
+    try { localStorage.setItem('fa_lang', lang); } catch (e) {}
+    window._faLang = lang;
+  }
+
+  let saved = 'ko';
+  try { saved = localStorage.getItem('fa_lang') || 'ko'; } catch (e) {}
+  applyLang(saved);
+
+  document.getElementById('lang-toggle')?.addEventListener('click', () => {
+    applyLang(window._faLang === 'en' ? 'ko' : 'en');
+  });
+})();
 </script>
 </body>
 </html>
