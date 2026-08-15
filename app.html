@@ -121,6 +121,12 @@
     margin-left:4px; flex-shrink:0; }
   .share-btn:hover { background:var(--paper2); }
 
+  .lang-toggle { font-size:11px; font-weight:500; font-family:'BM Dohyeon',sans-serif;
+    color:var(--ink2); background:var(--paper); border:.5px solid rgba(14,14,13,.12);
+    border-radius:100px; padding:5px 10px; cursor:pointer; transition:background .15s;
+    margin-left:4px; flex-shrink:0; }
+  .lang-toggle:hover { background:var(--paper2); }
+
   .user-count { font-size:11px; color:var(--ink3); display:flex; align-items:center;
     gap:5px; padding:0 4px; flex-shrink:0; }
   .user-dot { width:7px; height:7px; border-radius:50%; background:#22c55e;
@@ -431,21 +437,21 @@
 </head>
 <body>
 
-<a href="index.html" class="back-btn">← 홈</a>
-<button id="mob-sidebar-btn" title="프로젝트 목록">☰</button>
+<a href="index.html" class="back-btn" data-i18n-en="← Home" data-i18n-ko="← 홈">← 홈</a>
+<button id="mob-sidebar-btn" title="프로젝트 목록" data-i18n-en-title="Project list" data-i18n-ko-title="프로젝트 목록">☰</button>
 
 <!-- ── SIDEBAR ── -->
 <div id="sidebar" style="display:none;">
   <div id="sidebar-header">
-    <span>최근 프로젝트</span>
-    <button id="sidebar-add-btn" title="새 프로젝트">+</button>
+    <span data-i18n-en="Recent Projects" data-i18n-ko="최근 프로젝트">최근 프로젝트</span>
+    <button id="sidebar-add-btn" title="새 프로젝트" data-i18n-en-title="New project" data-i18n-ko-title="새 프로젝트">+</button>
   </div>
   <div id="sidebar-new-form">
-    <input id="sidebar-new-input" type="text" placeholder="프로젝트 이름" maxlength="32"/>
+    <input id="sidebar-new-input" type="text" placeholder="프로젝트 이름" data-i18n-en-placeholder="Project name" data-i18n-ko-placeholder="프로젝트 이름" maxlength="32"/>
   </div>
   <div id="sidebar-list"></div>
   <div id="sidebar-trash" style="display:none;">
-    <div id="sidebar-trash-header">🗑 휴지통</div>
+    <div id="sidebar-trash-header" data-i18n-en="🗑 Trash" data-i18n-ko="🗑 휴지통">🗑 휴지통</div>
     <div id="sidebar-trash-list"></div>
   </div>
 </div>
@@ -454,24 +460,24 @@
 <div class="topbar" id="topbar">
   <span class="topbar-logo">Freedom AI</span>
 
-  <button class="tool-btn" id="tool-hand" title="이동 (H)">
+  <button class="tool-btn" id="tool-hand" title="이동 (H)" data-i18n-en-title="Move (H)" data-i18n-ko-title="이동 (H)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M5.5 1.5v5.5M8 3v4M10.5 4.5v2M3 4.5v3.5l1 4h6.5l1.5-4V6.5a.9.9 0 00-1.8 0V4.5a.9.9 0 00-1.8 0V3a.9.9 0 00-1.8 0V1.5a.9.9 0 00-1.8 0z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
-  <button class="tool-btn active" id="tool-pen" title="펜 (P)">
+  <button class="tool-btn active" id="tool-pen" title="펜 (P)" data-i18n-en-title="Pen (P)" data-i18n-ko-title="펜 (P)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M2 13l3.5-1 6.5-6.5-2.5-2.5L3 9.5 2 13z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M9.5 3l2.5 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-eraser" title="지우개 (E)">
+  <button class="tool-btn" id="tool-eraser" title="지우개 (E)" data-i18n-en-title="Eraser (E)" data-i18n-ko-title="지우개 (E)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M2 12h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
       <path d="M9 3.5L12 6.5 7 12H4L2 10l7-6.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-sticky" title="포스트잇 (S)">
+  <button class="tool-btn" id="tool-sticky" title="포스트잇 (S)" data-i18n-en-title="Sticky note (S)" data-i18n-ko-title="포스트잇 (S)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <rect x="2" y="2" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.2"/>
       <path d="M9 9l3 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
@@ -479,13 +485,13 @@
       <path d="M5 5h5M5 7.5h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-shape" title="도형 (R)">
+  <button class="tool-btn" id="tool-shape" title="도형 (R)" data-i18n-en-title="Shape (R)" data-i18n-ko-title="도형 (R)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <rect x="1.5" y="1.5" width="7" height="7" rx="1.2" stroke="currentColor" stroke-width="1.2"/>
       <circle cx="10.5" cy="10.5" r="3" stroke="currentColor" stroke-width="1.2"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-select" title="선택 (V)">
+  <button class="tool-btn" id="tool-select" title="선택 (V)" data-i18n-en-title="Select (V)" data-i18n-ko-title="선택 (V)">
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M3 2l9 5.5-4 1L6 13 3 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
     </svg>
@@ -518,16 +524,16 @@
   <!-- 도형 종류 옵션 -->
   <div id="shape-options" style="display:none;align-items:center;gap:3px;">
     <div class="divider"></div>
-    <button class="size-btn shape-type-btn active" data-shapetype="rect" title="사각형">
+    <button class="size-btn shape-type-btn active" data-shapetype="rect" title="사각형" data-i18n-en-title="Rectangle" data-i18n-ko-title="사각형">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
     </button>
-    <button class="size-btn shape-type-btn" data-shapetype="ellipse" title="원">
+    <button class="size-btn shape-type-btn" data-shapetype="ellipse" title="원" data-i18n-en-title="Circle" data-i18n-ko-title="원">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="5.5" ry="4.5" stroke="currentColor" stroke-width="1.3"/></svg>
     </button>
-    <button class="size-btn shape-type-btn" data-shapetype="triangle" title="삼각형">
+    <button class="size-btn shape-type-btn" data-shapetype="triangle" title="삼각형" data-i18n-en-title="Triangle" data-i18n-ko-title="삼각형">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><polygon points="7.5,2 2,12.5 13,12.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
     </button>
-    <button class="size-btn shape-type-btn" data-shapetype="arrow" title="화살표">
+    <button class="size-btn shape-type-btn" data-shapetype="arrow" title="화살표" data-i18n-en-title="Arrow" data-i18n-ko-title="화살표">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5h8M7 4l3.5 3.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -535,16 +541,17 @@
   <!-- 화살표 굵기 옵션 -->
   <div id="arrow-thickness-options" style="display:none;align-items:center;gap:3px;">
     <div class="divider"></div>
-    <button class="size-btn arrow-thickness-btn" data-thickness="0" title="얇게"><div class="size-dot" style="width:3px;height:3px;"></div></button>
-    <button class="size-btn arrow-thickness-btn active" data-thickness="1" title="보통"><div class="size-dot" style="width:6px;height:6px;"></div></button>
-    <button class="size-btn arrow-thickness-btn" data-thickness="2" title="굵게"><div class="size-dot" style="width:11px;height:11px;"></div></button>
+    <button class="size-btn arrow-thickness-btn" data-thickness="0" title="얇게" data-i18n-en-title="Thin" data-i18n-ko-title="얇게"><div class="size-dot" style="width:3px;height:3px;"></div></button>
+    <button class="size-btn arrow-thickness-btn active" data-thickness="1" title="보통" data-i18n-en-title="Medium" data-i18n-ko-title="보통"><div class="size-dot" style="width:6px;height:6px;"></div></button>
+    <button class="size-btn arrow-thickness-btn" data-thickness="2" title="굵게" data-i18n-en-title="Thick" data-i18n-ko-title="굵게"><div class="size-dot" style="width:11px;height:11px;"></div></button>
   </div>
 
   <div class="divider" style="margin-left:6px;"></div>
-  <button class="share-btn" id="btn-share">🔗 공유</button>
+  <button class="share-btn" id="btn-share" data-i18n-en="🔗 Share" data-i18n-ko="🔗 공유">🔗 공유</button>
+  <button class="lang-toggle" id="lang-toggle" type="button">EN</button>
   <div id="avatar-stack"></div>
-  <div id="offline-badge"><div class="off-dot"></div><span>오프라인</span></div>
-  <button id="btn-logout" style="display:none;font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0 4px;font-family:'BM Dohyeon',sans-serif;flex-shrink:0;" title="로그아웃">로그아웃</button>
+  <div id="offline-badge"><div class="off-dot"></div><span data-i18n-en="Offline" data-i18n-ko="오프라인">오프라인</span></div>
+  <button id="btn-logout" style="display:none;font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0 4px;font-family:'BM Dohyeon',sans-serif;flex-shrink:0;" title="로그아웃" data-i18n-en-title="Log out" data-i18n-ko-title="로그아웃" data-i18n-en="Log out" data-i18n-ko="로그아웃">로그아웃</button>
 </div>
 
 <!-- ── ZOOM HUD ── -->
@@ -552,23 +559,23 @@
   <button class="zoom-btn" id="btn-zoom-out">−</button>
   <span id="zoom-label">100%</span>
   <button class="zoom-btn" id="btn-zoom-in">+</button>
-  <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;">초기화</button>
+  <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;" data-i18n-en="Reset" data-i18n-ko="초기화">초기화</button>
 </div>
 
-<div class="hint" id="hint">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
+<div class="hint" id="hint" data-i18n-en="P: Pen · E: Eraser · S: Sticky · R: Shape · H: Move · Ctrl+Z: Undo" data-i18n-ko="P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 <div id="select-box"></div>
 
 <!-- ── AI TRANSFORM MODAL ── -->
 <div id="ai-modal">
   <div id="ai-modal-inner">
-    <div id="ai-modal-title">AI 이미지 변환</div>
-    <div id="ai-modal-sub">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
+    <div id="ai-modal-title" data-i18n-en="AI Image Transform" data-i18n-ko="AI 이미지 변환">AI 이미지 변환</div>
+    <div id="ai-modal-sub" data-i18n-en-html="Works best in English<br>e.g. watercolor style, cartoon, oil painting, sketch" data-i18n-ko-html="영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
     <textarea id="ai-prompt-input" rows="2" placeholder="e.g. watercolor painting style"></textarea>
     <div id="ai-status"></div>
     <div id="ai-modal-btns">
-      <button id="ai-cancel-btn">취소</button>
-      <button id="ai-go-btn">✦ AI 변환</button>
+      <button id="ai-cancel-btn" data-i18n-en="Cancel" data-i18n-ko="취소">취소</button>
+      <button id="ai-go-btn" data-i18n-en="✦ AI Transform" data-i18n-ko="✦ AI 변환">✦ AI 변환</button>
     </div>
   </div>
 </div>
@@ -577,7 +584,7 @@
 <div class="name-modal" id="name-modal" style="display:none;">
   <div class="name-modal-inner">
     <div class="name-modal-logo">Freedom AI</div>
-    <div class="name-modal-sub">시작하려면 로그인하세요</div>
+    <div class="name-modal-sub" data-i18n-en="Log in to get started" data-i18n-ko="시작하려면 로그인하세요">시작하려면 로그인하세요</div>
     <div id="login-status" style="font-size:12px;color:#ef4444;text-align:center;min-height:16px;margin-bottom:4px;"></div>
     <button id="google-btn" type="button" style="
       width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
@@ -586,7 +593,7 @@
       font-family:'BM Dohyeon',sans-serif;color:#3c4043;margin-top:8px;
       transition:background .15s,box-shadow .15s;">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-      Google로 로그인
+      <span data-i18n-en="Sign in with Google" data-i18n-ko="Google로 로그인">Google로 로그인</span>
     </button>
   </div>
 </div>
@@ -595,14 +602,14 @@
 <div class="name-modal" id="project-modal" style="display:none;">
   <div class="name-modal-inner">
     <div class="name-modal-logo">Freedom AI</div>
-    <div class="name-modal-sub">프로젝트 이름을 입력하세요</div>
+    <div class="name-modal-sub" data-i18n-en="Enter a project name" data-i18n-ko="프로젝트 이름을 입력하세요">프로젝트 이름을 입력하세요</div>
     <form id="project-form">
       <input class="modal-input" id="project-input" type="text"
-             placeholder="예: 팀 아이디어 회의" maxlength="32" autocomplete="off">
-      <button class="modal-submit" type="submit">입장하기 →</button>
+             placeholder="예: 팀 아이디어 회의" data-i18n-en-placeholder="e.g. Team brainstorm" data-i18n-ko-placeholder="예: 팀 아이디어 회의" maxlength="32" autocomplete="off">
+      <button class="modal-submit" type="submit" data-i18n-en="Enter →" data-i18n-ko="입장하기 →">입장하기 →</button>
     </form>
     <div id="recent-projects" style="display:none;margin-top:20px;text-align:left;">
-      <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">최근 프로젝트</div>
+      <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;" data-i18n-en="Recent Projects" data-i18n-ko="최근 프로젝트">최근 프로젝트</div>
       <div id="recent-list" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   </div>
@@ -612,16 +619,16 @@
 <div id="share-modal">
   <div class="share-inner">
     <div class="share-header">
-      <div class="share-title">팀원 초대</div>
+      <div class="share-title" data-i18n-en="Invite teammates" data-i18n-ko="팀원 초대">팀원 초대</div>
       <button class="share-close" id="share-modal-close">×</button>
     </div>
-    <div class="share-desc">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
+    <div class="share-desc" data-i18n-en="Send this link to teammates so you can work together" data-i18n-ko="이 링크를 팀원에게 보내면 함께 작업할 수 있어요">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
     <div class="share-url-row">
       <input class="share-url-input" id="share-url-input" readonly>
-      <button class="share-copy-btn" id="share-copy-btn">복사</button>
+      <button class="share-copy-btn" id="share-copy-btn" data-i18n-en="Copy" data-i18n-ko="복사">복사</button>
     </div>
     <div id="share-members-section" style="display:none;">
-      <div class="share-members-title">지금 함께하는 팀원</div>
+      <div class="share-members-title" data-i18n-en="Currently working together" data-i18n-ko="지금 함께하는 팀원">지금 함께하는 팀원</div>
       <div id="share-members-list"></div>
     </div>
   </div>
@@ -636,6 +643,38 @@
 <canvas id="canvas"></canvas>
 
 <script>
+// ═══════════════════════════════════════════════════════════════
+//  LANGUAGE (EN/KO)
+// ═══════════════════════════════════════════════════════════════
+function applyLang(lang) {
+  document.querySelectorAll('[data-i18n-en],[data-i18n-en-html]').forEach(el => {
+    const isHtml = el.hasAttribute('data-i18n-en-html');
+    const val = lang === 'en'
+      ? (isHtml ? el.dataset.i18nEnHtml : el.dataset.i18nEn)
+      : (isHtml ? el.dataset.i18nKoHtml : el.dataset.i18nKo);
+    if (val == null) return;
+    if (isHtml) el.innerHTML = val; else el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-en-title]').forEach(el => {
+    el.title = lang === 'en' ? el.dataset.i18nEnTitle : el.dataset.i18nKoTitle;
+  });
+  document.querySelectorAll('[data-i18n-en-placeholder]').forEach(el => {
+    el.placeholder = lang === 'en' ? el.dataset.i18nEnPlaceholder : el.dataset.i18nKoPlaceholder;
+  });
+  document.documentElement.lang = lang;
+  const toggle = document.getElementById('lang-toggle');
+  if (toggle) toggle.textContent = lang === 'en' ? '한글' : 'EN';
+  try { localStorage.setItem('fa_lang', lang); } catch (e) {}
+  window._faLang = lang;
+}
+try { window._faLang = localStorage.getItem('fa_lang') || 'ko'; } catch (e) { window._faLang = 'ko'; }
+document.addEventListener('DOMContentLoaded', () => {
+  applyLang(window._faLang);
+  document.getElementById('lang-toggle')?.addEventListener('click', () => {
+    applyLang(window._faLang === 'en' ? 'ko' : 'en');
+  });
+});
+
 // ═══════════════════════════════════════════════════════════════
 //  UTILITIES
 // ═══════════════════════════════════════════════════════════════
@@ -994,9 +1033,9 @@ function buildNoteEl(note, autoFocus=false) {
   el.dataset.id = note.id;
   el.style.cssText = `left:${note.x}px;top:${note.y}px;width:${note.w}px;height:${note.h}px;background:${note.color};`;
   el.innerHTML = `
-    <div class="note-handle"><button class="note-delete" title="삭제">×</button></div>
+    <div class="note-handle"><button class="note-delete" title="${window._faLang==='en'?'Delete':'삭제'}">×</button></div>
     <div class="note-text" contenteditable="true" spellcheck="false"
-         data-placeholder="내용을 입력하세요">${esc(note.text||'')}</div>
+         data-placeholder="${window._faLang==='en'?'Type something':'내용을 입력하세요'}">${esc(note.text||'')}</div>
     <div class="note-resize-bar">
       <div class="note-resize-handle left"  data-dir="left">${RESIZE_L}</div>
       <div class="note-resize-handle right" data-dir="right">${RESIZE_R}</div>
@@ -1194,7 +1233,7 @@ function buildImageEl(img) {
   el.style.cssText = `left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
   el.innerHTML = `
     <img src="${img.src}" draggable="false">
-    <button class="canvas-img-del" title="삭제">×</button>
+    <button class="canvas-img-del" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
     <div class="canvas-img-resize">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
         <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
@@ -1331,7 +1370,7 @@ function buildShapeEl(shape) {
   el.style.cssText = `left:${shape.x}px;top:${shape.y}px;width:${shape.w}px;height:${shape.h}px;`;
   el.innerHTML = `
     <svg width="${Math.max(1,shape.w)}" height="${Math.max(1,shape.h)}" viewBox="0 0 ${Math.max(1,shape.w)} ${Math.max(1,shape.h)}">${shapeSvgMarkup(shape.type, shape.w, shape.h, shape.color)}</svg>
-    <button class="shape-delete" title="삭제">×</button>
+    <button class="shape-delete" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
     <div class="shape-resize-handle">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
         <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
@@ -1506,7 +1545,7 @@ function renderArrowEl(shape) {
       <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="transparent" stroke-width="${hitW}" class="arrow-hit"/>
       <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="${shape.color}" stroke-width="${sw}" stroke-linecap="round" marker-end="url(#arrowhead-${shape.id})"/>
     </svg>
-    <button class="shape-delete" title="삭제" style="left:${lx2}px;top:${ly2-22}px;">×</button>
+    <button class="shape-delete" title="${window._faLang==='en'?'Delete':'삭제'}" style="left:${lx2}px;top:${ly2-22}px;">×</button>
     <div class="arrow-handle" data-role="p1" style="left:${lx1}px;top:${ly1}px;"></div>
     <div class="arrow-handle" data-role="p2" style="left:${lx2}px;top:${ly2}px;"></div>
     <div class="arrow-handle bend" data-role="bend" style="left:${lcx}px;top:${lcy}px;"></div>
@@ -1658,12 +1697,12 @@ function closeAiModal() {
 async function runAiTransform() {
   if (!_aiTargetImg) return;
   const prompt = document.getElementById('ai-prompt-input').value.trim();
-  if (!prompt) { document.getElementById('ai-status').textContent = '프롬프트를 입력해주세요.'; return; }
+  if (!prompt) { document.getElementById('ai-status').textContent = window._faLang==='en' ? 'Please enter a prompt.' : '프롬프트를 입력해주세요.'; return; }
 
   const goBtn   = document.getElementById('ai-go-btn');
   const statusEl = document.getElementById('ai-status');
   goBtn.disabled = true;
-  statusEl.textContent = '⏳ AI가 이미지를 변환 중입니다... (30~60초 소요)';
+  statusEl.textContent = window._faLang==='en' ? '⏳ AI is transforming your image... (30–60s)' : '⏳ AI가 이미지를 변환 중입니다... (30~60초 소요)';
 
   try {
     const res = await fetch('/api/ai-transform', {
@@ -1688,7 +1727,7 @@ async function runAiTransform() {
     scheduleLocalSave();
     closeAiModal();
   } catch (e) {
-    statusEl.textContent = '❌ 오류: ' + e.message;
+    statusEl.textContent = (window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message;
     goBtn.disabled = false;
   }
 }
@@ -1783,7 +1822,7 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('pusher:member_added', m => {
     addRemoteCursor(m.id, m.info.name, m.info.color);
-    showToast(`${esc(m.info.name)}님이 입장했어요`);
+    showToast(window._faLang==='en' ? `${esc(m.info.name)} joined` : `${esc(m.info.name)}님이 입장했어요`);
   });
 
   channel.bind('pusher:member_removed', m => removeRemoteCursor(m.id));
@@ -2253,8 +2292,8 @@ document.getElementById('share-modal').addEventListener('click', e => {
 document.getElementById('share-copy-btn').addEventListener('click', () => {
   const btn = document.getElementById('share-copy-btn');
   navigator.clipboard.writeText(decodeURIComponent(location.href)).then(() => {
-    btn.textContent = '복사됨!'; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 2000);
+    btn.textContent = window._faLang==='en' ? 'Copied!' : '복사됨!'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = window._faLang==='en' ? 'Copy' : '복사'; btn.classList.remove('copied'); }, 2000);
   });
 });
 
@@ -2281,7 +2320,7 @@ function openShareModal() {
 function closeShareModal() {
   document.getElementById('share-modal').classList.remove('open');
   const btn = document.getElementById('share-copy-btn');
-  btn.textContent = '복사'; btn.classList.remove('copied');
+  btn.textContent = window._faLang==='en' ? 'Copy' : '복사'; btn.classList.remove('copied');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2374,8 +2413,9 @@ function startGoogleLogin(resolveCallback) {
   const statusEl = document.getElementById('login-status');
   statusEl.textContent = '';
 
+  const isEn = window._faLang === 'en';
   if (!window.google?.accounts?.oauth2) {
-    statusEl.textContent = 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.';
+    statusEl.textContent = isEn ? 'Google library is still loading. Please try again in a moment.' : 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.';
     return;
   }
 
@@ -2387,22 +2427,24 @@ function startGoogleLogin(resolveCallback) {
       if (err.type === 'popup_closed') {
         // 팝업이 2초 이내에 닫히면 origin_mismatch 등 오류로 판단
         if (Date.now() - popupOpenTime < 2000) {
-          statusEl.innerHTML =
-            `현재 주소(<b>${location.origin}</b>)가 Google에 미등록 상태입니다.<br>` +
-            `Google Cloud Console → Authorized JavaScript origins 에 추가해주세요.`;
+          statusEl.innerHTML = isEn
+            ? `The current address (<b>${location.origin}</b>) is not registered with Google.<br>` +
+              `Add it under Google Cloud Console → Authorized JavaScript origins.`
+            : `현재 주소(<b>${location.origin}</b>)가 Google에 미등록 상태입니다.<br>` +
+              `Google Cloud Console → Authorized JavaScript origins 에 추가해주세요.`;
         }
         return;
       }
       if (err.type === 'popup_failed_to_open') {
-        statusEl.textContent = '팝업이 차단되었습니다. 브라우저 팝업 차단을 해제해주세요.';
+        statusEl.textContent = isEn ? 'The popup was blocked. Please allow popups in your browser.' : '팝업이 차단되었습니다. 브라우저 팝업 차단을 해제해주세요.';
         return;
       }
-      statusEl.textContent = 'Google 로그인 오류: ' + (err.type || err);
+      statusEl.textContent = (isEn ? 'Google sign-in error: ' : 'Google 로그인 오류: ') + (err.type || err);
       console.error('Google OAuth error:', err);
     },
     callback: async (tokenResponse) => {
       if (tokenResponse.error) {
-        statusEl.textContent = 'Google 로그인 실패: ' + tokenResponse.error;
+        statusEl.textContent = (isEn ? 'Google sign-in failed: ' : 'Google 로그인 실패: ') + tokenResponse.error;
         return;
       }
       try {
@@ -2417,7 +2459,7 @@ function startGoogleLogin(resolveCallback) {
         document.getElementById('name-modal').style.display = 'none';
         resolveCallback(user);
       } catch (e) {
-        statusEl.textContent = '로그인 처리 중 오류가 발생했습니다.';
+        statusEl.textContent = isEn ? 'An error occurred while signing in.' : '로그인 처리 중 오류가 발생했습니다.';
         console.error(e);
       }
     },
@@ -2531,11 +2573,11 @@ async function main() {
 
         const del = document.createElement('button');
         del.className = 'sidebar-del';
-        del.title = '삭제';
+        del.title = window._faLang==='en' ? 'Delete' : '삭제';
         del.innerHTML = '×';
         del.addEventListener('click', e => {
           e.stopPropagation();
-          if (!confirm(`"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
+          if (!confirm(window._faLang==='en' ? `Delete project "${name}"?` : `"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
           pushProjectsToServer(updated);
@@ -2564,7 +2606,7 @@ async function main() {
         const label = document.createElement('button');
         label.className = 'sidebar-item';
         label.textContent = name;
-        label.title = '클릭하여 내용 보기';
+        label.title = window._faLang==='en' ? 'Click to view' : '클릭하여 내용 보기';
         label.addEventListener('click', () => {
           sessionStorage.setItem('fa_sidebar_nav', '1');
           history.replaceState(null, '', `?room=${encodeURIComponent(name.slice(0,32))}`);
@@ -2572,11 +2614,11 @@ async function main() {
         });
         const del = document.createElement('button');
         del.className = 'sidebar-del';
-        del.title = '영구 삭제';
+        del.title = window._faLang==='en' ? 'Delete permanently' : '영구 삭제';
         del.innerHTML = '×';
         del.addEventListener('click', e => {
           e.stopPropagation();
-          if (!confirm('정말 삭제가 됩니다. 다시 되돌릴 수 없습니다.')) return;
+          if (!confirm(window._faLang==='en' ? 'This will permanently delete it. This cannot be undone.' : '정말 삭제가 됩니다. 다시 되돌릴 수 없습니다.')) return;
           localStorage.removeItem('fa:room:' + name.slice(0, 32));
           const t = JSON.parse(localStorage.getItem('fa_trash') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_trash', JSON.stringify(t));
