@@ -20,6 +20,25 @@ async function kvSet(key, val) {
   } catch { /* ignore */ }
 }
 
+// 방이 비공개로 전환된 경우(팀 초대를 한 번이라도 발급한 방) 멤버인지 검증.
+// 아직 비공개 전환 안 된(레거시 오픈) 방은 지금까지처럼 누구나 액션 가능.
+async function checkAccess(kv, req, roomId, email) {
+  if (!kv) return true;
+  const members = await kv.get(`fa:room:${roomId}:members`);
+  if (!members) return true;
+  if (!email) return false;
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return false;
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) return false;
+    const info = await r.json();
+    if (typeof info.email !== 'string' || info.email.toLowerCase() !== email.toLowerCase()) return false;
+  } catch { return false; }
+  return members.map(m => String(m).toLowerCase()).includes(email.toLowerCase());
+}
+
 const MAX_STROKES  = 1000;
 const MAX_NOTE_TXT = 10_000;
 const MIN_NOTE_W = 100, MAX_NOTE_W = 3_000;
@@ -105,11 +124,11 @@ function applyErasure(state, eraserStroke) {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).end();
 
-  const { roomId, userId, socketId, action } = req.body || {};
+  const { roomId, userId, socketId, action, email } = req.body || {};
   if (!roomId || !userId || !action?.type) return res.status(400).json({ error: 'invalid' });
 
   const pusher  = getPusher();
@@ -118,6 +137,7 @@ module.exports = async (req, res) => {
   const excl    = socketId ? { socket_id: socketId } : undefined;
 
   const kv = await getKv();
+  if (!(await checkAccess(kv, req, roomId, email))) return res.status(403).json({ error: 'access_denied' });
   const lockKey = await acquireRoomLock(kv, kvKey);
   try {
 

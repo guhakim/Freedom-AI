@@ -368,7 +368,19 @@
   #share-members-list { display:flex; flex-direction:column; gap:8px; }
   .share-member { display:flex; align-items:center; gap:10px; }
   .share-member-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-  .share-member-name { font-size:13px; color:var(--ink2); }
+  .share-member-name { font-size:13px; color:var(--ink2); flex:1; }
+  .share-member-remove { border:none; background:transparent; color:var(--ink3);
+    font-size:13px; cursor:pointer; padding:2px 6px; border-radius:6px; }
+  .share-member-remove:hover { background:var(--paper); color:#ef4444; }
+
+  .share-privacy-row { display:flex; align-items:center; justify-content:space-between;
+    gap:10px; padding:10px 12px; background:var(--paper); border-radius:10px; margin-bottom:16px; }
+  .share-privacy-label { font-size:12px; color:var(--ink3); line-height:1.4; }
+  .share-privacy-btn { background:var(--ink); color:var(--white); border:none;
+    border-radius:8px; padding:7px 12px; font-size:12px; font-weight:500;
+    font-family:'BM Dohyeon',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+  .share-privacy-btn:hover { background:var(--ink2); }
+  .share-privacy-btn:disabled { opacity:.5; cursor:default; }
 
   /* ── TOAST ── */
   .toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%) translateY(10px);
@@ -640,11 +652,22 @@
       <div class="share-title" data-i18n-en="Invite teammates" data-i18n-ko="팀원 초대">팀원 초대</div>
       <button class="share-close" id="share-modal-close">×</button>
     </div>
-    <div class="share-desc" data-i18n-en="Send this link to teammates so you can work together" data-i18n-ko="이 링크를 팀원에게 보내면 함께 작업할 수 있어요">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
+    <div class="share-desc" id="share-desc" data-i18n-en="Send this link to teammates so you can work together" data-i18n-ko="이 링크를 팀원에게 보내면 함께 작업할 수 있어요">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
     <div class="share-url-row">
       <input class="share-url-input" id="share-url-input" readonly>
       <button class="share-copy-btn" id="share-copy-btn" data-i18n-en="Copy" data-i18n-ko="복사">복사</button>
     </div>
+
+    <div class="share-privacy-row">
+      <div class="share-privacy-label" id="share-privacy-label" data-i18n-en="🔓 Public project — anyone with the link can join" data-i18n-ko="🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능">🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능</div>
+      <button class="share-privacy-btn" id="share-privacy-btn" data-i18n-en="Make private" data-i18n-ko="비공개로 전환">비공개로 전환</button>
+    </div>
+
+    <div id="share-invited-section" style="display:none;">
+      <div class="share-members-title" data-i18n-en="Invited teammates" data-i18n-ko="초대된 팀원">초대된 팀원</div>
+      <div id="share-invited-list"></div>
+    </div>
+
     <div id="share-members-section" style="display:none;">
       <div class="share-members-title" data-i18n-en="Currently working together" data-i18n-ko="지금 함께하는 팀원">지금 함께하는 팀원</div>
       <div id="share-members-list"></div>
@@ -781,6 +804,7 @@ let myUserId   = null;
 let myColor    = '#8b5cf6';
 let roomId     = '';
 let userName   = '';
+let myEmail    = '';
 const remoteCursors = new Map(); // userId → { el, wx, wy }
 let lastCursorSend  = 0;
 
@@ -1981,12 +2005,13 @@ function sendAction(action) {
   scheduleLocalSave();
   return fetch('/api/action', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
     body: JSON.stringify({
       roomId,
       userId:   myUserId,
       socketId: pusher?.connection?.socket_id,
       action,
+      email: myEmail,
     }),
   });
 }
@@ -1996,7 +2021,8 @@ function initPusher(pusherKey, pusherCluster) {
     cluster:      pusherCluster,
     authEndpoint: '/api/pusher-auth',
     auth: {
-      params: { user_id: myUserId, user_name: userName, user_color: myColor },
+      params:  { user_id: myUserId, user_name: userName, user_color: myColor, email: myEmail },
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
     },
   });
 
@@ -2112,7 +2138,9 @@ function initPusher(pusherKey, pusherCluster) {
   channel.bind('image_add', async data => {
     if (images.find(i => i.id === data.id)) return;
     try {
-      const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}`);
+      const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+      });
       const state = await res.json();
       const img = state.images?.find(i => i.id === data.id);
       if (img && !images.find(i => i.id === img.id)) {
@@ -2512,14 +2540,104 @@ document.getElementById('share-modal').addEventListener('click', e => {
 });
 document.getElementById('share-copy-btn').addEventListener('click', () => {
   const btn = document.getElementById('share-copy-btn');
-  navigator.clipboard.writeText(decodeURIComponent(location.href)).then(() => {
+  navigator.clipboard.writeText(document.getElementById('share-url-input').value).then(() => {
     btn.textContent = window._faLang==='en' ? 'Copied!' : '복사됨!'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = window._faLang==='en' ? 'Copy' : '복사'; btn.classList.remove('copied'); }, 2000);
   });
 });
 
+let shareIsPrivate = false;
+
+document.getElementById('share-privacy-btn').addEventListener('click', async () => {
+  const isEn = window._faLang === 'en';
+  if (!shareIsPrivate) {
+    const msg = isEn
+      ? 'From now on, only invited teammates will be able to open this project. The current public link will stop working. Continue?'
+      : '지금부터는 초대받은 팀원만 이 프로젝트를 열 수 있어요. 지금까지의 공개 링크는 더 이상 작동하지 않습니다. 계속할까요?';
+    if (!confirm(msg)) return;
+  }
+  const btn = document.getElementById('share-privacy-btn');
+  btn.disabled = true;
+  await generateInviteLink();
+  await refreshShareInvite();
+  btn.disabled = false;
+});
+
+async function teamApi(body) {
+  const authToken = localStorage.getItem('fa_google_token');
+  const r = await fetch('/api/team', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': authToken ? `Bearer ${authToken}` : '' },
+    body: JSON.stringify({ ...body, email: myEmail }),
+  });
+  return r.ok ? r.json() : null;
+}
+
+// 초대 링크를 새로 발급받는다 — 아직 공개 상태인 방이면 이 호출로 비공개 전환도 함께 일어난다(멤버=본인)
+async function generateInviteLink() {
+  const data = await teamApi({ action:'invite', roomId });
+  if (!data?.token) return null;
+  const url = `${location.origin}${location.pathname}?invite=${encodeURIComponent(data.token)}`;
+  document.getElementById('share-url-input').value = url;
+  return url;
+}
+
+async function refreshShareInvite() {
+  const urlInput   = document.getElementById('share-url-input');
+  const desc       = document.getElementById('share-desc');
+  const label      = document.getElementById('share-privacy-label');
+  const privacyBtn = document.getElementById('share-privacy-btn');
+  const invSection = document.getElementById('share-invited-section');
+  const invList    = document.getElementById('share-invited-list');
+  const isEn = window._faLang === 'en';
+
+  let data = null;
+  try {
+    const authToken = localStorage.getItem('fa_google_token');
+    const r = await fetch(`/api/team?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
+      headers: { 'Authorization': authToken ? `Bearer ${authToken}` : '' },
+    });
+    if (r.ok) data = await r.json();
+  } catch (e) {}
+
+  shareIsPrivate = !!data?.isPrivate;
+
+  if (!data || !data.isPrivate) {
+    // 아직 공개(레거시) 상태 — 지금까지처럼 방 링크 그대로 공유
+    urlInput.value = decodeURIComponent(location.href);
+    desc.textContent = isEn ? 'Send this link to teammates so you can work together' : '이 링크를 팀원에게 보내면 함께 작업할 수 있어요';
+    label.textContent = isEn ? '🔓 Public project — anyone with the link can join' : '🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능';
+    privacyBtn.textContent = isEn ? 'Make private' : '비공개로 전환';
+    invSection.style.display = 'none';
+    return;
+  }
+
+  desc.textContent = isEn ? 'Only invited teammates can open this link' : '초대받은 팀원만 이 링크로 들어올 수 있어요';
+  label.textContent = isEn ? '🔒 Private project — only invited teammates can join' : '🔒 비공개 프로젝트 — 초대된 팀원만 입장 가능';
+  privacyBtn.textContent = isEn ? 'Create new invite link' : '새 초대 링크 만들기';
+  if (!urlInput.value.includes('?invite=')) await generateInviteLink();
+
+  invSection.style.display = 'block';
+  invList.innerHTML = '';
+  (data.members || []).forEach(email => {
+    const row = document.createElement('div');
+    row.className = 'share-member';
+    row.innerHTML = `<div class="share-member-dot" style="background:#8b5cf6"></div>
+      <span class="share-member-name"></span>
+      <button class="share-member-remove" title="${isEn?'Remove':'제거'}">×</button>`;
+    row.querySelector('.share-member-name').textContent = email;
+    row.querySelector('.share-member-remove').addEventListener('click', async () => {
+      if (!confirm(isEn ? `Remove ${email}?` : `${email} 님을 팀에서 제거할까요?`)) return;
+      await teamApi({ action:'remove', roomId, removeEmail: email });
+      refreshShareInvite();
+    });
+    invList.appendChild(row);
+  });
+}
+
 function openShareModal() {
   document.getElementById('share-url-input').value = decodeURIComponent(location.href);
+  refreshShareInvite();
   const sec  = document.getElementById('share-members-section');
   const list = document.getElementById('share-members-list');
   list.innerHTML = '';
@@ -2715,6 +2833,7 @@ async function main() {
 
   const gUser = await getGoogleUser();
   userName = gUser.name;
+  myEmail  = gUser.email || '';
   if (gUser.email) {
     try {
       const token = localStorage.getItem('fa_google_token');
@@ -2735,14 +2854,47 @@ async function main() {
       }
     } catch(e) {}
   }
+
+  // 팀 초대 링크(?invite=token)로 들어온 경우 — 로그인 완료된 지금 시점에 초대를 사용 처리하고
+  // 정상적인 ?room= 진입으로 전환
+  const inviteToken = new URLSearchParams(location.search).get('invite');
+  if (inviteToken) {
+    try {
+      const authToken = localStorage.getItem('fa_google_token');
+      const r = await fetch('/api/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': authToken ? `Bearer ${authToken}` : '' },
+        body: JSON.stringify({ action: 'redeem', token: inviteToken, email: myEmail }),
+      });
+      if (r.ok) {
+        const { roomId: invitedRoomId } = await r.json();
+        saveRecentProject(invitedRoomId);
+        history.replaceState(null, '', `?room=${encodeURIComponent(invitedRoomId)}`);
+      } else {
+        alert(window._faLang==='en' ? 'This invite link is invalid or has expired.' : '유효하지 않거나 만료된 초대 링크입니다.');
+        history.replaceState(null, '', location.pathname);
+      }
+    } catch(e) {
+      history.replaceState(null, '', location.pathname);
+    }
+  }
+
   roomId = await getProjectName();
 
   // 방 입장 & Pusher 설정 수신
   const joinRes = await fetch('/api/join', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ roomId, name: userName }),
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+    body: JSON.stringify({ roomId, name: userName, email: myEmail }),
   });
+  if (joinRes.status === 403) {
+    alert(window._faLang==='en'
+      ? 'This is a private project. Ask the owner to invite you.'
+      : '비공개 프로젝트입니다. 소유자에게 초대를 요청해주세요.');
+    history.replaceState(null, '', location.pathname);
+    location.reload();
+    return;
+  }
   const { userId, color, state, pusherKey, pusherCluster } = await joinRes.json();
 
   myUserId = userId;
