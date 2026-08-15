@@ -29,6 +29,7 @@ const MAX_IMAGES   = 20;
 const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
 const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
 const MAX_IMG_SRC  = 2_000_000;
+const VALID_IMG_SRC = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
 const MAX_SHAPES   = 300;
 const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
 const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
@@ -47,6 +48,25 @@ function getPusher() {
 }
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// 룸 단위 락: 동시 요청이 같은 룸 상태를 읽고-수정하고-쓰는 과정에서
+// 서로를 덮어써 스트로크/포스트잇 등이 유실되는 것을 방지한다.
+async function acquireRoomLock(kv, kvKey) {
+  if (!kv) return false;
+  const lockKey = `${kvKey}:lock`;
+  for (let i = 0; i < 20; i++) {
+    try {
+      const ok = await kv.set(lockKey, '1', { nx: true, ex: 5 });
+      if (ok) return lockKey;
+    } catch { return false; } // 락 자체가 실패하면 락 없이 진행 (가용성 우선)
+    await new Promise(r => setTimeout(r, 40 + Math.random() * 60));
+  }
+  return false; // 경합이 심해 확보 실패 — 락 없이 진행 (최선 노력)
+}
+async function releaseRoomLock(kv, lockKey) {
+  if (!lockKey) return;
+  try { await kv.del(lockKey); } catch { /* ignore */ }
+}
 
 function applyErasure(state, eraserStroke) {
   const r2   = (eraserStroke.width / 2) ** 2;
@@ -89,6 +109,10 @@ module.exports = async (req, res) => {
   const kvKey   = `fa:room:${roomId}`;
   const excl    = socketId ? { socket_id: socketId } : undefined;
 
+  const kv = await getKv();
+  const lockKey = await acquireRoomLock(kv, kvKey);
+  try {
+
   let state = (await kvGet(kvKey)) || { strokes: [], notes: [] };
 
   switch (action.type) {
@@ -109,18 +133,14 @@ module.exports = async (req, res) => {
       const { strokeId, stroke } = action;
       if (!stroke) break;
 
-      if (false) { // eraser now handled by erase_result
-        break;
-      } else {
-        if (!state.strokes.find(s => s.id === strokeId)
-            && state.strokes.length < MAX_STROKES
-            && stroke.tool === 'pen'
-            && VALID_COLOR.test(stroke.color)) {
-          state.strokes.push({ ...stroke, userId });
-        }
-        await kvSet(kvKey, state);
-        await pusher.trigger(channel, 'stroke_end', { strokeId, stroke }, excl);
+      if (!state.strokes.find(s => s.id === strokeId)
+          && state.strokes.length < MAX_STROKES
+          && stroke.tool === 'pen'
+          && VALID_COLOR.test(stroke.color)) {
+        state.strokes.push({ ...stroke, userId });
       }
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'stroke_end', { strokeId, stroke }, excl);
       break;
     }
 
@@ -202,7 +222,7 @@ module.exports = async (req, res) => {
       if (state.images.find(i => i.id === image.id)) break;
       if (state.images.length >= MAX_IMAGES) break;
       if (typeof image.src !== 'string' || image.src.length > MAX_IMG_SRC) break;
-      if (!image.src.startsWith('data:image/')) break;
+      if (!VALID_IMG_SRC.test(image.src)) break;
       const img = {
         id:     image.id,
         src:    image.src,
@@ -336,4 +356,7 @@ module.exports = async (req, res) => {
   }
 
   res.json({ ok: true });
+  } finally {
+    await releaseRoomLock(kv, lockKey);
+  }
 };

@@ -1232,13 +1232,14 @@ function buildImageEl(img) {
   el.dataset.id = img.id;
   el.style.cssText = `left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
   el.innerHTML = `
-    <img src="${img.src}" draggable="false">
+    <img draggable="false">
     <button class="canvas-img-del" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
     <div class="canvas-img-resize">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
         <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
       </svg>
     </div>`;
+  el.querySelector('img').src = img.src;
   img.el = el;
   // 이미지는 노트보다 아래(DOM 맨 앞에 삽입)
   notesLayer.insertBefore(el, notesLayer.firstChild);

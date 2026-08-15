@@ -15,6 +15,7 @@ const MAX_IMAGES  = 20;
 const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
 const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
 const MAX_IMG_SRC = 2_000_000;
+const VALID_IMG_SRC = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
 const MAX_SHAPES  = 300;
 const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
 const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
@@ -335,7 +336,7 @@ function handle(m, user, room, ws) {
       if (room.state.images.find(i => i.id === m.image.id)) return;
       if (room.state.images.length >= MAX_IMAGES) return;
       if (typeof m.image.src !== 'string' || m.image.src.length > MAX_IMG_SRC) return;
-      if (!m.image.src.startsWith('data:image/')) return;
+      if (!VALID_IMG_SRC.test(m.image.src)) return;
       const img = {
         id:     m.image.id,
         src:    m.image.src,
