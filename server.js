@@ -388,16 +388,29 @@ function handle(m, user, room, ws) {
       if (!room.state.shapes) room.state.shapes = [];
       if (room.state.shapes.find(s => s.id === m.shape.id)) return;
       if (room.state.shapes.length >= MAX_SHAPES) return;
-      const s = {
-        id:     m.shape.id,
-        type:   m.shape.type,
-        x:      typeof m.shape.x === 'number' ? m.shape.x : 0,
-        y:      typeof m.shape.y === 'number' ? m.shape.y : 0,
-        w:      Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, m.shape.w || 160)),
-        h:      Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, m.shape.h || 120)),
-        color:  VALID_COLOR.test(m.shape.color) ? m.shape.color : '#0e0e0d',
-        userId: uid,
-      };
+      const color = VALID_COLOR.test(m.shape.color) ? m.shape.color : '#0e0e0d';
+      let s;
+      if (m.shape.type === 'arrow') {
+        s = {
+          id:   m.shape.id, type: 'arrow',
+          x1:   typeof m.shape.x1 === 'number' ? m.shape.x1 : 0,
+          y1:   typeof m.shape.y1 === 'number' ? m.shape.y1 : 0,
+          x2:   typeof m.shape.x2 === 'number' ? m.shape.x2 : 100,
+          y2:   typeof m.shape.y2 === 'number' ? m.shape.y2 : 0,
+          bend: Math.min(2000, Math.max(-2000, typeof m.shape.bend === 'number' ? m.shape.bend : 0)),
+          strokeWidth: Math.min(60, Math.max(1, m.shape.strokeWidth || 6)),
+          color, userId: uid,
+        };
+      } else {
+        s = {
+          id:   m.shape.id, type: m.shape.type,
+          x:    typeof m.shape.x === 'number' ? m.shape.x : 0,
+          y:    typeof m.shape.y === 'number' ? m.shape.y : 0,
+          w:    Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, m.shape.w || 160)),
+          h:    Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, m.shape.h || 120)),
+          color, userId: uid,
+        };
+      }
       room.state.shapes.push(s);
       scheduleSave();
       bcast(room, ws, { type: 'shape_add', shape: s });
@@ -407,7 +420,7 @@ function handle(m, user, room, ws) {
     case 'shape_move': {
       if (typeof m.x !== 'number' || typeof m.y !== 'number') return;
       const s = (room.state.shapes || []).find(s => s.id === m.shapeId && (!s.userId || s.userId === uid));
-      if (!s) return;
+      if (!s || s.type === 'arrow') return;
       s.x = m.x; s.y = m.y;
       scheduleSave();
       bcast(room, ws, { type: 'shape_move', shapeId: m.shapeId, x: s.x, y: s.y });
@@ -416,11 +429,24 @@ function handle(m, user, room, ws) {
 
     case 'shape_resize': {
       const s = (room.state.shapes || []).find(s => s.id === m.shapeId && (!s.userId || s.userId === uid));
-      if (!s) return;
+      if (!s || s.type === 'arrow') return;
       s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, m.w ?? s.w));
       s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, m.h ?? s.h));
       scheduleSave();
       bcast(room, ws, { type: 'shape_resize', shapeId: m.shapeId, w: s.w, h: s.h });
+      break;
+    }
+
+    case 'shape_arrow_update': {
+      const s = (room.state.shapes || []).find(s => s.id === m.shapeId && s.type === 'arrow' && (!s.userId || s.userId === uid));
+      if (!s) return;
+      if (typeof m.x1 === 'number') s.x1 = m.x1;
+      if (typeof m.y1 === 'number') s.y1 = m.y1;
+      if (typeof m.x2 === 'number') s.x2 = m.x2;
+      if (typeof m.y2 === 'number') s.y2 = m.y2;
+      if (typeof m.bend === 'number') s.bend = Math.min(2000, Math.max(-2000, m.bend));
+      scheduleSave();
+      bcast(room, ws, { type: 'shape_arrow_update', shapeId: m.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend });
       break;
     }
 

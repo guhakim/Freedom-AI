@@ -259,16 +259,29 @@ module.exports = async (req, res) => {
       if (state.shapes.find(s => s.id === shape.id)) break;
       if (state.shapes.length >= MAX_SHAPES) break;
       if (!VALID_SHAPE_TYPE.has(shape.type)) break;
-      const s = {
-        id:     shape.id,
-        type:   shape.type,
-        x:      typeof shape.x === 'number' ? shape.x : 0,
-        y:      typeof shape.y === 'number' ? shape.y : 0,
-        w:      Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, shape.w || 160)),
-        h:      Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, shape.h || 120)),
-        color:  VALID_COLOR.test(shape.color) ? shape.color : '#0e0e0d',
-        userId,
-      };
+      const color = VALID_COLOR.test(shape.color) ? shape.color : '#0e0e0d';
+      let s;
+      if (shape.type === 'arrow') {
+        s = {
+          id:   shape.id, type: 'arrow',
+          x1:   typeof shape.x1 === 'number' ? shape.x1 : 0,
+          y1:   typeof shape.y1 === 'number' ? shape.y1 : 0,
+          x2:   typeof shape.x2 === 'number' ? shape.x2 : 100,
+          y2:   typeof shape.y2 === 'number' ? shape.y2 : 0,
+          bend: Math.min(2000, Math.max(-2000, typeof shape.bend === 'number' ? shape.bend : 0)),
+          strokeWidth: Math.min(60, Math.max(1, shape.strokeWidth || 6)),
+          color, userId,
+        };
+      } else {
+        s = {
+          id:   shape.id, type: shape.type,
+          x:    typeof shape.x === 'number' ? shape.x : 0,
+          y:    typeof shape.y === 'number' ? shape.y : 0,
+          w:    Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, shape.w || 160)),
+          h:    Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, shape.h || 120)),
+          color, userId,
+        };
+      }
       state.shapes.push(s);
       await kvSet(kvKey, state);
       await pusher.trigger(channel, 'shape_add', { shape: s }, excl);
@@ -279,7 +292,7 @@ module.exports = async (req, res) => {
       if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
       if (!state.shapes) break;
       const s = state.shapes.find(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
-      if (!s) break;
+      if (!s || s.type === 'arrow') break;
       s.x = action.x; s.y = action.y;
       await kvSet(kvKey, state);
       await pusher.trigger(channel, 'shape_move', { shapeId: action.shapeId, x: s.x, y: s.y }, excl);
@@ -289,11 +302,25 @@ module.exports = async (req, res) => {
     case 'shape_resize': {
       if (!state.shapes) break;
       const s = state.shapes.find(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
-      if (!s) break;
+      if (!s || s.type === 'arrow') break;
       s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w ?? s.w));
       s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h ?? s.h));
       await kvSet(kvKey, state);
       await pusher.trigger(channel, 'shape_resize', { shapeId: action.shapeId, w: s.w, h: s.h }, excl);
+      break;
+    }
+
+    case 'shape_arrow_update': {
+      if (!state.shapes) break;
+      const s = state.shapes.find(s => s.id === action.shapeId && s.type === 'arrow' && (!s.userId || s.userId === userId));
+      if (!s) break;
+      if (typeof action.x1 === 'number') s.x1 = action.x1;
+      if (typeof action.y1 === 'number') s.y1 = action.y1;
+      if (typeof action.x2 === 'number') s.x2 = action.x2;
+      if (typeof action.y2 === 'number') s.y2 = action.y2;
+      if (typeof action.bend === 'number') s.bend = Math.min(2000, Math.max(-2000, action.bend));
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'shape_arrow_update', { shapeId: action.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend }, excl);
       break;
     }
 
