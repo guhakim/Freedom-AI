@@ -2724,8 +2724,14 @@ async function main() {
       const { projects: serverProjects } = await r.json();
       if (serverProjects?.length) {
         const local = JSON.parse(localStorage.getItem('fa_projects') || '[]');
-        const merged = [...new Set([...serverProjects, ...local])].slice(0, 10);
+        const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+        // 로그인 사이 삭제(휴지통 이동)한 프로젝트는 서버 목록에 남아있어도 되살아나지 않도록 제외
+        const merged = [...new Set([...serverProjects, ...local])]
+          .filter(p => !trash.includes(p))
+          .slice(0, 10);
         localStorage.setItem('fa_projects', JSON.stringify(merged));
+        // 토큰 만료 등으로 서버에 반영되지 못했던 로컬 변경(예: 삭제)을 이번 로그인 시점에 재동기화
+        pushProjectsToServer(merged);
       }
     } catch(e) {}
   }
