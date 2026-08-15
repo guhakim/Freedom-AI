@@ -2017,6 +2017,50 @@ function sendAction(action) {
   });
 }
 
+// 재연결 시 그 사이 놓친 변경사항을 서버 최신 상태로 따라잡는다.
+// 스트로크는 진행 중 입력이 없으므로 서버 값으로 그대로 교체하고,
+// 노트/이미지/도형은 로컬에 없는 건 추가, 서버에 없는(그 사이 삭제된) 건 제거,
+// 지금 편집 중인 노트 텍스트는 덮어쓰지 않는다.
+async function resyncFromServer() {
+  try {
+    const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+    });
+    if (!res.ok) return;
+    const state = await res.json();
+
+    strokes = state.strokes || [];
+    invalidateStrokesCache(); requestDraw();
+
+    const serverNoteIds = new Set((state.notes || []).map(n => n.id));
+    notes.filter(n => !serverNoteIds.has(n.id)).forEach(n => { unbindArrowsForNote(n.id); n.connEl?.remove(); n.el?.remove(); });
+    notes = notes.filter(n => serverNoteIds.has(n.id));
+    (state.notes || []).forEach(sn => {
+      const local = notes.find(n => n.id === sn.id);
+      if (!local) { notes.push(sn); buildNoteEl(sn, false); return; }
+      if (document.activeElement === local.el?.querySelector('.note-text')) return; // 지금 편집 중이면 건드리지 않음
+      local.x = sn.x; local.y = sn.y; local.w = sn.w; local.h = sn.h; local.text = sn.text;
+      local.el.style.left = sn.x+'px'; local.el.style.top = sn.y+'px'; local.el.style.width = sn.w+'px'; local.el.style.height = sn.h+'px';
+      const t = local.el.querySelector('.note-text');
+      if (t) t.innerText = sn.text || '';
+      positionNoteConnectors(local);
+    });
+
+    const serverImgIds = new Set((state.images || []).map(i => i.id));
+    images.filter(i => !serverImgIds.has(i.id)).forEach(i => i.el?.remove());
+    images = images.filter(i => serverImgIds.has(i.id));
+    (state.images || []).forEach(si => { if (!images.find(i => i.id === si.id)) { images.push(si); buildImageEl(si); } });
+
+    const serverShapeIds = new Set((state.shapes || []).map(s => s.id));
+    shapes.filter(s => !serverShapeIds.has(s.id)).forEach(s => s.el?.remove());
+    shapes = shapes.filter(s => serverShapeIds.has(s.id));
+    (state.shapes || []).forEach(ss => { if (!shapes.find(s => s.id === ss.id)) { shapes.push(ss); buildShapeEl(ss); } });
+
+    resyncArrowBindings();
+    scheduleLocalSave();
+  } catch (e) { /* 실패해도 기존 화면은 그대로 유지 */ }
+}
+
 function initPusher(pusherKey, pusherCluster) {
   pusher = new Pusher(pusherKey, {
     cluster:      pusherCluster,
@@ -2031,9 +2075,13 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('pusher:subscription_succeeded', members => {
     offlineBadge.style.display = 'none';
+    const currentIds = new Set();
     members.each(m => {
+      currentIds.add(m.id);
       if (m.id !== myUserId) addRemoteCursor(m.id, m.info.name, m.info.color);
     });
+    // 연결이 끊겼다 다시 붙는 사이 나간 사람의 커서가 유령처럼 남아있지 않도록 정리
+    [...remoteCursors.keys()].forEach(userId => { if (!currentIds.has(userId)) removeRemoteCursor(userId); });
   });
 
   channel.bind('pusher:member_added', m => {
@@ -2043,8 +2091,16 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('pusher:member_removed', m => removeRemoteCursor(m.id));
 
+  // 연결이 끊겼다 재연결되는 사이 놓친 액션이 있을 수 있으므로, 재연결 시(최초 연결 제외)
+  // 방 상태를 서버에서 다시 받아와 따라잡는다 — 그렇지 않으면 "실시간이 안 보인다"는
+  // 증상이 페이지를 새로고침하기 전까지 계속된다
+  let everConnected = false;
   pusher.connection.bind('disconnected', () => { offlineBadge.style.display = 'flex'; });
-  pusher.connection.bind('connected',    () => { offlineBadge.style.display = 'none'; });
+  pusher.connection.bind('connected',    () => {
+    offlineBadge.style.display = 'none';
+    if (everConnected) resyncFromServer();
+    everConnected = true;
+  });
 
   // ── 커서 (client event) ──
   channel.bind('client-cursor', data => {
