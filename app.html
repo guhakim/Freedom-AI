@@ -2126,9 +2126,12 @@ function initPusher(pusherKey, pusherCluster) {
 
   // ── 획 확정/삭제 (server events) ──
   channel.bind('stroke_end', data => {
-    let s = remoteInProgress.get(data.strokeId);
-    if (s) { remoteInProgress.delete(data.strokeId); }
-    else if (data.stroke) { s = data.stroke; }
+    // client-stroke_add(실시간 미리보기, Pusher client event)는 중간에 한두 개만 씹혀도
+    // remoteInProgress에 점이 빠진 채로 남는다. stroke_end는 서버가 보내는 완전한 최종본이므로
+    // 항상 이걸 우선해야 한다 — 반대로 하면(예전 코드) 미리보기가 깨졌을 때 그 깨진 상태가 그대로
+    // 확정되어 "그린 선이 중간에 끊어져 보이는" 버그가 된다.
+    const s = data.stroke || remoteInProgress.get(data.strokeId);
+    remoteInProgress.delete(data.strokeId);
     if (s) strokes.push(s);
     invalidateStrokesCache(); draw();
   });
