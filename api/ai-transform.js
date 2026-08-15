@@ -1,11 +1,47 @@
 'use strict';
 
+async function getKv() {
+  try { return require('@vercel/kv').kv; } catch { return null; }
+}
+
+const RATE_LIMIT_MAX    = 5;   // 요청 수
+const RATE_LIMIT_WINDOW = 60;  // 초
+
+// 서버리스 인스턴스 로컬 폴백 (KV 미설정 환경용, 완벽한 보장은 아님)
+const localHits = new Map();
+function checkLocalRateLimit(key) {
+  const now = Date.now();
+  const windowMs = RATE_LIMIT_WINDOW * 1000;
+  const hits = (localHits.get(key) || []).filter(t => now - t < windowMs);
+  hits.push(now);
+  localHits.set(key, hits);
+  return hits.length <= RATE_LIMIT_MAX;
+}
+
+async function checkRateLimit(ip) {
+  const key = `fa:ratelimit:ai-transform:${ip}`;
+  try {
+    const kv = await getKv();
+    if (kv && process.env.KV_REST_API_URL) {
+      const count = await kv.incr(key);
+      if (count === 1) await kv.expire(key, RATE_LIMIT_WINDOW);
+      return count <= RATE_LIMIT_MAX;
+    }
+  } catch { /* KV 실패 시 로컬 폴백 */ }
+  return checkLocalRateLimit(key);
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
+
+  const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  if (!(await checkRateLimit(ip))) {
+    return res.status(429).json({ error: 'rate_limited', message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+  }
 
   const { imageBase64, prompt } = req.body || {};
   if (!imageBase64 || !prompt) return res.status(400).json({ error: 'imageBase64 and prompt required' });

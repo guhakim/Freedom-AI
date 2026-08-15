@@ -135,7 +135,8 @@ const httpServer = http.createServer((req, res) => {
   const urlPath  = req.url.split('?')[0];
   const filePath = path.join(__dirname, urlPath === '/' ? 'index.html' : urlPath);
 
-  if (!filePath.startsWith(__dirname)) { res.writeHead(403); return res.end(); }
+  const rel = path.relative(__dirname, filePath);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) { res.writeHead(403); return res.end(); }
 
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }

@@ -1806,10 +1806,11 @@ function saveRecentProject(name) {
 function pushProjectsToServer(projects) {
   try {
     const u = JSON.parse(localStorage.getItem('fa_user') || 'null');
-    if (!u?.email) return;
+    const token = localStorage.getItem('fa_google_token');
+    if (!u?.email || !token) return;
     fetch('/api/projects', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ email: u.email, projects }),
     }).catch(() => {});
   } catch(e) {}
@@ -1945,7 +1946,10 @@ async function main() {
   userName = gUser.name;
   if (gUser.email) {
     try {
-      const r = await fetch(`/api/projects?email=${encodeURIComponent(gUser.email)}`);
+      const token = localStorage.getItem('fa_google_token');
+      const r = await fetch(`/api/projects?email=${encodeURIComponent(gUser.email)}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const { projects: serverProjects } = await r.json();
       if (serverProjects?.length) {
         const local = JSON.parse(localStorage.getItem('fa_projects') || '[]');
