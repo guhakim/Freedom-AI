@@ -34,6 +34,14 @@ const MAX_SHAPES   = 300;
 const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
 const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
 const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
+const VALID_SIDE = new Set(['top', 'right', 'bottom', 'left']);
+
+// 화살표를 노트 가장자리에 연결(binding)할 때, 대상 노트 id/방향이 유효한 경우에만 통과시킨다.
+function resolveBinding(state, id, side) {
+  if (typeof id !== 'string' || !VALID_SIDE.has(side)) return { id: null, side: null };
+  if (!(state.notes || []).some(n => n.id === id)) return { id: null, side: null };
+  return { id, side };
+}
 
 let _pusher;
 function getPusher() {
@@ -282,6 +290,8 @@ module.exports = async (req, res) => {
       const color = VALID_COLOR.test(shape.color) ? shape.color : '#0e0e0d';
       let s;
       if (shape.type === 'arrow') {
+        const from = resolveBinding(state, shape.fromId, shape.fromSide);
+        const to   = resolveBinding(state, shape.toId,   shape.toSide);
         s = {
           id:   shape.id, type: 'arrow',
           x1:   typeof shape.x1 === 'number' ? shape.x1 : 0,
@@ -291,6 +301,8 @@ module.exports = async (req, res) => {
           bend: Math.min(2000, Math.max(-2000, typeof shape.bend === 'number' ? shape.bend : 0)),
           strokeWidth: Math.min(60, Math.max(1, shape.strokeWidth || 6)),
           color, userId,
+          fromId: from.id, fromSide: from.side,
+          toId:   to.id,   toSide:   to.side,
         };
       } else {
         s = {

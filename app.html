@@ -274,6 +274,19 @@
   .arrow-handle.bend { border-color:#f59e0b; }
   .arrow-shape .shape-delete { pointer-events:auto; }
 
+  /* ── NOTE CONNECTORS (포스트잇 가장자리 연결 핸들) ── */
+  .note-connectors { position:absolute; pointer-events:none; }
+  .note-connect-handle { position:absolute; width:16px; height:16px; margin:-8px;
+    border-radius:50%; background:var(--white); border:2px solid rgba(14,14,13,.35);
+    opacity:0; transform:scale(.6); transition:opacity .12s,transform .12s,background .12s,border-color .12s;
+    cursor:crosshair; pointer-events:none; }
+  .note-connectors.show .note-connect-handle { opacity:1; transform:scale(1); pointer-events:auto; }
+  .note-connect-handle:hover { background:#8b5cf6; border-color:#8b5cf6; transform:scale(1.25); }
+  .note-connect-handle.top    { left:50%; top:0; }
+  .note-connect-handle.bottom { left:50%; top:100%; }
+  .note-connect-handle.left   { left:0;   top:50%; }
+  .note-connect-handle.right  { left:100%; top:50%; }
+
   /* ── HINT ── */
   .hint { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:100;
     background:rgba(14,14,13,.72); color:var(--paper); font-size:12px; padding:6px 14px;
@@ -1047,8 +1060,97 @@ function buildNoteEl(note, autoFocus=false) {
     </div>`;
   note.el = el;
   notesLayer.appendChild(el);
+  note.connEl = buildNoteConnectors(note);
   setupNoteEvents(note);
   if (autoFocus) requestAnimationFrame(() => el.querySelector('.note-text').focus());
+}
+
+// 포스트잇 가장자리 연결 핸들(상하좌우) — 호버 시 노출, 드래그로 다른 포스트잇에 화살표 연결
+function buildNoteConnectors(note) {
+  const el = document.createElement('div');
+  el.className = 'note-connectors';
+  el.style.cssText = `left:${note.x}px;top:${note.y}px;width:${note.w}px;height:${note.h}px;`;
+  el.innerHTML = ['top','right','bottom','left']
+    .map(side => `<div class="note-connect-handle ${side}" data-side="${side}"></div>`)
+    .join('');
+  notesLayer.appendChild(el);
+
+  let hideTimer;
+  const show      = () => { clearTimeout(hideTimer); el.classList.add('show'); };
+  const hideLater = () => { hideTimer = setTimeout(() => el.classList.remove('show'), 200); };
+  note.el.addEventListener('mouseenter', show);
+  note.el.addEventListener('mouseleave', hideLater);
+  el.addEventListener('mouseenter', show);
+  el.addEventListener('mouseleave', hideLater);
+
+  el.querySelectorAll('.note-connect-handle').forEach(h => {
+    h.addEventListener('mousedown', e => {
+      e.stopPropagation(); e.preventDefault();
+      startConnectorDrag(note, h.dataset.side, e.clientX, e.clientY);
+    });
+    h.addEventListener('touchstart', e => {
+      e.stopPropagation();
+      if (e.touches.length === 1) startConnectorDrag(note, h.dataset.side, e.touches[0].clientX, e.touches[0].clientY, true);
+    }, { passive:false });
+  });
+
+  return el;
+}
+
+function positionNoteConnectors(note) {
+  if (note.connEl) note.connEl.style.cssText = `left:${note.x}px;top:${note.y}px;width:${note.w}px;height:${note.h}px;`;
+}
+
+// 노트 가장자리(상/하/좌/우 중앙)의 월드 좌표
+function noteAnchor(note, side) {
+  switch (side) {
+    case 'top':    return { x: note.x + note.w/2, y: note.y };
+    case 'bottom': return { x: note.x + note.w/2, y: note.y + note.h };
+    case 'left':   return { x: note.x,            y: note.y + note.h/2 };
+    default:       return { x: note.x + note.w,   y: note.y + note.h/2 }; // 'right'
+  }
+}
+
+// noteId에 연결된(bound) 화살표들의 끝점을 노트의 현재 위치/크기에 맞춰 다시 계산
+function updateBoundArrows(noteId, broadcast=false) {
+  const note = notes.find(n => n.id === noteId);
+  if (!note) return;
+  shapes.forEach(s => {
+    if (s.type !== 'arrow') return;
+    let changed = false;
+    if (s.fromId === noteId) { const a = noteAnchor(note, s.fromSide); s.x1 = a.x; s.y1 = a.y; changed = true; }
+    if (s.toId   === noteId) { const a = noteAnchor(note, s.toSide);   s.x2 = a.x; s.y2 = a.y; changed = true; }
+    if (!changed || !s.el) return;
+    renderArrowEl(s); setupArrowEvents(s);
+    if (broadcast) sendAction({ type:'shape_arrow_update', shapeId:s.id, x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend });
+  });
+}
+
+// 삭제되는 노트에 연결된 화살표는 마지막 위치에 고정된 채로 연결만 해제
+function unbindArrowsForNote(noteId) {
+  shapes.forEach(s => {
+    if (s.type !== 'arrow') return;
+    if (s.fromId === noteId) { s.fromId = null; s.fromSide = null; }
+    if (s.toId   === noteId) { s.toId   = null; s.toSide   = null; }
+  });
+}
+
+// 방 입장 직후 등, 저장된 x1/y1/x2/y2가 오래됐을 수 있는 시점에
+// bound 화살표 전체를 현재 노트 위치 기준으로 재계산
+function resyncArrowBindings() {
+  shapes.forEach(s => {
+    if (s.type !== 'arrow') return;
+    let changed = false;
+    if (s.fromId) {
+      const n = notes.find(n => n.id === s.fromId);
+      if (n) { const a = noteAnchor(n, s.fromSide); s.x1 = a.x; s.y1 = a.y; changed = true; }
+    }
+    if (s.toId) {
+      const n = notes.find(n => n.id === s.toId);
+      if (n) { const a = noteAnchor(n, s.toSide); s.x2 = a.x; s.y2 = a.y; changed = true; }
+    }
+    if (changed && s.el) { renderArrowEl(s); setupArrowEvents(s); }
+  });
 }
 
 function setupNoteEvents(note) {
@@ -1092,12 +1194,18 @@ function startNoteDrag(note, sx0, sy0, isTouch=false) {
   function onMove(sx,sy) {
     note.x = ox+(sx-sx0)/scale; note.y = oy+(sy-sy0)/scale;
     note.el.style.left=note.x+'px'; note.el.style.top=note.y+'px';
+    positionNoteConnectors(note);
+    updateBoundArrows(note.id, false);
     clearTimeout(sendTimer);
-    sendTimer = setTimeout(() => sendAction({ type:'note_move', noteId:note.id, x:note.x, y:note.y }), 40);
+    sendTimer = setTimeout(() => {
+      sendAction({ type:'note_move', noteId:note.id, x:note.x, y:note.y });
+      updateBoundArrows(note.id, true);
+    }, 40);
   }
   function cleanup() {
     note.el.querySelector('.note-handle').style.cursor='';
     sendAction({ type:'note_move', noteId:note.id, x:note.x, y:note.y });
+    updateBoundArrows(note.id, true);
     document.removeEventListener('mousemove', mm);
     document.removeEventListener('mouseup',   cleanup);
     document.removeEventListener('touchmove', tm);
@@ -1119,11 +1227,17 @@ function startNoteResize(note, dir, sx0, sy0, isTouch=false) {
     else { const nw=Math.max(MIN_NOTE_W,ow-dx); note.x=ox+(ow-nw); note.w=nw; }
     note.h=Math.max(MIN_NOTE_H,oh+dy);
     note.el.style.left=note.x+'px'; note.el.style.width=note.w+'px'; note.el.style.height=note.h+'px';
+    positionNoteConnectors(note);
+    updateBoundArrows(note.id, false);
     clearTimeout(sendTimer);
-    sendTimer=setTimeout(()=>sendAction({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h }),40);
+    sendTimer=setTimeout(()=>{
+      sendAction({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h });
+      updateBoundArrows(note.id, true);
+    },40);
   }
   function cleanup() {
     sendAction({ type:'note_resize', noteId:note.id, x:note.x, w:note.w, h:note.h });
+    updateBoundArrows(note.id, true);
     document.removeEventListener('mousemove',mm); document.removeEventListener('mouseup',cleanup);
     document.removeEventListener('touchmove',tm); document.removeEventListener('touchend',cleanup);
   }
@@ -1135,6 +1249,8 @@ function startNoteResize(note, dir, sx0, sy0, isTouch=false) {
 
 function deleteNote(note) {
   lastDeleted = { type: 'note', data: { id:note.id, x:note.x, y:note.y, w:note.w, h:note.h, color:note.color, text:note.text||'' } };
+  unbindArrowsForNote(note.id);
+  note.connEl?.remove();
   note.el.classList.add('deleting');
   note.el.addEventListener('animationend', ()=>note.el.remove(), {once:true});
   notes = notes.filter(n=>n.id!==note.id);
@@ -1468,7 +1584,8 @@ function setupShapeEvents(shape) {
 
 function deleteShape(shape) {
   const data = shape.type==='arrow'
-    ? { id:shape.id, type:'arrow', x1:shape.x1, y1:shape.y1, x2:shape.x2, y2:shape.y2, bend:shape.bend, strokeWidth:shape.strokeWidth, color:shape.color }
+    ? { id:shape.id, type:'arrow', x1:shape.x1, y1:shape.y1, x2:shape.x2, y2:shape.y2, bend:shape.bend, strokeWidth:shape.strokeWidth, color:shape.color,
+        fromId:shape.fromId, fromSide:shape.fromSide, toId:shape.toId, toSide:shape.toSide }
     : { id:shape.id, type:shape.type, x:shape.x, y:shape.y, w:shape.w, h:shape.h, color:shape.color };
   lastDeleted = { type: 'shape', data };
   shape.el.classList.add('deleting');
@@ -1685,6 +1802,67 @@ function startArrowCreate(sx0, sy0, isTouch=false) {
   else         { document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); }
 }
 
+// 포스트잇 가장자리 핸들에서 시작하는 연결 드래그 — 다른 포스트잇 위에서 놓으면 화살표로 연결(binding)됨,
+// 빈 캔버스에 놓으면 취소
+function startConnectorDrag(fromNote, fromSide, sx0, sy0, isTouch=false) {
+  const start = noteAnchor(fromNote, fromSide);
+  const shape = {
+    id: genId(), type:'arrow',
+    x1: start.x, y1: start.y, x2: start.x, y2: start.y, bend: 0,
+    strokeWidth: ARROW_THICKNESS[arrowSizeIndex], color: penColor, userId: myUserId,
+    fromId: fromNote.id, fromSide,
+  };
+  buildArrowEl(shape);
+  let targetNote = null, targetSide = null;
+
+  function noteAt(sx, sy) {
+    const wp = s2w(sx, sy);
+    return notes.find(n => n.id !== fromNote.id && wp.x>=n.x && wp.x<=n.x+n.w && wp.y>=n.y && wp.y<=n.y+n.h);
+  }
+  function nearestSide(note, wp) {
+    const dl=Math.abs(wp.x-note.x), dr=Math.abs(wp.x-(note.x+note.w));
+    const dt=Math.abs(wp.y-note.y), db=Math.abs(wp.y-(note.y+note.h));
+    const m = Math.min(dl,dr,dt,db);
+    return m===dl ? 'left' : m===dr ? 'right' : m===dt ? 'top' : 'bottom';
+  }
+
+  function onMove(sx, sy) {
+    const wp = s2w(sx, sy);
+    targetNote = noteAt(sx, sy);
+    if (targetNote) {
+      targetSide = nearestSide(targetNote, wp);
+      const a = noteAnchor(targetNote, targetSide);
+      shape.x2 = a.x; shape.y2 = a.y;
+    } else {
+      targetSide = null;
+      shape.x2 = wp.x; shape.y2 = wp.y;
+    }
+    renderArrowEl(shape); setupArrowEvents(shape);
+  }
+
+  function finish() {
+    document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+    document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te);
+    if (!targetNote) { shape.el.remove(); return; } // 포스트잇 위에서 놓지 않으면 취소
+    shape.toId = targetNote.id; shape.toSide = targetSide;
+    renderArrowEl(shape); setupArrowEvents(shape);
+    shapes.push(shape);
+    scheduleLocalSave();
+    sendAction({ type:'shape_add', shape: {
+      id:shape.id, type:'arrow', x1:shape.x1, y1:shape.y1, x2:shape.x2, y2:shape.y2, bend:shape.bend,
+      strokeWidth:shape.strokeWidth, color:shape.color,
+      fromId:shape.fromId, fromSide:shape.fromSide, toId:shape.toId, toSide:shape.toSide,
+    } });
+  }
+
+  const mm = e => onMove(e.clientX, e.clientY);
+  const mu = () => finish();
+  const tm = e => { if (e.touches.length===1) onMove(e.touches[0].clientX, e.touches[0].clientY); };
+  const te = () => finish();
+  if (isTouch) { document.addEventListener('touchmove', tm, { passive:true }); document.addEventListener('touchend', te, { passive:true }); }
+  else         { document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); }
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  AI TRANSFORM
 // ═══════════════════════════════════════════════════════════════
@@ -1790,7 +1968,8 @@ function scheduleLocalSave() {
         notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', userId:n.userId })),
         images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
         shapes: shapes.map(s => s.type==='arrow'
-          ? { id:s.id, type:'arrow', x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend, strokeWidth:s.strokeWidth, color:s.color, userId:s.userId }
+          ? { id:s.id, type:'arrow', x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend, strokeWidth:s.strokeWidth, color:s.color, userId:s.userId,
+              fromId:s.fromId, fromSide:s.fromSide, toId:s.toId, toSide:s.toSide }
           : { id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId }),
       };
       localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
@@ -1894,13 +2073,20 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('note_move', data => {
     const n = notes.find(n=>n.id===data.noteId);
-    if (n) { n.x=data.x; n.y=data.y; n.el.style.left=data.x+'px'; n.el.style.top=data.y+'px'; }
+    if (n) {
+      n.x=data.x; n.y=data.y; n.el.style.left=data.x+'px'; n.el.style.top=data.y+'px';
+      positionNoteConnectors(n);
+      updateBoundArrows(n.id, false);
+    }
   });
 
   channel.bind('note_resize', data => {
     const n = notes.find(n=>n.id===data.noteId);
     if (n) { n.x=data.x; n.w=data.w; n.h=data.h;
-      n.el.style.left=data.x+'px'; n.el.style.width=data.w+'px'; n.el.style.height=data.h+'px'; }
+      n.el.style.left=data.x+'px'; n.el.style.width=data.w+'px'; n.el.style.height=data.h+'px';
+      positionNoteConnectors(n);
+      updateBoundArrows(n.id, false);
+    }
   });
 
   channel.bind('note_text', data => {
@@ -1914,7 +2100,12 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('note_delete', data => {
     const n = notes.find(n=>n.id===data.noteId);
-    if (n) { n.el?.remove(); notes=notes.filter(x=>x.id!==data.noteId); }
+    if (n) {
+      unbindArrowsForNote(n.id);
+      n.connEl?.remove();
+      n.el?.remove();
+      notes=notes.filter(x=>x.id!==data.noteId);
+    }
   });
 
   // ── 이미지 (server events) ──
@@ -2066,6 +2257,7 @@ function startSelMove(sx0, sy0) {
       } else {
         obj.x = ox+dx; obj.y = oy+dy;
         it.el.style.left = obj.x+'px'; it.el.style.top = obj.y+'px';
+        if (notes.includes(obj)) { positionNoteConnectors(obj); updateBoundArrows(obj.id, false); }
       }
     });
   };
@@ -2571,6 +2763,7 @@ async function main() {
   (resolvedState.images || []).forEach(i => { images.push(i); buildImageEl(i); });
   (resolvedState.shapes || []).forEach(s => { shapes.push(s); buildShapeEl(s); });
   (resolvedState.notes  || []).forEach(n => { notes.push(n);  buildNoteEl(n, false); });
+  resyncArrowBindings(); // 노트가 마지막에 로드되므로, bound 화살표 끝점을 현재 노트 위치로 재계산
   invalidateStrokesCache();
 
   // 사이드바 렌더
