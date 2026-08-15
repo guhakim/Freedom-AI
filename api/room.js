@@ -5,6 +5,25 @@ async function getKv() {
   try { return require('@vercel/kv').kv; } catch { return null; }
 }
 
+// 토큰→이메일 검증 결과를 짧게 캐싱 — 서버리스 인스턴스가 재사용되는 동안은 반복 호출마다
+// Google userinfo API를 왕복하지 않아도 되게 한다 (완벽한 보장은 아님)
+const verifyCache = new Map(); // token -> { email, exp }
+const VERIFY_CACHE_TTL = 5 * 60 * 1000;
+
+async function verifyToken(token) {
+  const cached = verifyCache.get(token);
+  if (cached && cached.exp > Date.now()) return cached.email;
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) return null;
+    const info = await r.json();
+    if (typeof info.email !== 'string') return null;
+    const email = info.email.toLowerCase();
+    verifyCache.set(token, { email, exp: Date.now() + VERIFY_CACHE_TTL });
+    return email;
+  } catch { return null; }
+}
+
 // 방이 비공개로 전환된 경우(팀 초대를 한 번이라도 발급한 방) 멤버인지 검증.
 // 아직 비공개 전환 안 된(레거시 오픈) 방은 지금까지처럼 누구나 조회 가능.
 async function checkAccess(kv, req, roomId, email) {
@@ -15,12 +34,8 @@ async function checkAccess(kv, req, roomId, email) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return false;
-  try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${token}` } });
-    if (!r.ok) return false;
-    const info = await r.json();
-    if (typeof info.email !== 'string' || info.email.toLowerCase() !== email.toLowerCase()) return false;
-  } catch { return false; }
+  const verifiedEmail = await verifyToken(token);
+  if (!verifiedEmail || verifiedEmail !== email.toLowerCase()) return false;
   return members.map(m => String(m).toLowerCase()).includes(email.toLowerCase());
 }
 

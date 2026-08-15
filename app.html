@@ -363,6 +363,7 @@
     transition:background .2s; flex-shrink:0; }
   .share-copy-btn:hover { background:var(--ink2); }
   .share-copy-btn.copied { background:#22c55e; }
+  .share-copy-btn:disabled { opacity:.5; cursor:default; }
   .share-members-title { font-size:11px; font-weight:500; color:var(--ink3);
     text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
   #share-members-list { display:flex; flex-direction:column; gap:8px; }
@@ -2570,13 +2571,18 @@ async function teamApi(body) {
     headers: { 'Content-Type': 'application/json', 'Authorization': authToken ? `Bearer ${authToken}` : '' },
     body: JSON.stringify({ ...body, email: myEmail }),
   });
-  return r.ok ? r.json() : null;
+  let data = null;
+  try { data = await r.json(); } catch (e) {}
+  return { ok: r.ok, data };
 }
 
 // 초대 링크를 새로 발급받는다 — 아직 공개 상태인 방이면 이 호출로 비공개 전환도 함께 일어난다(멤버=본인)
 async function generateInviteLink() {
-  const data = await teamApi({ action:'invite', roomId });
-  if (!data?.token) return null;
+  const { ok, data } = await teamApi({ action:'invite', roomId });
+  if (!ok || !data?.token) {
+    alert(window._faLang==='en' ? 'Failed to create the invite link. Please try logging in again.' : '초대 링크 생성에 실패했습니다. 다시 로그인 후 시도해주세요.');
+    return null;
+  }
   const url = `${location.origin}${location.pathname}?invite=${encodeURIComponent(data.token)}`;
   document.getElementById('share-url-input').value = url;
   return url;
@@ -2628,7 +2634,13 @@ async function refreshShareInvite() {
     row.querySelector('.share-member-name').textContent = email;
     row.querySelector('.share-member-remove').addEventListener('click', async () => {
       if (!confirm(isEn ? `Remove ${email}?` : `${email} 님을 팀에서 제거할까요?`)) return;
-      await teamApi({ action:'remove', roomId, removeEmail: email });
+      const { ok, data: res } = await teamApi({ action:'remove', roomId, removeEmail: email });
+      if (!ok) {
+        alert(res?.error === 'cannot_remove_last_member'
+          ? (isEn ? 'You cannot remove the last teammate — no one would be able to open this project anymore.' : '마지막 팀원은 제거할 수 없어요 — 아무도 이 프로젝트에 못 들어오게 됩니다.')
+          : (isEn ? 'Failed to remove teammate.' : '팀원 제거에 실패했습니다.'));
+        return;
+      }
       refreshShareInvite();
     });
     invList.appendChild(row);
@@ -2637,7 +2649,11 @@ async function refreshShareInvite() {
 
 function openShareModal() {
   document.getElementById('share-url-input').value = decodeURIComponent(location.href);
-  refreshShareInvite();
+  // refreshShareInvite()가 끝나기 전(비공개 방이면 초대 링크로 값이 바뀌기 전)에
+  // 복사 버튼을 눌러 옛 값을 복사해가는 걸 막기 위해 완료될 때까지 비활성화
+  const copyBtn = document.getElementById('share-copy-btn');
+  copyBtn.disabled = true;
+  refreshShareInvite().finally(() => { copyBtn.disabled = false; });
   const sec  = document.getElementById('share-members-section');
   const list = document.getElementById('share-members-list');
   list.innerHTML = '';

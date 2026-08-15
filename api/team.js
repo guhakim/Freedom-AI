@@ -8,21 +8,32 @@ async function getKv() {
 const INVITE_TTL = 7 * 24 * 3600; // 초대 링크 유효기간: 7일
 const MAX_ROOMID = 32;
 
+// 토큰→이메일 검증 결과를 짧게 캐싱 — 공유 모달이 초대 발급 직후 목록을 바로 다시 조회하는 등
+// 같은 요청 흐름에서 verifyOwner가 연달아 호출되는 경우가 많아, 매번 Google API를 왕복하지 않게 한다
+const verifyCache = new Map(); // token -> { email, exp }
+const VERIFY_CACHE_TTL = 5 * 60 * 1000;
+
+async function verifyToken(token) {
+  const cached = verifyCache.get(token);
+  if (cached && cached.exp > Date.now()) return cached.email;
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${token}` } });
+    if (!r.ok) return null;
+    const info = await r.json();
+    if (typeof info.email !== 'string') return null;
+    const email = info.email.toLowerCase();
+    verifyCache.set(token, { email, exp: Date.now() + VERIFY_CACHE_TTL });
+    return email;
+  } catch { return null; }
+}
+
 // Authorization: Bearer <google access token> 이 실제로 email의 소유자인지 검증
 async function verifyOwner(req, email) {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return false;
-  try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!r.ok) return false;
-    const info = await r.json();
-    return typeof info.email === 'string' && info.email.toLowerCase() === email.toLowerCase();
-  } catch {
-    return false;
-  }
+  const verifiedEmail = await verifyToken(token);
+  return !!verifiedEmail && verifiedEmail === email.toLowerCase();
 }
 
 function genToken() {
@@ -110,6 +121,9 @@ module.exports = async (req, res) => {
       if (!members.includes(email.toLowerCase())) return res.status(403).json({ error: 'not_a_member' });
 
       const updated = members.filter(m => m !== removeEmail.toLowerCase());
+      // 멤버가 0명이 되면, kv에 저장된 빈 배열([])은 "값 있음"으로 취급되어
+      // checkAccess()가 그 방을 아무도 못 들어오는 상태로 영구히 잠가버린다 — 마지막 멤버는 제거 금지
+      if (!updated.length) return res.status(400).json({ error: 'cannot_remove_last_member' });
       await kv.set(key, updated);
       return res.json({ members: updated });
     }
