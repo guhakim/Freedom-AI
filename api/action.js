@@ -2,6 +2,7 @@
 const Pusher = require('pusher');
 
 async function getKv() {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
   try { return require('@vercel/kv').kv; } catch { return null; }
 }
 async function kvGet(key) {

@@ -4,6 +4,7 @@ const COLORS = ['#8b5cf6','#0ea5e9','#ef4444','#22c55e','#f59e0b','#ec4899','#06
 let colorCounter = 0;
 
 async function getKv() {
+  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
   try { return require('@vercel/kv').kv; } catch { return null; }
 }
 
