@@ -2770,19 +2770,25 @@ function showToast(msg) {
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
-function saveRecentProject(name) {
+async function saveRecentProject(name) {
   const list = JSON.parse(localStorage.getItem('fa_projects') || '[]');
   const updated = [name, ...list.filter(p => p !== name)].slice(0, 5);
   localStorage.setItem('fa_projects', JSON.stringify(updated));
-  pushProjectsToServer(updated);
+  await pushProjectsToServer(updated);
 }
 
-function pushProjectsToServer(projects) {
+// 서버에 저장하는 요청들이 서로 순서를 기다리지 않고 동시에 여러 개 날아가면(로그인 시 병합 1회 +
+// 초대 수락 1회 + 방 입장 1회 등, main()에서 짧은 시간에 연달아 호출됨), 네트워크 타이밍에 따라
+// 먼저 보낸(더 오래된, 항목이 적은) 요청이 나중에 서버에 도착해서 더 최신 목록을 덮어쓸 수 있다.
+// 그러면 로컬 화면엔 정상적으로 보이지만 서버엔 최신 항목이 빠진 채로 저장되어, 다음에 다시
+// 로그인했을 때(서버 목록과 병합하는 시점) 방금 추가한 프로젝트가 사라진 것처럼 보이게 된다.
+// 이걸 막기 위해 반환값을 await할 수 있게 해서 호출부에서 순서를 보장하도록 한다.
+async function pushProjectsToServer(projects) {
   try {
     const u = JSON.parse(localStorage.getItem('fa_user') || 'null');
     const token = localStorage.getItem('fa_google_token');
     if (!u?.email || !token) return;
-    fetch('/api/projects', {
+    await fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ email: u.email, projects }),
@@ -2943,8 +2949,10 @@ async function main() {
           .filter(p => !trash.includes(p))
           .slice(0, 10);
         localStorage.setItem('fa_projects', JSON.stringify(merged));
-        // 토큰 만료 등으로 서버에 반영되지 못했던 로컬 변경(예: 삭제)을 이번 로그인 시점에 재동기화
-        pushProjectsToServer(merged);
+        // 토큰 만료 등으로 서버에 반영되지 못했던 로컬 변경(예: 삭제)을 이번 로그인 시점에 재동기화.
+        // await로 순서를 보장 — 안 그러면 뒤이어 나오는 초대 수락/방 입장 쪽 서버 저장과 순서가
+        // 뒤바뀌어 방금 추가된 프로젝트가 서버에서 도로 사라질 수 있다.
+        await pushProjectsToServer(merged);
       }
     } catch(e) {}
   }
@@ -2962,7 +2970,7 @@ async function main() {
       });
       if (r.ok) {
         const { roomId: invitedRoomId } = await r.json();
-        saveRecentProject(invitedRoomId);
+        await saveRecentProject(invitedRoomId);
         history.replaceState(null, '', `?room=${encodeURIComponent(invitedRoomId)}`);
       } else {
         alert(window._faLang==='en' ? 'This invite link is invalid or has expired.' : '유효하지 않거나 만료된 초대 링크입니다.');
@@ -2992,7 +3000,7 @@ async function main() {
   const { userId, color, state, pusherKey, pusherCluster } = await joinRes.json();
   // 초대 링크를 거치지 않고 방 이름을 직접 전달받아 들어온 경우(공유 방식이 여러 갈래일 수 있으므로)에도
   // 항상 이 계정의 최근 프로젝트 목록에 남도록, 방 입장에 성공할 때마다 무조건 기록한다
-  if (myEmail) saveRecentProject(roomId);
+  if (myEmail) await saveRecentProject(roomId);
 
   myUserId = userId;
   myColor  = color;
