@@ -2990,6 +2990,9 @@ async function main() {
     return;
   }
   const { userId, color, state, pusherKey, pusherCluster } = await joinRes.json();
+  // 초대 링크를 거치지 않고 방 이름을 직접 전달받아 들어온 경우(공유 방식이 여러 갈래일 수 있으므로)에도
+  // 항상 이 계정의 최근 프로젝트 목록에 남도록, 방 입장에 성공할 때마다 무조건 기록한다
+  if (myEmail) saveRecentProject(roomId);
 
   myUserId = userId;
   myColor  = color;
