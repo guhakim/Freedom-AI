@@ -2064,6 +2064,20 @@ async function resyncFromServer() {
   } catch (e) { /* 실패해도 기존 화면은 그대로 유지 */ }
 }
 
+// Pusher 채널 이름은 영문/숫자와 _-=@,.; 만 허용한다(한글·이모지 등 불가).
+// roomId는 사용자가 자유롭게 입력한 프로젝트 이름(한글 포함)이므로, 채널 이름으로 쓰기 전에
+// 안전한 문자열로 변환해야 한다 — 이걸 안 하면 Pusher 인증 자체가 서버 에러로 죽어서
+// 실시간 기능(커서·이름 표시 포함)이 전혀 동작하지 않는다.
+function toChannelSafe(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  // Node의 Buffer.toString('base64url')과 정확히 같은 결과가 나와야 한다(패딩 '=' 없이) —
+  // 클라이언트가 구독하는 채널 이름과 서버(action.js)가 트리거하는 채널 이름이 한 글자라도
+  // 다르면 서버가 보낸 이벤트가 아무도 없는 채널로 날아가 실시간이 조용히 안 되게 된다.
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 function initPusher(pusherKey, pusherCluster) {
   pusher = new Pusher(pusherKey, {
     cluster:      pusherCluster,
@@ -2074,7 +2088,7 @@ function initPusher(pusherKey, pusherCluster) {
     },
   });
 
-  channel = pusher.subscribe(`presence-room-${roomId}`);
+  channel = pusher.subscribe(`presence-room-${toChannelSafe(roomId)}`);
 
   channel.bind('pusher:subscription_succeeded', members => {
     offlineBadge.style.display = 'none';

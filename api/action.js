@@ -92,6 +92,13 @@ function getPusher() {
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
+// Pusher 채널 이름은 영문/숫자와 _-=@,.; 만 허용한다. roomId는 사용자가 입력한 임의의
+// 문자열(한글 등 포함)이라 그대로 쓰면 Pusher 인증이 서버 에러로 죽어 실시간 기능이 전혀
+// 동작하지 않는다 — app.html의 toChannelSafe()와 반드시 동일한 인코딩을 써야 한다.
+function toChannelSafe(str) {
+  return Buffer.from(str, 'utf8').toString('base64url');
+}
+
 // 룸 단위 락: 동시 요청이 같은 룸 상태를 읽고-수정하고-쓰는 과정에서
 // 서로를 덮어써 스트로크/포스트잇 등이 유실되는 것을 방지한다.
 async function acquireRoomLock(kv, kvKey) {
@@ -148,7 +155,7 @@ module.exports = async (req, res) => {
   if (!roomId || !userId || !action?.type) return res.status(400).json({ error: 'invalid' });
 
   const pusher  = getPusher();
-  const channel = `presence-room-${roomId}`;
+  const channel = `presence-room-${toChannelSafe(roomId)}`;
   const kvKey   = `fa:room:${roomId}`;
   const excl    = socketId ? { socket_id: socketId } : undefined;
 

@@ -46,6 +46,12 @@ async function checkAccess(kv, req, roomId, email) {
   return members.map(m => String(m).toLowerCase()).includes(email.toLowerCase());
 }
 
+// 채널 이름(presence-room-<base64url화된 roomId>)에서 실제 roomId를 복원 —
+// checkAccess의 fa:room:${roomId}:members 조회에는 원래 roomId가 필요하다.
+function fromChannelSafe(str) {
+  try { return Buffer.from(str, 'base64url').toString('utf8'); } catch { return str; }
+}
+
 let _pusher;
 function getPusher() {
   if (!_pusher) _pusher = new Pusher({
@@ -69,7 +75,7 @@ module.exports = async (req, res) => {
   if (!socket_id || !channel_name) return res.status(400).end();
 
   if (channel_name.startsWith('presence-room-')) {
-    const roomId = channel_name.slice('presence-room-'.length);
+    const roomId = fromChannelSafe(channel_name.slice('presence-room-'.length));
     const kv = await getKv();
     if (!(await checkAccess(kv, req, roomId, email))) return res.status(403).json({ error: 'access_denied' });
   }
