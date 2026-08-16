@@ -977,7 +977,10 @@ function continueDraw(sx, sy) {
   const wp = s2w(sx, sy);
   currentStroke.points.push(wp);
   pendingPoints.push(wp);
-  if (!strokeFlushTimer) strokeFlushTimer = setTimeout(flushPoints, 16);
+  // Pusher client event는 연결당 초당 10개로 제한되고 넘으면 조용히 버려진다(에러 없음).
+  // client-cursor(아래, 300ms 간격)와 이 채널을 공유하므로 16ms(초당 ~62회)는 한참 초과였다 —
+  // 이게 "실시간이 끊기고 안 보인다"는 증상들의 실제 원인이었음. 300ms로 늦춰 합산 빈도를 안전권으로.
+  if (!strokeFlushTimer) strokeFlushTimer = setTimeout(flushPoints, 300);
   requestDraw();
 }
 
@@ -2392,8 +2395,10 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mousemove', e => {
   updateEraserRing(e.clientX,e.clientY);
   // send cursor (world space, throttled)
+  // Pusher client event는 연결당 초당 10개 제한(초과분은 조용히 버려짐) — client-stroke_add와
+  // 같은 채널을 공유하므로 33ms(초당 ~30회)는 그리는 동안 한도를 크게 넘겼다. 300ms로 완화.
   const now = Date.now();
-  if (now-lastCursorSend>33) {
+  if (now-lastCursorSend>300) {
     const wp = s2w(e.clientX,e.clientY);
     channel?.trigger('client-cursor', { userId:myUserId, x:wp.x, y:wp.y });
     lastCursorSend=now;
