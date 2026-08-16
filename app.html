@@ -2777,17 +2777,6 @@ function saveRecentProject(name) {
   pushProjectsToServer(updated);
 }
 
-// 초대 링크로 들어온 프로젝트는 매번(다시 들어와도) 이 브라우저에서 "손님"으로 표시 —
-// 사이드바 최근 프로젝트 목록에 이 계정의 다른(무관한) 프로젝트들이 같이 보이지 않게 하기 위함
-function markGuestRoom(name) {
-  const set = new Set(JSON.parse(localStorage.getItem('fa_guest_rooms') || '[]'));
-  set.add(name);
-  localStorage.setItem('fa_guest_rooms', JSON.stringify([...set]));
-}
-function isGuestRoom(name) {
-  return JSON.parse(localStorage.getItem('fa_guest_rooms') || '[]').includes(name);
-}
-
 function pushProjectsToServer(projects) {
   try {
     const u = JSON.parse(localStorage.getItem('fa_user') || 'null');
@@ -2974,7 +2963,6 @@ async function main() {
       if (r.ok) {
         const { roomId: invitedRoomId } = await r.json();
         saveRecentProject(invitedRoomId);
-        markGuestRoom(invitedRoomId);
         history.replaceState(null, '', `?room=${encodeURIComponent(invitedRoomId)}`);
       } else {
         alert(window._faLang==='en' ? 'This invite link is invalid or has expired.' : '유효하지 않거나 만료된 초대 링크입니다.');
@@ -3039,11 +3027,7 @@ async function main() {
     const newInput = document.getElementById('sidebar-new-input');
 
     function buildList() {
-      // 초대 링크로 들어온 프로젝트를 보는 중이면, 이 계정의 다른 프로젝트 기록은 감추고
-      // 지금 이 프로젝트 하나만 최근 프로젝트 목록에 표시
-      const projects = isGuestRoom(roomId)
-        ? [roomId]
-        : JSON.parse(localStorage.getItem('fa_projects') || '[]');
+      const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
       sidebar.style.display = 'block';
       list.innerHTML = '';
       projects.forEach(name => {
