@@ -1,5 +1,11 @@
 'use strict';
 const Pusher = require('pusher');
+const {
+  MAX_STROKES, MAX_NOTE_TEXT: MAX_NOTE_TXT, MIN_NOTE_W, MAX_NOTE_W, MIN_NOTE_H, MAX_NOTE_H,
+  VALID_COLOR, MAX_IMAGES, MIN_IMG_W, MAX_IMG_W, MIN_IMG_H, MAX_IMG_H,
+  MAX_IMG_SRC, VALID_IMG_SRC, MAX_SHAPES, MIN_SHAPE_W, MAX_SHAPE_W, MIN_SHAPE_H, MAX_SHAPE_H,
+  VALID_SHAPE_TYPE, resolveBinding, genId,
+} = require('../lib/canvasShared');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -55,29 +61,6 @@ async function checkAccess(kv, req, roomId, email) {
   return members.map(m => String(m).toLowerCase()).includes(email.toLowerCase());
 }
 
-const MAX_STROKES  = 1000;
-const MAX_NOTE_TXT = 10_000;
-const MIN_NOTE_W = 100, MAX_NOTE_W = 3_000;
-const MIN_NOTE_H = 80,  MAX_NOTE_H = 3_000;
-const VALID_COLOR  = /^#[0-9a-fA-F]{6}$/;
-const MAX_IMAGES   = 20;
-const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
-const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
-const MAX_IMG_SRC  = 2_000_000;
-const VALID_IMG_SRC = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
-const MAX_SHAPES   = 300;
-const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
-const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
-const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
-const VALID_SIDE = new Set(['top', 'right', 'bottom', 'left']);
-
-// 화살표를 노트 가장자리에 연결(binding)할 때, 대상 노트 id/방향이 유효한 경우에만 통과시킨다.
-function resolveBinding(state, id, side) {
-  if (typeof id !== 'string' || !VALID_SIDE.has(side)) return { id: null, side: null };
-  if (!(state.notes || []).some(n => n.id === id)) return { id: null, side: null };
-  return { id, side };
-}
-
 let _pusher;
 function getPusher() {
   if (!_pusher) _pusher = new Pusher({
@@ -89,8 +72,6 @@ function getPusher() {
   });
   return _pusher;
 }
-
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
 // Pusher 채널 이름은 영문/숫자와 _-=@,.; 만 허용한다. roomId는 사용자가 입력한 임의의
 // 문자열(한글 등 포함)이라 그대로 쓰면 Pusher 인증이 서버 에러로 죽어 실시간 기능이 전혀
@@ -116,32 +97,6 @@ async function acquireRoomLock(kv, kvKey) {
 async function releaseRoomLock(kv, lockKey) {
   if (!lockKey) return;
   try { await kv.del(lockKey); } catch { /* ignore */ }
-}
-
-function applyErasure(state, eraserStroke) {
-  const r2   = (eraserStroke.width / 2) ** 2;
-  const ePts = eraserStroke.points;
-  const deletedIds = [eraserStroke.id];
-  const newStrokes = [];
-
-  state.strokes = state.strokes.filter(s => {
-    if (s.id === eraserStroke.id) return false;
-    if (s.tool === 'eraser')      return true;
-    const hitMask = s.points.map(p =>
-      ePts.some(ep => (p.x-ep.x)**2 + (p.y-ep.y)**2 <= r2)
-    );
-    if (!hitMask.some(Boolean)) return true;
-    deletedIds.push(s.id);
-    let seg = [];
-    for (let i = 0; i < s.points.length; i++) {
-      if (!hitMask[i]) { seg.push(s.points[i]); }
-      else { if (seg.length) newStrokes.push({ ...s, id:genId(), points:seg }); seg = []; }
-    }
-    if (seg.length) newStrokes.push({ ...s, id:genId(), points:seg });
-    return false;
-  });
-  state.strokes.push(...newStrokes);
-  return { deletedIds, newStrokes };
 }
 
 module.exports = async (req, res) => {

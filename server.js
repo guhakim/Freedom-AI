@@ -3,31 +3,16 @@ const http = require('http');
 const { WebSocketServer, WebSocket } = require('ws');
 const fs   = require('fs');
 const path = require('path');
+const {
+  MAX_STROKES, MAX_NOTE_TEXT, MIN_NOTE_W, MAX_NOTE_W, MIN_NOTE_H, MAX_NOTE_H,
+  VALID_COLOR, MAX_IMAGES, MIN_IMG_W, MAX_IMG_W, MIN_IMG_H, MAX_IMG_H,
+  MAX_IMG_SRC, VALID_IMG_SRC, MAX_SHAPES, MIN_SHAPE_W, MAX_SHAPE_W, MIN_SHAPE_H, MAX_SHAPE_H,
+  VALID_SHAPE_TYPE, VALID_SIDE,
+  genId, resolveBinding, applyErasure, bakeForSave,
+} = require('./lib/canvasShared');
 
-// ── 검증 상수 ────────────────────────────────────────────────────
-const MAX_STROKES        = 1000;
+// ── 검증 상수 (WS 스트리밍 전용, 공유 모듈에는 없음) ──────────────────
 const MAX_POINTS_PER_MSG = 500;
-const MAX_NOTE_TEXT      = 10_000;
-const MIN_NOTE_W = 100, MAX_NOTE_W = 3_000;
-const MIN_NOTE_H = 80,  MAX_NOTE_H = 3_000;
-const VALID_COLOR = /^#[0-9a-fA-F]{6}$/;
-const MAX_IMAGES  = 20;
-const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
-const MIN_IMG_H = 20, MAX_IMG_H = 3_000;
-const MAX_IMG_SRC = 2_000_000;
-const VALID_IMG_SRC = /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/]+=*$/;
-const MAX_SHAPES  = 300;
-const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
-const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
-const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
-const VALID_SIDE = new Set(['top', 'right', 'bottom', 'left']);
-
-// 화살표를 노트 가장자리에 연결(binding)할 때, 대상 노트 id/방향이 유효한 경우에만 통과시킨다.
-function resolveBinding(room, id, side) {
-  if (typeof id !== 'string' || !VALID_SIDE.has(side)) return { id: null, side: null };
-  if (!(room.state.notes || []).some(n => n.id === id)) return { id: null, side: null };
-  return { id, side };
-}
 
 // ── 영속성 ──────────────────────────────────────────────────────────────
 const DATA = path.join(__dirname, 'data.json');
@@ -61,61 +46,6 @@ function scheduleSave() {
     fs.writeFileSync(DATA, JSON.stringify(out));
     disk = { ...out };
   }, 2000);
-}
-
-// 지우개 스트로크를 소성하여 순수 펜 스트로크만 반환
-function bakeForSave(state) {
-  if (!state) return { strokes: [], notes: [], images: [], shapes: [] };
-  const erasers = (state.strokes || []).filter(s => s.tool === 'eraser');
-  if (!erasers.length) return { ...state, images: state.images || [], shapes: state.shapes || [] };
-
-  let strokes = (state.strokes || []).filter(s => s.tool !== 'eraser');
-  for (const eraser of erasers) {
-    const r2 = (eraser.width / 2) ** 2;
-    strokes = strokes.filter(pen =>
-      !pen.points.some(p =>
-        eraser.points.some(ep => (p.x - ep.x) ** 2 + (p.y - ep.y) ** 2 <= r2)
-      )
-    );
-  }
-  return { strokes, notes: state.notes || [], images: state.images || [], shapes: state.shapes || [] };
-}
-
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-
-// 실시간 지우개 적용: 닿은 점만 제거하고 스트로크를 분할
-function applyErasure(state, eraserStroke) {
-  const r2 = (eraserStroke.width / 2) ** 2;
-  const ePts = eraserStroke.points;
-  const deletedIds = [eraserStroke.id];
-  const newStrokes = [];
-
-  state.strokes = state.strokes.filter(s => {
-    if (s.id === eraserStroke.id) return false;
-    if (s.tool === 'eraser') return true;
-
-    const hitMask = s.points.map(p =>
-      ePts.some(ep => (p.x - ep.x) ** 2 + (p.y - ep.y) ** 2 <= r2)
-    );
-    if (!hitMask.some(Boolean)) return true; // 닿지 않음 — 유지
-
-    // 닿은 점 제거 후 연속 구간을 새 스트로크로 분할
-    deletedIds.push(s.id);
-    let seg = [];
-    for (let i = 0; i < s.points.length; i++) {
-      if (!hitMask[i]) {
-        seg.push(s.points[i]);
-      } else {
-        if (seg.length >= 1) newStrokes.push({ ...s, id: genId(), points: seg });
-        seg = [];
-      }
-    }
-    if (seg.length >= 1) newStrokes.push({ ...s, id: genId(), points: seg });
-    return false;
-  });
-
-  state.strokes.push(...newStrokes);
-  return { deletedIds, newStrokes };
 }
 
 // ── 방 관리 ─────────────────────────────────────────────────────────────
@@ -400,8 +330,8 @@ function handle(m, user, room, ws) {
       const color = VALID_COLOR.test(m.shape.color) ? m.shape.color : '#0e0e0d';
       let s;
       if (m.shape.type === 'arrow') {
-        const from = resolveBinding(room, m.shape.fromId, m.shape.fromSide);
-        const to   = resolveBinding(room, m.shape.toId,   m.shape.toSide);
+        const from = resolveBinding(room.state, m.shape.fromId, m.shape.fromSide);
+        const to   = resolveBinding(room.state, m.shape.toId,   m.shape.toSide);
         s = {
           id:   m.shape.id, type: 'arrow',
           x1:   typeof m.shape.x1 === 'number' ? m.shape.x1 : 0,
