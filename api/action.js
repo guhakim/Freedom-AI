@@ -206,6 +206,31 @@ module.exports = async (req, res) => {
       break;
     }
 
+    // 선택 도구로 획 삭제 — 지우개(누구나 가능)와 달리 본인이 그린 획만 삭제 가능
+    case 'stroke_manual_delete': {
+      const { strokeId } = action;
+      const idx = state.strokes.findIndex(s => s.id === strokeId && s.userId === userId);
+      if (idx === -1) break;
+      state.strokes.splice(idx, 1);
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'stroke_delete', { strokeId }, excl);
+      break;
+    }
+
+    // 선택 도구로 획 이동 — 새로고침·재접속 시 되돌아가지 않도록 서버에 새 좌표를 영속화
+    case 'stroke_move': {
+      const { strokeId, points } = action;
+      if (!Array.isArray(points)) break;
+      const s = state.strokes.find(s => s.id === strokeId && s.userId === userId);
+      if (!s) break;
+      const pts = points.slice(0, 5000).filter(p => typeof p?.x === 'number' && typeof p?.y === 'number');
+      if (!pts.length) break;
+      s.points = pts;
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'stroke_move', { strokeId, points: pts }, excl);
+      break;
+    }
+
     case 'note_add': {
       const { note } = action;
       if (!note?.id || state.notes.find(n => n.id === note.id)) break;
