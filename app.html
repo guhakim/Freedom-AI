@@ -2335,6 +2335,20 @@ function strokeBBox(s) {
   return { x:x0-pad, y:y0-pad, w:(x1-x0)+pad*2, h:(y1-y0)+pad*2 };
 }
 
+// 획은 DOM 요소가 없어 note/image/shape처럼 자체 mousedown 핸들러를 가질 수 없다.
+// 캔버스 클릭 지점이 "이미 선택된" 획의 바운딩 박스 위인지 검사해, 클릭 시
+// 선택 해제 대신 이동을 시작할지 판단하는 데 쓴다. (커서 호버 표시에도 동일하게 사용)
+function hitSelectedStroke(clientX, clientY) {
+  const wp = s2w(clientX, clientY);
+  const grab = 4; // 얇은 획도 잡기 쉽도록 여유를 준다 (world 단위)
+  for (const s of strokes) {
+    if (s.tool!=='pen' || !selectedIds.has(s.id)) continue;
+    const b = strokeBBox(s);
+    if (wp.x>=b.x-grab && wp.x<=b.x+b.w+grab && wp.y>=b.y-grab && wp.y<=b.y+b.h+grab) return s;
+  }
+  return null;
+}
+
 function getSelectableItems() {
   return [
     ...notes.map(n  => ({ id:n.id,  el:n.el,  x:n.x,  y:n.y,  w:n.w,  h:n.h  })),
@@ -2446,6 +2460,8 @@ canvas.addEventListener('mousedown', e => {
   e.preventDefault();
   if (spaceHeld) { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); return; }
   if (activeTool==='select') {
+    // 이미 선택된 획 위를 클릭하면 (note/image/shape처럼) 선택 해제 대신 바로 이동 시작
+    if (hitSelectedStroke(e.clientX, e.clientY)) { startSelMove(e.clientX, e.clientY); return; }
     clearSelection();
     selDrag = { sx0:e.clientX, sy0:e.clientY };
     selBox.style.cssText = `display:block;left:${e.clientX}px;top:${e.clientY}px;width:0;height:0;`;
@@ -2483,6 +2499,11 @@ canvas.addEventListener('mousemove', e => {
   }
   if (isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
   else if (!spaceHeld) continueDraw(e.clientX,e.clientY);
+
+  // 선택된 획 위에서는 note/image/shape와 동일하게 이동 가능함을 나타내는 커서로 바꾼다
+  if (activeTool==='select' && !selDrag) {
+    canvas.style.cursor = hitSelectedStroke(e.clientX, e.clientY) ? 'move' : 'default';
+  }
 });
 
 canvas.addEventListener('mouseup',    () => { isPanning=false; stopDraw(); updateCursor(false); });
