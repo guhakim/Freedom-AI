@@ -164,7 +164,11 @@ module.exports = async (req, res) => {
   const lockKey = await acquireRoomLock(kv, kvKey);
   try {
 
-  let state = (await kvGet(kvKey)) || { strokes: [], notes: [] };
+  let state = (await kvGet(kvKey)) || { strokes: [], notes: [], images: [], shapes: [] };
+  if (!state.strokes) state.strokes = [];
+  if (!state.notes)   state.notes   = [];
+  if (!state.images)  state.images  = [];
+  if (!state.shapes)  state.shapes  = [];
 
   switch (action.type) {
 
@@ -253,9 +257,13 @@ module.exports = async (req, res) => {
       break;
     }
 
+    // 노트 이동/크기조절/삭제 — 획(select 도구)과 동일하게 소유자 상관없이 가능.
+    // userId는 클라이언트가 자체 생성하는 값이라 신원 증명이 아니고, 새로고침 전
+    // 세션에서 만든(옛 랜덤 userId) 노트는 지금 세션의 고정 clientId와 절대 일치하지
+    // 않아 이 체크가 있으면 영구히 삭제/이동이 안 되는 노트가 생긴다.
     case 'note_move': {
       if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
-      const n = state.notes.find(n => n.id === action.noteId && (!n.userId || n.userId === userId));
+      const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.x = action.x; n.y = action.y;
       await kvSet(kvKey, state);
@@ -264,7 +272,7 @@ module.exports = async (req, res) => {
     }
 
     case 'note_resize': {
-      const n = state.notes.find(n => n.id === action.noteId && (!n.userId || n.userId === userId));
+      const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       if (typeof action.x === 'number') n.x = action.x;
       n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w ?? n.w));
@@ -287,9 +295,7 @@ module.exports = async (req, res) => {
     }
 
     case 'note_delete': {
-      const idx = state.notes.findIndex(
-        n => n.id === action.noteId && (!n.userId || n.userId === userId)
-      );
+      const idx = state.notes.findIndex(n => n.id === action.noteId);
       if (idx === -1) break;
       state.notes.splice(idx, 1);
       await kvSet(kvKey, state);
@@ -321,10 +327,11 @@ module.exports = async (req, res) => {
       break;
     }
 
+    // 이미지/도형 이동·크기조절·삭제도 노트/획과 동일하게 소유자 무관 정책으로 통일.
     case 'image_move': {
       if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
       if (!state.images) break;
-      const img = state.images.find(i => i.id === action.imageId && (!i.userId || i.userId === userId));
+      const img = state.images.find(i => i.id === action.imageId);
       if (!img) break;
       img.x = action.x; img.y = action.y;
       await kvSet(kvKey, state);
@@ -334,7 +341,7 @@ module.exports = async (req, res) => {
 
     case 'image_resize': {
       if (!state.images) break;
-      const img = state.images.find(i => i.id === action.imageId && (!i.userId || i.userId === userId));
+      const img = state.images.find(i => i.id === action.imageId);
       if (!img) break;
       img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, action.w ?? img.w));
       img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, action.h ?? img.h));
@@ -346,7 +353,7 @@ module.exports = async (req, res) => {
 
     case 'image_delete': {
       if (!state.images) break;
-      const idx = state.images.findIndex(i => i.id === action.imageId && (!i.userId || i.userId === userId));
+      const idx = state.images.findIndex(i => i.id === action.imageId);
       if (idx === -1) break;
       state.images.splice(idx, 1);
       await kvSet(kvKey, state);
@@ -397,7 +404,7 @@ module.exports = async (req, res) => {
     case 'shape_move': {
       if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
       if (!state.shapes) break;
-      const s = state.shapes.find(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
+      const s = state.shapes.find(s => s.id === action.shapeId);
       if (!s || s.type === 'arrow') break;
       s.x = action.x; s.y = action.y;
       await kvSet(kvKey, state);
@@ -407,7 +414,7 @@ module.exports = async (req, res) => {
 
     case 'shape_resize': {
       if (!state.shapes) break;
-      const s = state.shapes.find(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
+      const s = state.shapes.find(s => s.id === action.shapeId);
       if (!s || s.type === 'arrow') break;
       s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w ?? s.w));
       s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h ?? s.h));
@@ -418,7 +425,7 @@ module.exports = async (req, res) => {
 
     case 'shape_arrow_update': {
       if (!state.shapes) break;
-      const s = state.shapes.find(s => s.id === action.shapeId && s.type === 'arrow' && (!s.userId || s.userId === userId));
+      const s = state.shapes.find(s => s.id === action.shapeId && s.type === 'arrow');
       if (!s) break;
       if (typeof action.x1 === 'number') s.x1 = action.x1;
       if (typeof action.y1 === 'number') s.y1 = action.y1;
@@ -432,7 +439,7 @@ module.exports = async (req, res) => {
 
     case 'shape_delete': {
       if (!state.shapes) break;
-      const idx = state.shapes.findIndex(s => s.id === action.shapeId && (!s.userId || s.userId === userId));
+      const idx = state.shapes.findIndex(s => s.id === action.shapeId);
       if (idx === -1) break;
       state.shapes.splice(idx, 1);
       await kvSet(kvKey, state);
