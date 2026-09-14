@@ -6,44 +6,53 @@
 <title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
-  @font-face {
-    font-family: 'BM Dohyeon';
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-    src: url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff2') format('woff2'),
-         url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff') format('woff');
-  }
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --ink: #0e0e0d;
-    --ink2: #3a3a38;
-    --ink3: #7a7a75;
-    --paper: #f5f3ee;
-    --paper2: #ede9e2;
-    --paper3: #e3dfd6;
-    --accent: #1a1a18;
-    --gold: #b8924a;
-    --gold-light: #d4aa6a;
+    --ink: #000000;
+    --ink2: #171310;
+    --ink3: #5b5348;
+    --paper: #fff7e8;
+    --paper2: #efe7d6;
+    --paper3: #e3d7bd;
+    --accent: #ffdc58;
+    --gold: #ffdc58;
+    --gold-light: #ffd12e;
+    --pink: #ff30cd;
+    --mint: #01e6b4;
+    --purple: #b39dff;
     --white: #ffffff;
-    --radius: 14px;
-    --radius-lg: 22px;
+    --radius: 0px;
+    --radius-lg: 0px;
+    --bw: 3px;
+    --shadow-color: #000;
+    --shadow-sm: 2px 2px 0 0 var(--shadow-color);
+    --shadow-md: 4px 4px 0 0 var(--shadow-color);
+    --shadow-lg: 6px 6px 0 0 var(--shadow-color);
+    --shadow-xl: 10px 10px 0 1px var(--shadow-color);
   }
 
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'BM Dohyeon', sans-serif;
+    font-family: 'IBM Plex Sans KR', sans-serif;
     background: var(--paper);
     color: var(--ink);
     font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
+
+  ::selection { background: var(--gold); color: var(--ink); }
+
+  /* 라틴 문자가 섞인 라벨류는 IBM Plex Mono로 — 한글 글자는 폰트에 없어서
+     자동으로 다음 폴백(IBM Plex Sans KR)으로 넘어가 안전하다 */
+  .mono { font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif; }
 
   /* ── HEADER ── */
   header {
@@ -54,11 +63,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 40px;
-    height: 64px;
-    background: rgba(245, 243, 238, 0.88);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 0.5px solid rgba(14,14,13,0.1);
+    height: 68px;
+    background: var(--paper);
+    border-bottom: var(--bw) solid var(--ink);
   }
 
   .logo {
@@ -69,23 +76,25 @@
   }
 
   .logo-mark {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius);
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow-sm);
   }
 
   .logo-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
   .logo-text {
-    font-family: 'BM Dohyeon', serif;
-    font-size: 18px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 20px;
     color: var(--ink);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
   nav {
@@ -95,15 +104,23 @@
   }
 
   nav a {
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 14px;
-    font-weight: 400;
-    color: var(--ink2);
+    font-weight: 600;
+    color: var(--ink);
     text-decoration: none;
     letter-spacing: -0.01em;
-    transition: color 0.2s;
+    position: relative;
   }
 
-  nav a:hover { color: var(--ink); }
+  nav a::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: -4px;
+    height: 3px; background: var(--gold);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.15s ease;
+  }
+  nav a:hover::after { transform: scaleX(1); }
 
   .header-cta {
     display: flex;
@@ -112,48 +129,55 @@
   }
 
   .btn-ghost {
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 14px;
-    color: var(--ink2);
-    background: none;
-    border: none;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--white);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 8px 16px;
     cursor: pointer;
-    padding: 8px 4px;
-    font-family: inherit;
-    transition: color 0.2s;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
   }
 
-  .btn-ghost:hover { color: var(--ink); }
+  .btn-ghost:hover { background: var(--gold); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 0 var(--shadow-color); }
+  .btn-ghost:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 0 var(--shadow-color); }
 
   .lang-toggle {
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
-    font-weight: 500;
-    color: var(--ink2);
-    background: var(--paper2);
-    border: 0.5px solid rgba(14,14,13,0.15);
-    border-radius: 100px;
-    padding: 6px 12px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--white);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 7px 12px;
     cursor: pointer;
-    font-family: inherit;
-    transition: background 0.2s, color 0.2s;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
   }
-  .lang-toggle:hover { background: var(--paper3); color: var(--ink); }
+  .lang-toggle:hover { background: var(--paper2); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 0 var(--shadow-color); }
+  .lang-toggle:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 0 var(--shadow-color); }
 
   .btn-primary {
     font-size: 14px;
-    font-weight: 500;
-    font-family: inherit;
-    color: var(--paper);
-    background: var(--ink);
-    border: none;
-    border-radius: 100px;
-    padding: 9px 22px;
+    font-weight: 700;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    color: var(--ink);
+    background: var(--gold);
+    border: var(--bw) solid var(--ink);
+    border-radius: var(--radius);
+    padding: 10px 22px;
     cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
     letter-spacing: -0.01em;
   }
 
-  .btn-primary:hover { background: var(--ink2); transform: translateY(-1px); }
-  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 0 var(--shadow-color); }
+  .btn-primary:active { transform: translate(2px,2px); box-shadow: 0 0 0 0 var(--shadow-color); }
 
   /* ── BANNER / HERO ── */
   .hero {
@@ -172,11 +196,22 @@
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(14,14,13,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(14,14,13,0.04) 1px, transparent 1px);
+      linear-gradient(rgba(0,0,0,0.07) 1.5px, transparent 1.5px),
+      linear-gradient(90deg, rgba(0,0,0,0.07) 1.5px, transparent 1.5px);
     background-size: 48px 48px;
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
     pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 14%; right: 6%;
+    width: 130px; height: 130px;
+    background: var(--mint);
+    border: var(--bw) solid var(--ink);
+    box-shadow: var(--shadow-lg);
+    transform: rotate(12deg);
+    z-index: 0;
   }
 
   .hero-inner {
@@ -189,22 +224,26 @@
   .hero-badge {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     background: var(--white);
-    border: 0.5px solid rgba(14,14,13,0.15);
-    border-radius: 100px;
-    padding: 5px 14px 5px 8px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 6px 16px 6px 8px;
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
-    color: var(--ink2);
+    font-weight: 600;
+    color: var(--ink);
     margin-bottom: 32px;
     letter-spacing: -0.01em;
+    box-shadow: var(--shadow-sm);
     animation: fadeUp 0.6s ease both;
   }
 
   .hero-badge-dot {
     width: 18px;
     height: 18px;
-    background: var(--ink);
+    background: var(--gold);
+    border: 2px solid var(--ink);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -215,33 +254,40 @@
     content: '';
     width: 6px;
     height: 6px;
-    background: var(--gold-light);
+    background: var(--ink);
     border-radius: 50%;
   }
 
   h1 {
-    font-family: 'BM Dohyeon', serif;
-    font-size: clamp(48px, 8vw, 80px);
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(46px, 7.5vw, 76px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
     color: var(--ink);
     margin-bottom: 24px;
     animation: fadeUp 0.6s 0.1s ease both;
   }
 
   h1 em {
-    font-style: italic;
-    color: var(--gold);
+    font-style: normal;
+    background: var(--gold);
+    color: var(--ink);
+    padding: 2px 10px;
+    border: 3px solid var(--ink);
+    box-shadow: var(--shadow-sm);
+    display: inline-block;
+    transform: rotate(-1.5deg);
   }
 
   .hero-desc {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 18px;
-    font-weight: 300;
+    font-weight: 400;
     color: var(--ink2);
     max-width: 520px;
     margin: 0 auto 40px;
     line-height: 1.65;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.005em;
     animation: fadeUp 0.6s 0.2s ease both;
   }
 
@@ -255,36 +301,40 @@
   }
 
   .btn-hero {
-    font-size: 15px;
-    font-weight: 500;
-    font-family: inherit;
-    color: var(--paper);
-    background: var(--ink);
-    border: none;
-    border-radius: 100px;
-    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    color: var(--ink);
+    background: var(--gold);
+    border: var(--bw) solid var(--ink);
+    border-radius: var(--radius);
+    padding: 15px 34px;
     cursor: pointer;
-    transition: background 0.2s, transform 0.15s;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
     letter-spacing: -0.01em;
   }
 
-  .btn-hero:hover { background: var(--ink2); transform: translateY(-2px); }
+  .btn-hero:hover { transform: translate(-3px,-3px); box-shadow: 8px 8px 0 0 var(--shadow-color); }
+  .btn-hero:active { transform: translate(2px,2px); box-shadow: 0 0 0 0 var(--shadow-color); }
 
   .btn-outline {
-    font-size: 15px;
-    font-weight: 400;
-    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'IBM Plex Sans KR', sans-serif;
     color: var(--ink);
-    background: transparent;
-    border: 0.5px solid rgba(14,14,13,0.3);
-    border-radius: 100px;
-    padding: 14px 32px;
+    background: var(--white);
+    border: var(--bw) solid var(--ink);
+    border-radius: var(--radius);
+    padding: 15px 34px;
     cursor: pointer;
-    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
     letter-spacing: -0.01em;
   }
 
-  .btn-outline:hover { border-color: var(--ink); background: rgba(14,14,13,0.04); transform: translateY(-2px); }
+  .btn-outline:hover { background: var(--paper2); transform: translate(-3px,-3px); box-shadow: 8px 8px 0 0 var(--shadow-color); }
+  .btn-outline:active { transform: translate(2px,2px); box-shadow: 0 0 0 0 var(--shadow-color); }
 
   /* canvas preview mockup */
   .hero-canvas {
@@ -292,9 +342,9 @@
     width: 100%;
     max-width: 780px;
     background: var(--white);
-    border: 0.5px solid rgba(14,14,13,0.12);
+    border: var(--bw) solid var(--ink);
     border-radius: var(--radius-lg);
-    box-shadow: 0 32px 80px rgba(14,14,13,0.1), 0 2px 8px rgba(14,14,13,0.06);
+    box-shadow: var(--shadow-xl);
     overflow: hidden;
     animation: fadeUp 0.7s 0.4s ease both;
   }
@@ -304,13 +354,14 @@
     align-items: center;
     gap: 8px;
     padding: 12px 16px;
-    border-bottom: 0.5px solid rgba(14,14,13,0.08);
-    background: var(--paper);
+    border-bottom: var(--bw) solid var(--ink);
+    background: var(--paper2);
   }
 
   .canvas-dot {
-    width: 10px; height: 10px;
+    width: 12px; height: 12px;
     border-radius: 50%;
+    border: 1.5px solid var(--ink);
   }
 
   .canvas-dot:nth-child(1) { background: #ff5f57; }
@@ -320,14 +371,20 @@
   .canvas-title {
     flex: 1;
     text-align: center;
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
-    color: var(--ink3);
+    font-weight: 600;
+    color: var(--ink2);
     letter-spacing: -0.01em;
   }
 
   .canvas-body {
     height: 320px;
-    background: var(--paper2);
+    background: var(--paper);
+    background-image:
+      linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
     position: relative;
     overflow: hidden;
   }
@@ -337,18 +394,21 @@
     position: absolute;
     width: 130px;
     padding: 12px 14px;
-    border-radius: 10px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
     line-height: 1.5;
-    box-shadow: 0 4px 16px rgba(14,14,13,0.1);
-    font-weight: 400;
+    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+    color: var(--ink);
   }
 
-  .sticky-yellow { background: #fef08a; color: #713f12; top: 40px; left: 60px; transform: rotate(-2deg); }
-  .sticky-pink   { background: #fbcfe8; color: #831843; top: 80px; left: 230px; transform: rotate(1.5deg); }
-  .sticky-green  { background: #bbf7d0; color: #14532d; top: 30px; left: 400px; transform: rotate(-1deg); }
-  .sticky-blue   { background: #bae6fd; color: #0c4a6e; top: 170px; left: 120px; transform: rotate(2deg); }
-  .sticky-peach  { background: #fed7aa; color: #7c2d12; top: 160px; left: 320px; transform: rotate(-1.5deg); }
+  .sticky-yellow { background: var(--gold); top: 40px; left: 60px; transform: rotate(-2deg); }
+  .sticky-pink   { background: #ffb3ec; top: 80px; left: 230px; transform: rotate(1.5deg); }
+  .sticky-green  { background: var(--mint); top: 30px; left: 400px; transform: rotate(-1deg); }
+  .sticky-blue   { background: #9fd8ff; top: 170px; left: 120px; transform: rotate(2deg); }
+  .sticky-peach  { background: #ffb27a; top: 160px; left: 320px; transform: rotate(-1.5deg); }
 
   /* cursor dots */
   .cursor-dot {
@@ -360,27 +420,29 @@
   }
 
   .cursor-dot-circle {
-    width: 10px; height: 10px;
+    width: 11px; height: 11px;
     border-radius: 50%;
-    border: 1.5px solid var(--white);
+    border: 2px solid var(--ink);
   }
 
   .cursor-label {
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 10px;
-    font-weight: 500;
-    padding: 2px 7px;
-    border-radius: 100px;
-    color: var(--white);
+    font-weight: 700;
+    padding: 2px 8px;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    color: var(--ink);
     white-space: nowrap;
   }
 
   .cursor-a { top: 55px; left: 188px; }
-  .cursor-a .cursor-dot-circle { background: #8b5cf6; }
-  .cursor-a .cursor-label { background: #8b5cf6; }
+  .cursor-a .cursor-dot-circle { background: var(--purple); }
+  .cursor-a .cursor-label { background: var(--purple); }
 
   .cursor-b { top: 175px; left: 460px; }
-  .cursor-b .cursor-dot-circle { background: #0ea5e9; }
-  .cursor-b .cursor-label { background: #0ea5e9; }
+  .cursor-b .cursor-dot-circle { background: #7fd8ff; }
+  .cursor-b .cursor-label { background: #7fd8ff; }
 
   /* ── SECTION SHARED ── */
   section {
@@ -393,26 +455,34 @@
   }
 
   .section-kicker {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
+    display: inline-block;
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 12px;
-  }
-
-  .section-heading {
-    font-family: 'BM Dohyeon', serif;
-    font-size: clamp(32px, 5vw, 50px);
-    line-height: 1.1;
-    letter-spacing: -0.025em;
     color: var(--ink);
+    background: var(--gold);
+    border: 2px solid var(--ink);
+    padding: 4px 12px;
+    box-shadow: var(--shadow-sm);
     margin-bottom: 16px;
   }
 
+  .section-heading {
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: clamp(32px, 5vw, 48px);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 16px;
+    text-wrap: balance;
+  }
+
   .section-sub {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 17px;
-    font-weight: 300;
+    font-weight: 400;
     color: var(--ink2);
     line-height: 1.65;
     max-width: 520px;
@@ -420,7 +490,7 @@
 
   /* ── CARD SECTION ── */
   .cards-section {
-    background: var(--white);
+    background: var(--paper);
   }
 
   .cards-header {
@@ -430,7 +500,7 @@
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 20px;
   }
 
   @media (max-width: 900px) {
@@ -443,63 +513,73 @@
     header { padding: 0 20px; }
     section { padding: 72px 20px; }
     .hero { padding: 100px 20px 60px; }
+    .hero::after { display: none; }
   }
 
   .card {
-    background: var(--paper);
-    border: 0.5px solid rgba(14,14,13,0.1);
+    background: var(--white);
+    border: var(--bw) solid var(--ink);
     border-radius: var(--radius-lg);
     padding: 28px;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     cursor: default;
   }
 
   .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 16px 48px rgba(14,14,13,0.08);
+    transform: translate(-3px,-3px);
+    box-shadow: var(--shadow-lg);
   }
 
   .card-icon-wrap {
-    width: 44px;
-    height: 44px;
-    background: var(--ink);
-    border-radius: 12px;
+    width: 46px;
+    height: 46px;
+    background: var(--gold);
+    border: 2.5px solid var(--ink);
+    border-radius: var(--radius);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 20px;
   }
 
+  .card:nth-child(3n+2) .card-icon-wrap { background: var(--mint); }
+  .card:nth-child(3n+3) .card-icon-wrap { background: var(--pink); }
+
   .card-icon-wrap svg { display: block; }
 
   .card h3 {
-    font-size: 17px;
-    font-weight: 500;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--ink);
     margin-bottom: 8px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
   }
 
   .card p {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 14px;
-    font-weight: 300;
+    font-weight: 400;
     color: var(--ink2);
     line-height: 1.6;
   }
 
   .card-phase {
     display: inline-block;
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 700;
     padding: 3px 10px;
-    border-radius: 100px;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
     margin-top: 16px;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
   }
 
   .phase-1 { background: var(--ink); color: var(--paper); }
-  .phase-2 { background: var(--paper3); color: var(--ink2); }
-  .phase-3 { background: rgba(184,146,74,0.12); color: var(--gold); }
+  .phase-2 { background: var(--white); color: var(--ink); }
+  .phase-3 { background: var(--pink); color: var(--ink); }
 
   /* featured card */
   .card-featured {
@@ -508,19 +588,21 @@
     grid-column: span 1;
   }
 
-  .card-featured .card-icon-wrap { background: rgba(255,255,255,0.1); }
+  .card-featured .card-icon-wrap { background: var(--gold); }
   .card-featured h3 { color: var(--paper); }
-  .card-featured p { color: rgba(245,243,238,0.65); }
+  .card-featured p { color: rgba(255,247,232,0.7); }
 
   /* ── PHASE SECTION ── */
   .phase-section {
     background: var(--paper2);
+    border-top: var(--bw) solid var(--ink);
+    border-bottom: var(--bw) solid var(--ink);
   }
 
   .phase-list {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: 20px;
     margin-top: 56px;
   }
 
@@ -530,54 +612,70 @@
 
   .phase-card {
     background: var(--white);
-    border: 0.5px solid rgba(14,14,13,0.1);
+    border: var(--bw) solid var(--ink);
     border-radius: var(--radius-lg);
     padding: 28px;
+    box-shadow: var(--shadow-md);
   }
 
   .phase-num {
-    font-family: 'BM Dohyeon', serif;
-    font-size: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 26px;
     line-height: 1;
-    color: var(--paper3);
-    margin-bottom: 16px;
+    color: var(--ink);
+    background: var(--gold);
+    border: 2.5px solid var(--ink);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 18px;
   }
 
+  .phase-list .phase-card:nth-child(2) .phase-num { background: var(--mint); }
+  .phase-list .phase-card:nth-child(3) .phase-num { background: var(--pink); }
+
   .phase-card h3 {
-    font-size: 17px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     color: var(--ink);
     margin-bottom: 8px;
   }
 
   .phase-card p {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 13px;
     color: var(--ink2);
     line-height: 1.65;
-    font-weight: 300;
+    font-weight: 400;
   }
 
   .phase-items {
     margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 8px;
   }
 
   .phase-item {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 13px;
+    font-weight: 500;
     color: var(--ink2);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
   }
 
   .phase-item::before {
     content: '';
-    width: 5px; height: 5px;
+    width: 8px; height: 8px;
     background: var(--gold);
-    border-radius: 50%;
+    border: 1.5px solid var(--ink);
     flex-shrink: 0;
   }
 
@@ -586,6 +684,7 @@
     background: var(--ink);
     color: var(--paper);
     padding: 64px 40px 40px;
+    border-top: var(--bw) solid var(--ink);
   }
 
   .footer-inner {
@@ -598,7 +697,7 @@
     grid-template-columns: 1.5fr 1fr 1fr 1fr;
     gap: 40px;
     padding-bottom: 48px;
-    border-bottom: 0.5px solid rgba(245,243,238,0.1);
+    border-bottom: 2px solid rgba(255,247,232,0.2);
     margin-bottom: 32px;
   }
 
@@ -607,34 +706,38 @@
   }
 
   .footer-brand .logo-text { color: var(--paper); }
+  .footer-brand .logo-mark { border-color: var(--paper); }
   .footer-brand p {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 13px;
-    color: rgba(245,243,238,0.45);
+    color: rgba(255,247,232,0.55);
     margin-top: 14px;
     line-height: 1.65;
-    font-weight: 300;
+    font-weight: 400;
   }
 
   .footer-col h4 {
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(245,243,238,0.4);
+    color: var(--gold);
     margin-bottom: 16px;
   }
 
   .footer-col a {
     display: block;
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 14px;
-    color: rgba(245,243,238,0.7);
+    color: rgba(255,247,232,0.75);
     text-decoration: none;
     margin-bottom: 10px;
-    font-weight: 300;
-    transition: color 0.2s;
+    font-weight: 400;
+    transition: color 0.15s;
   }
 
-  .footer-col a:hover { color: var(--paper); }
+  .footer-col a:hover { color: var(--gold); }
 
   .footer-bottom {
     display: flex;
@@ -645,9 +748,10 @@
   }
 
   .footer-bottom p {
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
-    color: rgba(245,243,238,0.3);
-    font-weight: 300;
+    color: rgba(255,247,232,0.4);
+    font-weight: 500;
   }
 
   .footer-links {
@@ -656,13 +760,14 @@
   }
 
   .footer-links a {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
-    color: rgba(245,243,238,0.3);
+    color: rgba(255,247,232,0.4);
     text-decoration: none;
-    transition: color 0.2s;
+    transition: color 0.15s;
   }
 
-  .footer-links a:hover { color: rgba(245,243,238,0.7); }
+  .footer-links a:hover { color: var(--gold); }
 
   /* animations */
   @keyframes fadeUp {
@@ -676,9 +781,7 @@
     position: fixed;
     inset: 0;
     z-index: 300;
-    background: rgba(14,14,13,0.55);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.6);
     align-items: center;
     justify-content: center;
     padding: 20px;
@@ -691,41 +794,46 @@
     max-width: 440px;
     background: var(--paper);
     color: var(--ink);
+    border: var(--bw) solid var(--ink);
     border-radius: var(--radius-lg);
     padding: 32px;
     position: relative;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
-    animation: fadeUp 0.25s ease;
+    box-shadow: var(--shadow-xl);
+    animation: fadeUp 0.2s ease;
   }
 
   .contact-close {
     position: absolute;
-    top: 18px;
-    right: 18px;
+    top: 16px;
+    right: 16px;
     width: 32px;
     height: 32px;
-    border-radius: 50%;
-    border: none;
-    background: var(--paper2);
-    color: var(--ink2);
-    font-size: 16px;
+    border-radius: var(--radius);
+    border: 2px solid var(--ink);
+    background: var(--white);
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.1s ease;
   }
-  .contact-close:hover { background: var(--paper3); }
+  .contact-close:hover { background: var(--gold); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 0 var(--shadow-color); }
+  .contact-close:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 0 var(--shadow-color); }
 
   .contact-modal h3 {
-    font-family: 'BM Dohyeon', serif;
-    font-size: 22px;
+    font-family: 'Black Han Sans', sans-serif;
+    font-size: 24px;
     font-weight: 400;
     margin-bottom: 6px;
     padding-right: 30px;
   }
 
   .contact-modal p.contact-sub {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 14px;
     color: var(--ink3);
     margin-bottom: 24px;
@@ -736,30 +844,31 @@
 
   .contact-field label {
     display: block;
+    font-family: 'IBM Plex Mono', 'IBM Plex Sans KR', sans-serif;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 700;
     letter-spacing: 0.02em;
-    color: var(--ink2);
+    color: var(--ink);
     margin-bottom: 6px;
   }
 
   .contact-field input,
   .contact-field textarea {
     width: 100%;
-    font-family: inherit;
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 14px;
     color: var(--ink);
     background: var(--white);
-    border: 1px solid var(--paper3);
-    border-radius: 10px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
     padding: 10px 12px;
-    transition: border-color 0.2s;
+    transition: box-shadow 0.15s;
   }
 
   .contact-field input:focus,
   .contact-field textarea:focus {
     outline: none;
-    border-color: var(--gold);
+    box-shadow: var(--shadow-sm);
   }
 
   .contact-field textarea {
@@ -769,22 +878,25 @@
   }
 
   .contact-error {
+    font-family: 'IBM Plex Sans KR', sans-serif;
     font-size: 13px;
-    color: #b3392f;
+    font-weight: 600;
+    color: #c0143c;
     margin-bottom: 12px;
     min-height: 16px;
   }
 
   .contact-modal .btn-primary {
     width: 100%;
-    padding: 11px 22px;
+    padding: 12px 22px;
     font-size: 14px;
   }
 
   .contact-modal .btn-primary:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: default;
     transform: none;
+    box-shadow: var(--shadow-md);
   }
 
   .contact-success {
@@ -793,20 +905,24 @@
   }
 
   .contact-success .check-mark {
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     margin: 0 auto 16px;
-    border-radius: 50%;
-    background: rgba(184,146,74,0.15);
-    color: var(--gold);
+    border-radius: var(--radius);
+    background: var(--mint);
+    border: 2.5px solid var(--ink);
+    box-shadow: var(--shadow-sm);
+    color: var(--ink);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
+    font-weight: 700;
   }
 
   .contact-success h3 { margin-bottom: 8px; }
-  .contact-success p { font-size: 14px; color: var(--ink3); line-height: 1.5; }
+  .contact-success p { font-family: 'IBM Plex Sans KR', sans-serif; font-size: 14px; color: var(--ink3); line-height: 1.5; }
+
 </style>
 </head>
 <body>
@@ -906,8 +1022,8 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M2 11h18M11 2v18" stroke="#f5f3ee" stroke-width="1.5" stroke-linecap="round"/>
-            <circle cx="11" cy="11" r="3" stroke="rgba(245,243,238,0.6)" stroke-width="1.2"/>
+            <path d="M2 11h18M11 2v18" stroke="#000000" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="11" cy="11" r="3" stroke="rgba(0,0,0,0.6)" stroke-width="1.2"/>
           </svg>
         </div>
         <h3 data-i18n-en="Infinite canvas" data-i18n-ko="무한 캔버스">무한 캔버스</h3>
@@ -918,7 +1034,7 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M15.58 2.75a2.59 2.59 0 0 1 3.67 3.67L6.88 18.79 1.83 20.17l1.38-5.04L15.58 2.75z" stroke="#f5f3ee" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+            <path d="M15.58 2.75a2.59 2.59 0 0 1 3.67 3.67L6.88 18.79 1.83 20.17l1.38-5.04L15.58 2.75z" stroke="#000000" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
           </svg>
         </div>
         <h3 data-i18n-en="Pen &amp; eraser" data-i18n-ko="펜 & 지우개">펜 & 지우개</h3>
@@ -929,9 +1045,9 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="7" cy="11" r="3" fill="#f5f3ee" opacity="0.9"/>
-            <circle cx="15" cy="7" r="2.5" fill="#f5f3ee" opacity="0.6"/>
-            <circle cx="15" cy="15" r="2.5" fill="#f5f3ee" opacity="0.35"/>
+            <circle cx="7" cy="11" r="3" fill="#000000" opacity="0.9"/>
+            <circle cx="15" cy="7" r="2.5" fill="#000000" opacity="0.6"/>
+            <circle cx="15" cy="15" r="2.5" fill="#000000" opacity="0.35"/>
           </svg>
         </div>
         <h3 data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</h3>
@@ -942,9 +1058,9 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <rect x="3" y="5" width="7" height="7" rx="2" fill="#f5f3ee" opacity="0.9"/>
-            <rect x="12" y="5" width="7" height="7" rx="2" fill="#f5f3ee" opacity="0.5"/>
-            <rect x="3" y="14" width="16" height="4" rx="2" fill="#f5f3ee" opacity="0.3"/>
+            <rect x="3" y="5" width="7" height="7" rx="2" fill="#000000" opacity="0.9"/>
+            <rect x="12" y="5" width="7" height="7" rx="2" fill="#000000" opacity="0.5"/>
+            <rect x="3" y="14" width="16" height="4" rx="2" fill="#000000" opacity="0.3"/>
           </svg>
         </div>
         <h3 data-i18n-en="Sticky notes" data-i18n-ko="포스트잇">포스트잇</h3>
@@ -955,10 +1071,10 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <circle cx="5" cy="11" r="2" fill="#f5f3ee"/>
-            <circle cx="17" cy="11" r="2" fill="#f5f3ee"/>
-            <circle cx="11" cy="5" r="2" fill="#f5f3ee" opacity="0.5"/>
-            <path d="M7 11h8M11 7v8" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+            <circle cx="5" cy="11" r="2" fill="#000000"/>
+            <circle cx="17" cy="11" r="2" fill="#000000"/>
+            <circle cx="11" cy="5" r="2" fill="#000000" opacity="0.5"/>
+            <path d="M7 11h8M11 7v8" stroke="#000000" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
           </svg>
         </div>
         <h3 data-i18n-en="Real-time collaboration" data-i18n-ko="실시간 협업">실시간 협업</h3>
@@ -969,9 +1085,9 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M4 6h14M4 11h10M4 16h7" stroke="#f5f3ee" stroke-width="1.4" stroke-linecap="round"/>
-            <circle cx="17" cy="16" r="3" fill="#f5f3ee" opacity="0.4"/>
-            <path d="M16 16h2M17 15v2" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M4 6h14M4 11h10M4 16h7" stroke="#000000" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="17" cy="16" r="3" fill="#000000" opacity="0.4"/>
+            <path d="M16 16h2M17 15v2" stroke="#000000" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
         </div>
         <h3 data-i18n-en="Collaborative to-dos" data-i18n-ko="협업 To-Do">협업 To-Do</h3>
@@ -982,8 +1098,8 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <rect x="3" y="5" width="16" height="12" rx="2.5" fill="#f5f3ee" opacity="0.15" stroke="#f5f3ee" stroke-width="1.2"/>
-            <path d="M3 13l4-3 3 2 4-4 5 4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="5" width="16" height="12" rx="2.5" fill="#000000" opacity="0.15" stroke="#000000" stroke-width="1.2"/>
+            <path d="M3 13l4-3 3 2 4-4 5 4" stroke="#000000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
         <h3 data-i18n-en="Drag & drop images" data-i18n-ko="이미지 드래그">이미지 드래그</h3>
@@ -994,9 +1110,9 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <path d="M11 3C6.582 3 3 6.582 3 11s3.582 8 8 8 8-3.582 8-8" stroke="#f5f3ee" stroke-width="1.3" stroke-linecap="round"/>
-            <path d="M15 3l2 2-5 5-2-2 5-5z" fill="#b8924a" opacity="0.8"/>
-            <path d="M17 5l2-2" stroke="#b8924a" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M11 3C6.582 3 3 6.582 3 11s3.582 8 8 8 8-3.582 8-8" stroke="#000000" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M15 3l2 2-5 5-2-2 5-5z" fill="#000000" opacity="0.8"/>
+            <path d="M17 5l2-2" stroke="#000000" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
         </div>
         <h3 data-i18n-en="AI image editing" data-i18n-ko="AI 이미지 편집">AI 이미지 편집</h3>
@@ -1007,10 +1123,10 @@
       <div class="card">
         <div class="card-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2"/>
-            <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2" opacity="0.5"/>
-            <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2" opacity="0.5"/>
-            <path d="M14 16h4M16 14v4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#000000" stroke-width="1.2"/>
+            <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#000000" stroke-width="1.2" opacity="0.5"/>
+            <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#000000" stroke-width="1.2" opacity="0.5"/>
+            <path d="M14 16h4M16 14v4" stroke="#000000" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
           </svg>
         </div>
         <h3 data-i18n-en="Shape tools" data-i18n-ko="도형 도구">도형 도구</h3>
