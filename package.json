@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "vercel-build": "echo 'no build step'"
+    "vercel-build": "echo 'no build step'",
+    "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "ws": "^8.17.0",
