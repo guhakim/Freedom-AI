@@ -2442,10 +2442,24 @@ function startSelMove(sx0, sy0) {
     document.removeEventListener('mousemove', mm);
     document.removeEventListener('mouseup',   mu);
     scheduleLocalSave();
-    // 획은 서버에 위치가 저장되지 않으면 새로고침·재접속 시 이동 전 위치로 되돌아가므로,
-    // 노트/이미지/도형과 달리 이동 완료 시점에 반드시 서버로 전송해 영속화한다.
+    // 개별 드래그(startNoteDrag 등)와 달리 이 함수는 지금까지 로컬 상태만 바꾸고 서버로
+    // 전송하지 않았다 — 그래서 여러 개를 선택해 옮기면 새로고침·재접속 시 이동 전 위치로
+    // 되돌아가고, 다른 협업자에게도 실시간으로 보이지 않았다. 항목별로 맞는 액션을 전송한다.
     snapshot.forEach(({ it }) => {
-      const s = strokes.find(x => x.id === it.id);
+      const note  = notes.find(n=>n.id===it.id);
+      if (note)  { sendAction({ type:'note_move', noteId:note.id, x:note.x, y:note.y }); return; }
+      const img   = images.find(i=>i.id===it.id);
+      if (img)   { sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); return; }
+      const shape = shapes.find(s=>s.id===it.id);
+      if (shape) {
+        if (shape.type==='arrow') {
+          sendAction({ type:'shape_arrow_update', shapeId:shape.id, x1:shape.x1, y1:shape.y1, x2:shape.x2, y2:shape.y2, bend:shape.bend });
+        } else {
+          sendAction({ type:'shape_move', shapeId:shape.id, x:shape.x, y:shape.y });
+        }
+        return;
+      }
+      const s = strokes.find(x=>x.id===it.id);
       if (s) sendAction({ type:'stroke_move', strokeId:s.id, points:s.points });
     });
   };
