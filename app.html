@@ -32,6 +32,11 @@
   html, body { width:100%; height:100%; overflow:hidden; background:var(--paper2);
     font-family:'BM Dohyeon',sans-serif; -webkit-font-smoothing:antialiased; user-select:none; }
 
+  /* 스페이스바로 캔버스를 패닝하는 동안엔, 포스트잇·이미지·도형 등 각자 cursor:move를
+     가진 요소 위에 마우스가 있어도 손 커서를 계속 보여준다 (updateCursor 참고) */
+  body.space-panning, body.space-panning * { cursor: grab !important; }
+  body.space-panning.is-panning, body.space-panning.is-panning * { cursor: grabbing !important; }
+
   /* ── CANVAS ── */
   #canvas { display:block; width:100%; height:100%; touch-action:none;
     position:fixed; top:0; left:0; z-index:1; }
@@ -984,7 +989,16 @@ function resize() {
 //  CURSOR
 // ═══════════════════════════════════════════════════════════════
 function updateCursor(panning) {
-  if (spaceHeld) { canvas.style.cursor = panning ? 'grabbing' : 'grab'; return; }
+  if (spaceHeld) {
+    canvas.style.cursor = panning ? 'grabbing' : 'grab';
+    // 포스트잇/이미지/도형 등은 각자 자기 cursor:move 스타일을 갖고 있어서, 스페이스바로
+    // 팬 하는 중에 그 위로 마우스가 지나가면 손 커서 대신 그쪽 커서로 잠깐 바뀌어 보였다.
+    // 스페이스바를 누르는 동안은 body에 클래스를 달아 모든 요소의 커서를 강제로 통일한다.
+    document.body.classList.add('space-panning');
+    document.body.classList.toggle('is-panning', panning);
+    return;
+  }
+  document.body.classList.remove('space-panning', 'is-panning');
   const map = { hand: panning?'grabbing':'grab', pen:'crosshair', eraser:'none', sticky:'cell', shape:'crosshair', select:'default' };
   canvas.style.cursor = map[activeTool] || 'default';
 }
