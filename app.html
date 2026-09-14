@@ -2501,7 +2501,8 @@ canvas.addEventListener('mousemove', e => {
   else if (!spaceHeld) continueDraw(e.clientX,e.clientY);
 
   // 선택된 획 위에서는 note/image/shape와 동일하게 이동 가능함을 나타내는 커서로 바꾼다
-  if (activeTool==='select' && !selDrag) {
+  // (스페이스바 팬 중에는 grab/grabbing 커서가 우선이어야 하므로 spaceHeld일 때는 건너뛴다)
+  if (activeTool==='select' && !selDrag && !spaceHeld) {
     canvas.style.cursor = hitSelectedStroke(e.clientX, e.clientY) ? 'move' : 'default';
   }
 });
