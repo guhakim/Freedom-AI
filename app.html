@@ -234,13 +234,8 @@
   #ai-go-btn:hover { background:var(--ink2); }
   #ai-go-btn:disabled { background:var(--ink3); cursor:default; }
   #ai-status { font-size:12px; color:var(--ink3); text-align:center; min-height:16px; }
-  #ai-removebg-btn { padding:10px; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
-    background:none; cursor:pointer; font-size:14px; font-weight:500;
-    font-family:'BM Dohyeon',sans-serif; color:var(--ink); transition:background .15s,border-color .15s; }
-  #ai-removebg-btn:hover { background:var(--paper); border-color:var(--ink); }
-  #ai-removebg-btn:disabled { color:var(--ink3); cursor:default; background:none; border-color:rgba(14,14,13,.1); }
-  #ai-modal-divider { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink3); margin:-4px 0; }
-  #ai-modal-divider::before, #ai-modal-divider::after { content:''; flex:1; height:1px; background:rgba(14,14,13,.12); }
+  /* 배경 제거는 모달 버튼이 아니라 이미지를 꾹 누르는 제스처로 트리거된다 (아래 .canvas-img.bg-processing) */
+  .canvas-img.bg-processing { opacity: .45; transition: opacity .15s; }
 
   /* ── SELECT TOOL ── */
   #select-box { position:fixed; border:1.5px solid #3b82f6; background:rgba(59,130,246,.08);
@@ -629,8 +624,6 @@
 <div id="ai-modal">
   <div id="ai-modal-inner">
     <div id="ai-modal-title" data-i18n-en="AI Image Transform" data-i18n-ko="AI 이미지 변환">AI 이미지 변환</div>
-    <button id="ai-removebg-btn" data-i18n-en="✂️ Remove Background" data-i18n-ko="✂️ 배경 제거">✂️ 배경 제거</button>
-    <div id="ai-modal-divider" data-i18n-en="or transform with a prompt" data-i18n-ko="또는 프롬프트로 변환">또는 프롬프트로 변환</div>
     <div id="ai-modal-sub" data-i18n-en-html="Works best in English<br>e.g. watercolor style, cartoon, oil painting, sketch" data-i18n-ko-html="영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
     <textarea id="ai-prompt-input" rows="2" placeholder="e.g. watercolor painting style"></textarea>
     <div id="ai-status"></div>
@@ -1473,36 +1466,58 @@ function setupImageEvents(img) {
   el.addEventListener('mousedown',  e => e.stopPropagation());
   el.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
 
-  // 드래그 이동
+  // 드래그 이동 — 움직이지 않고 일정 시간 이상 꾹 누르고 있으면(long-press)
+  // 드래그 대신 AI 배경 제거를 자동 실행한다 (모달·버튼 없이 바로).
+  const LONG_PRESS_MS = 600;
+  const LONG_PRESS_MOVE_TOLERANCE = 4; // px, 이 이상 움직이면 드래그로 간주
+
   el.addEventListener('mousedown', e => {
     if (e.target === del || e.target === rsz || rsz.contains(e.target)) return;
     e.stopPropagation();
     if (activeTool==='select' && selectedIds.has(img.id)) { startSelMove(e.clientX,e.clientY); return; }
     const ox = img.x, oy = img.y, sx0 = e.clientX, sy0 = e.clientY;
+    let longPressFired = false;
+    const longPressTimer = setTimeout(() => {
+      longPressFired = true;
+      cleanup();
+      autoRemoveBackground(img);
+    }, LONG_PRESS_MS);
     const mm = e => {
-      img.x = ox + (e.clientX - sx0) / scale;
-      img.y = oy + (e.clientY - sy0) / scale;
+      const dx = e.clientX - sx0, dy = e.clientY - sy0;
+      if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE) clearTimeout(longPressTimer);
+      img.x = ox + dx / scale;
+      img.y = oy + dy / scale;
       el.style.left = img.x + 'px'; el.style.top = img.y + 'px';
     };
-    const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); scheduleLocalSave(); sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); };
+    const mu = () => { clearTimeout(longPressTimer); cleanup(); if (!longPressFired) { scheduleLocalSave(); sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); } };
+    function cleanup() { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); }
     document.addEventListener('mousemove', mm);
     document.addEventListener('mouseup', mu);
   });
 
-  // 터치 드래그
+  // 터치 드래그 (동일하게 꾹 누르면 배경 제거)
   el.addEventListener('touchstart', e => {
     if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target)) return;
     e.stopPropagation();
     const t0 = e.touches[0];
     const ox = img.x, oy = img.y, sx0 = t0.clientX, sy0 = t0.clientY;
+    let longPressFired = false;
+    const longPressTimer = setTimeout(() => {
+      longPressFired = true;
+      cleanup();
+      autoRemoveBackground(img);
+    }, LONG_PRESS_MS);
     const tm = e => {
       if (e.touches.length !== 1) return;
       const t = e.touches[0];
-      img.x = ox + (t.clientX - sx0) / scale;
-      img.y = oy + (t.clientY - sy0) / scale;
+      const dx = t.clientX - sx0, dy = t.clientY - sy0;
+      if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE) clearTimeout(longPressTimer);
+      img.x = ox + dx / scale;
+      img.y = oy + dy / scale;
       el.style.left = img.x + 'px'; el.style.top = img.y + 'px';
     };
-    const te = () => { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); scheduleLocalSave(); sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); };
+    const te = () => { clearTimeout(longPressTimer); cleanup(); if (!longPressFired) { scheduleLocalSave(); sendAction({ type:'image_move', imageId:img.id, x:img.x, y:img.y }); } };
+    function cleanup() { document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); }
     document.addEventListener('touchmove', tm, { passive: true });
     document.addEventListener('touchend', te, { passive: true });
   }, { passive: true });
@@ -1964,7 +1979,6 @@ function openAiModal(img) {
   document.getElementById('ai-status').textContent = '';
   document.getElementById('ai-go-btn').disabled = false;
   document.getElementById('ai-cancel-btn').disabled = false;
-  document.getElementById('ai-removebg-btn').disabled = false;
   document.getElementById('ai-modal').classList.add('open');
   setTimeout(() => document.getElementById('ai-prompt-input').focus(), 50);
 }
@@ -2071,30 +2085,25 @@ async function combineMasks(maskSrcs) {
   return canvas.toDataURL('image/png');
 }
 
-async function runRemoveBg() {
-  if (!_aiTargetImg) return;
-  const goBtn      = document.getElementById('ai-go-btn');
-  const cancelBtn  = document.getElementById('ai-cancel-btn');
-  const removeBtn  = document.getElementById('ai-removebg-btn');
-  const statusEl   = document.getElementById('ai-status');
-  goBtn.disabled = cancelBtn.disabled = removeBtn.disabled = true;
-  statusEl.textContent = window._faLang==='en' ? '⏳ Removing background... (10–30s)' : '⏳ 배경을 제거하는 중입니다... (10~30초 소요)';
+// 이미지를 꾹 누르고 있으면(길게 누르기) 모달 없이 바로 배경을 제거한다 —
+// setupImageEvents()의 long-press 감지에서 호출된다.
+async function autoRemoveBackground(img) {
+  img.el.classList.add('bg-processing');
+  showToast(window._faLang==='en' ? '🪄 Analyzing image...' : '🪄 이미지를 분석하는 중입니다...');
 
   try {
     const res = await fetch('/api/remove-bg', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageBase64: _aiTargetImg.src }),
+      body: JSON.stringify({ imageBase64: img.src }),
     });
     const data = await res.json();
 
     if (!res.ok) {
-      if (data.error === 'model_loading') {
-        statusEl.textContent = '🔄 ' + data.message;
-        goBtn.disabled = cancelBtn.disabled = removeBtn.disabled = false;
-        return;
-      }
-      throw new Error(data.error || res.status);
+      showToast(data.error === 'model_loading'
+        ? (window._faLang==='en' ? '🔄 Model is loading, please try again shortly' : '🔄 모델 로딩 중입니다. 잠시 후 다시 시도해주세요')
+        : (window._faLang==='en' ? '❌ Failed to remove background' : '❌ 배경 제거에 실패했습니다'));
+      return;
     }
 
     let finalSrc;
@@ -2102,17 +2111,18 @@ async function runRemoveBg() {
       finalSrc = data.imageBase64;
     } else if (Array.isArray(data.masks) && data.masks.length) {
       const combined = data.masks.length > 1 ? await combineMasks(data.masks) : data.masks[0];
-      finalSrc = await compositeImageWithMask(_aiTargetImg.src, combined);
+      finalSrc = await compositeImageWithMask(img.src, combined);
     } else if (data.maskBase64) {
-      finalSrc = await compositeImageWithMask(_aiTargetImg.src, data.maskBase64);
+      finalSrc = await compositeImageWithMask(img.src, data.maskBase64);
     } else {
       throw new Error('unexpected_response');
     }
-    applyImageSrcUpdate(_aiTargetImg, finalSrc);
-    closeAiModal();
+    applyImageSrcUpdate(img, finalSrc);
+    showToast(window._faLang==='en' ? '✂️ Background removed' : '✂️ 배경을 제거했습니다');
   } catch (e) {
-    statusEl.textContent = (window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message;
-    goBtn.disabled = cancelBtn.disabled = removeBtn.disabled = false;
+    showToast((window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message);
+  } finally {
+    img.el.classList.remove('bg-processing');
   }
 }
 
@@ -2121,7 +2131,6 @@ document.getElementById('ai-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('ai-modal')) closeAiModal();
 });
 document.getElementById('ai-go-btn').addEventListener('click', runAiTransform);
-document.getElementById('ai-removebg-btn').addEventListener('click', runRemoveBg);
 document.getElementById('ai-prompt-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAiTransform(); }
 });
