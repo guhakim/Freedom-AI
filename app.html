@@ -827,6 +827,17 @@ let myColor    = '#8b5cf6';
 let roomId     = '';
 let userName   = '';
 let myEmail    = '';
+
+// 이 브라우저의 고정 식별자 — 새로고침·재접속해도 항상 같은 값을 써서
+// "본인 것만 삭제/이동" 같은 소유권 체크가 계속 유효하도록 한다.
+function getClientId() {
+  let id = localStorage.getItem('fa_client_id');
+  if (!id || !/^[A-Za-z0-9]{4,64}$/.test(id)) {
+    id = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('fa_client_id', id);
+  }
+  return id;
+}
 const remoteCursors = new Map(); // userId → { el, wx, wy }
 let lastCursorSend  = 0;
 
@@ -3126,7 +3137,7 @@ async function main() {
   const joinRes = await fetch('/api/join', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
-    body: JSON.stringify({ roomId, name: userName, email: myEmail }),
+    body: JSON.stringify({ roomId, name: userName, email: myEmail, clientId: getClientId() }),
   });
   if (joinRes.status === 403) {
     alert(window._faLang==='en'

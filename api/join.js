@@ -49,10 +49,15 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { roomId, email } = req.body || {};
+  const { roomId, email, clientId } = req.body || {};
   if (!roomId) return res.status(400).json({ error: 'roomId required' });
 
-  const userId = Math.random().toString(36).slice(2, 10);
+  // 클라이언트가 localStorage에 보관한 고정 id를 그대로 써서, 새로고침·재접속해도
+  // userId가 매번 바뀌지 않게 한다 — 안 그러면 노트/획 등의 "본인 것만 삭제/이동" 권한
+  // 체크가 새로고침 이후엔 항상 실패해, 지운 게 서버엔 반영 안 되고 되살아나 보인다.
+  const userId = (typeof clientId === 'string' && /^[A-Za-z0-9]{4,64}$/.test(clientId))
+    ? clientId
+    : Math.random().toString(36).slice(2, 10);
   let color = COLORS[colorCounter++ % 8];
   let state = { strokes: [], notes: [], images: [], shapes: [] };
 

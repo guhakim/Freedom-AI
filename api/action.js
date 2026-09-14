@@ -206,10 +206,12 @@ module.exports = async (req, res) => {
       break;
     }
 
-    // 선택 도구로 획 삭제 — 지우개(누구나 가능)와 달리 본인이 그린 획만 삭제 가능
+    // 선택 도구로 획 삭제 — 지우개 도구와 동일하게 소유자 상관없이 삭제 가능.
+    // (userId는 클라이언트가 자체 생성해 보내는 값이라 진짜 신원 증명이 아니고,
+    //  지우개로는 어차피 아무 획이나 지울 수 있어 소유권 체크가 실질적 의미가 없었음)
     case 'stroke_manual_delete': {
       const { strokeId } = action;
-      const idx = state.strokes.findIndex(s => s.id === strokeId && s.userId === userId);
+      const idx = state.strokes.findIndex(s => s.id === strokeId);
       if (idx === -1) break;
       state.strokes.splice(idx, 1);
       await kvSet(kvKey, state);
@@ -217,11 +219,12 @@ module.exports = async (req, res) => {
       break;
     }
 
-    // 선택 도구로 획 이동 — 새로고침·재접속 시 되돌아가지 않도록 서버에 새 좌표를 영속화
+    // 선택 도구로 획 이동 — 삭제와 마찬가지로 소유자 상관없이 이동 가능 (지우개와 동일 정책).
+    // 새로고침·재접속 시 되돌아가지 않도록 서버에 새 좌표를 영속화한다.
     case 'stroke_move': {
       const { strokeId, points } = action;
       if (!Array.isArray(points)) break;
-      const s = state.strokes.find(s => s.id === strokeId && s.userId === userId);
+      const s = state.strokes.find(s => s.id === strokeId);
       if (!s) break;
       const pts = points.slice(0, 5000).filter(p => typeof p?.x === 'number' && typeof p?.y === 'number');
       if (!pts.length) break;
