@@ -55,16 +55,20 @@ module.exports = async (req, res) => {
   if (!HF_TOKEN) return res.status(500).json({ error: 'HF_TOKEN not configured' });
 
   try {
-    // briaai/RMBG-1.4: 오픈 웨이트 배경제거 모델. image-segmentation 계열 모델의
-    // HF 표준 추론 API는 원본 이미지 바이트를 그대로 요청 본문으로 받는다(JSON 아님).
+    // 실제 HF_TOKEN으로 라이브 테스트해 확인한 내용: 예전 api-inference.huggingface.co
+    // 도메인은 아예 사라졌고(HF가 router 방식으로 전면 이전), briaai/RMBG-1.4 같은
+    // 전용 배경제거 모델은 무료 hf-inference 프로바이더에서 "지원 안 함"으로 거부된다.
+    // 대신 사람 인물 사진을 부위별(배경/얼굴/머리카락/옷 등)로 나눠주는 인물 파싱
+    // 모델은 hf-inference에서 정상 동작한다 — "배경"을 제외한 나머지 부위를 전부
+    // 합치면 인물 컷아웃과 동일한 효과를 낼 수 있다. (인물 사진 기준 — 사람이 아닌
+    // 피사체에는 잘 안 맞을 수 있음)
     const hfRes = await fetch(
-      'https://api-inference.huggingface.co/models/briaai/RMBG-1.4',
+      'https://router.huggingface.co/hf-inference/models/mattmdjaga/segformer_b2_clothes',
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${HF_TOKEN}`,
           'Content-Type': mime,
-          'X-Wait-For-Model': 'true',
         },
         body: Buffer.from(base64Data, 'base64'),
       }
@@ -81,22 +85,26 @@ module.exports = async (req, res) => {
 
     const contentType = hfRes.headers.get('content-type') || '';
 
-    // 모델에 따라 배경이 제거된 최종 이미지를 바로 돌려주는 경우
+    // 다른 모델로 바뀌어 배경이 제거된 최종 이미지를 바로 돌려주는 경우도 방어적으로 처리
     if (contentType.startsWith('image/')) {
       const buf = Buffer.from(await hfRes.arrayBuffer());
       return res.json({ imageBase64: `data:${contentType};base64,${buf.toString('base64')}` });
     }
 
-    // image-segmentation 파이프라인의 표준 응답 형식: [{ score, label, mask }, ...]
-    // (mask는 흑백 PNG의 base64) — 최종 합성은 원본 이미지를 들고 있는 클라이언트가 한다.
+    // image-segmentation 파이프라인의 표준 응답: [{ score, label, mask }, ...] — 사람 부위별로
+    // 하나씩 온다. "Background" 라벨만 빼고 나머지 마스크를 전부 클라이언트로 보내면,
+    // 거기서 하나로 합쳐 원본 이미지에 알파로 입힌다.
     if (contentType.includes('application/json')) {
       const data = await hfRes.json();
-      const first = Array.isArray(data) ? data[0] : data;
-      if (!first?.mask) {
+      if (!Array.isArray(data) || !data.length) {
         console.error('remove-bg unexpected JSON shape:', JSON.stringify(data).slice(0, 300));
         return res.status(502).json({ error: 'unexpected_model_response' });
       }
-      return res.json({ maskBase64: `data:image/png;base64,${first.mask}` });
+      const masks = data
+        .filter(d => d.label !== 'Background' && typeof d.mask === 'string')
+        .map(d => `data:image/png;base64,${d.mask}`);
+      if (!masks.length) return res.status(502).json({ error: 'no_subject_detected' });
+      return res.json({ masks });
     }
 
     const raw = await hfRes.text();

@@ -2056,6 +2056,21 @@ async function compositeImageWithMask(imageSrc, maskSrc) {
   return canvas.toDataURL('image/png');
 }
 
+// 인물 파싱 모델은 배경을 제외한 나머지를 부위별(얼굴/머리카락/옷 등)로 마스크를
+// 하나씩 따로 준다 — 'lighten'(픽셀별 최대값)으로 겹쳐 그리면 "배경이 아닌 모든 부위"
+// 하나의 마스크로 합쳐진다(이진 흑백 마스크라 OR 연산과 동일한 효과).
+async function combineMasks(maskSrcs) {
+  const masks = await Promise.all(maskSrcs.map(loadImageEl));
+  const w = masks[0].naturalWidth, h = masks[0].naturalHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(masks[0], 0, 0, w, h);
+  ctx.globalCompositeOperation = 'lighten';
+  for (let i = 1; i < masks.length; i++) ctx.drawImage(masks[i], 0, 0, w, h);
+  return canvas.toDataURL('image/png');
+}
+
 async function runRemoveBg() {
   if (!_aiTargetImg) return;
   const goBtn      = document.getElementById('ai-go-btn');
@@ -2082,7 +2097,17 @@ async function runRemoveBg() {
       throw new Error(data.error || res.status);
     }
 
-    const finalSrc = data.imageBase64 || await compositeImageWithMask(_aiTargetImg.src, data.maskBase64);
+    let finalSrc;
+    if (data.imageBase64) {
+      finalSrc = data.imageBase64;
+    } else if (Array.isArray(data.masks) && data.masks.length) {
+      const combined = data.masks.length > 1 ? await combineMasks(data.masks) : data.masks[0];
+      finalSrc = await compositeImageWithMask(_aiTargetImg.src, combined);
+    } else if (data.maskBase64) {
+      finalSrc = await compositeImageWithMask(_aiTargetImg.src, data.maskBase64);
+    } else {
+      throw new Error('unexpected_response');
+    }
     applyImageSrcUpdate(_aiTargetImg, finalSrc);
     closeAiModal();
   } catch (e) {
