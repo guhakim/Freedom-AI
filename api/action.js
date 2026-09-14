@@ -59,6 +59,7 @@ const MAX_STROKES  = 1000;
 const MAX_NOTE_TXT = 10_000;
 const MIN_NOTE_W = 100, MAX_NOTE_W = 3_000;
 const MIN_NOTE_H = 80,  MAX_NOTE_H = 3_000;
+const MIN_NOTE_FONT = 10, MAX_NOTE_FONT = 32;
 const VALID_COLOR  = /^#[0-9a-fA-F]{6}$/;
 const MAX_IMAGES   = 20;
 const MIN_IMG_W = 20, MAX_IMG_W = 3_000;
@@ -249,6 +250,7 @@ module.exports = async (req, res) => {
         h:      Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, note.h || 130)),
         color:  VALID_COLOR.test(note.color) ? note.color : '#fef08a',
         text:   String(note.text || '').slice(0, MAX_NOTE_TXT),
+        fontSize: typeof note.fontSize === 'number' ? Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, note.fontSize)) : 13,
         userId,
       };
       state.notes.push(n);
@@ -279,6 +281,15 @@ module.exports = async (req, res) => {
       n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, action.h ?? n.h));
       await kvSet(kvKey, state);
       await pusher.trigger(channel, 'note_resize', { noteId: action.noteId, x: n.x, w: n.w, h: n.h }, excl);
+      break;
+    }
+
+    case 'note_font_size': {
+      const n = state.notes.find(n => n.id === action.noteId);
+      if (!n || typeof action.fontSize !== 'number') break;
+      n.fontSize = Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, action.fontSize));
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'note_font_size', { noteId: action.noteId, fontSize: n.fontSize }, excl);
       break;
     }
 

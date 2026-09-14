@@ -75,6 +75,29 @@ test('note_delete removes a note created under a stale legacy userId (production
   assert.equal(state.notes.length, 0);
 });
 
+test('note_font_size clamps to the valid range and ignores non-numeric values', async () => {
+  const { kv, triggers } = installMocks();
+  await kv.set(kvKey('r1'), { strokes: [], images: [], shapes: [],
+    notes: [{ id: 'n1', x: 0, y: 0, w: 160, h: 130, color: '#fef08a', text: 'hi', userId: 'old' }] });
+  const handler = freshHandler(ACTION);
+
+  let res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'note_font_size', noteId: 'n1', fontSize: 999 } } }), res);
+  let state = await kv.get(kvKey('r1'));
+  assert.equal(state.notes[0].fontSize, 32); // MAX_NOTE_FONT로 clamp
+  assert.deepEqual(triggers.at(-1).data, { noteId: 'n1', fontSize: 32 });
+
+  res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'note_font_size', noteId: 'n1', fontSize: 'big' } } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.notes[0].fontSize, 32); // 숫자 아니면 무시하고 기존 값 유지
+
+  res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'note_font_size', noteId: 'n1', fontSize: 18 } } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.notes[0].fontSize, 18);
+});
+
 test('image_update replaces src (position/size untouched) and validates the data URI', async () => {
   const { kv, triggers } = installMocks();
   await kv.set(kvKey('r1'), {

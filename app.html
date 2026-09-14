@@ -55,16 +55,17 @@
   @keyframes noteOut { to{opacity:0;transform:scale(.85)} }
 
   .note-handle { height:28px; border-radius:10px 10px 0 0; display:flex;
-    align-items:center; justify-content:flex-end; padding:0 7px;
+    align-items:center; justify-content:flex-end; gap:5px; padding:0 7px;
     cursor:grab; background:rgba(0,0,0,.07); flex-shrink:0; }
   .note-handle:active { cursor:grabbing; }
 
-  .note-delete { width:18px; height:18px; border:none; background:rgba(0,0,0,.12);
+  .note-delete, .note-fontsize-btn { width:18px; height:18px; border:none; background:rgba(0,0,0,.12);
     border-radius:50%; cursor:pointer; font-size:11px; color:rgba(14,14,13,.55);
     display:flex; align-items:center; justify-content:center;
-    opacity:0; transition:opacity .15s,background .15s; padding:0; }
-  .note:hover .note-delete { opacity:1; }
-  .note-delete:hover { background:rgba(0,0,0,.25); color:var(--ink); }
+    opacity:0; transition:opacity .15s,background .15s; padding:0; font-family:'BM Dohyeon',sans-serif; }
+  .note:hover .note-delete, .note:hover .note-fontsize-btn { opacity:1; }
+  .note-delete:hover, .note-fontsize-btn:hover { background:rgba(0,0,0,.25); color:var(--ink); }
+  .note-fontsize-btn { font-size:10px; }
 
   .note-text { flex:1; padding:9px 11px 4px; font-size:13px; line-height:1.55;
     color:var(--ink); outline:none; word-break:break-word; white-space:pre-wrap;
@@ -1148,8 +1149,11 @@ function buildNoteEl(note, autoFocus=false) {
   el.dataset.id = note.id;
   el.style.cssText = `left:${note.x}px;top:${note.y}px;width:${note.w}px;height:${note.h}px;background:${note.color};`;
   el.innerHTML = `
-    <div class="note-handle"><button class="note-delete" title="${window._faLang==='en'?'Delete':'삭제'}">×</button></div>
-    <div class="note-text" contenteditable="true" spellcheck="false"
+    <div class="note-handle">
+      <button class="note-fontsize-btn" title="${window._faLang==='en'?'Text size':'글자 크기'}">가</button>
+      <button class="note-delete" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
+    </div>
+    <div class="note-text" contenteditable="true" spellcheck="false" style="font-size:${note.fontSize||13}px"
          data-placeholder="${window._faLang==='en'?'Type something':'내용을 입력하세요'}">${esc(note.text||'')}</div>
     <div class="note-resize-bar">
       <div class="note-resize-handle left"  data-dir="left">${RESIZE_L}</div>
@@ -1250,11 +1254,15 @@ function resyncArrowBindings() {
   });
 }
 
+// 클릭할 때마다 작게 → 크게 순서로 돌아가며 바뀐다 (13px가 기존 기본값)
+const NOTE_FONT_SIZES = [13, 16, 20, 26];
+
 function setupNoteEvents(note) {
-  const el   = note.el;
-  const hndl = el.querySelector('.note-handle');
-  const del  = el.querySelector('.note-delete');
-  const txt  = el.querySelector('.note-text');
+  const el      = note.el;
+  const hndl    = el.querySelector('.note-handle');
+  const del     = el.querySelector('.note-delete');
+  const fontBtn = el.querySelector('.note-fontsize-btn');
+  const txt     = el.querySelector('.note-text');
 
   el.addEventListener('mousedown',  e => e.stopPropagation());
   el.addEventListener('touchstart', e => e.stopPropagation(), { passive:true });
@@ -1263,15 +1271,26 @@ function setupNoteEvents(note) {
     e.stopPropagation();
     if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(note.id)) { startSelMove(e.clientX,e.clientY); return; }
-    if (e.target!==del) startNoteDrag(note,e.clientX,e.clientY);
+    if (e.target!==del && e.target!==fontBtn) startNoteDrag(note,e.clientX,e.clientY);
   });
   hndl.addEventListener('touchstart',e => {
     e.stopPropagation();
     if (activeTool==='hand') { if (e.touches.length===1) startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
+    if (e.target===fontBtn) return;
     if(e.touches.length===1) startNoteDrag(note,e.touches[0].clientX,e.touches[0].clientY,true);
   }, {passive:true});
 
   del.addEventListener('click', e => { e.stopPropagation(); deleteNote(note); });
+
+  fontBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const idx = NOTE_FONT_SIZES.indexOf(note.fontSize || 13);
+    const next = NOTE_FONT_SIZES[(idx === -1 ? 0 : idx + 1) % NOTE_FONT_SIZES.length];
+    note.fontSize = next;
+    txt.style.fontSize = next + 'px';
+    scheduleLocalSave();
+    sendAction({ type:'note_font_size', noteId: note.id, fontSize: next });
+  });
 
   // resize handles
   el.querySelectorAll('.note-resize-handle').forEach(h => {
@@ -2194,7 +2213,7 @@ function saveLocalNow() {
   try {
     const data = {
       strokes,
-      notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', userId:n.userId })),
+      notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', fontSize:n.fontSize||13, userId:n.userId })),
       images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
       shapes: shapes.map(s => s.type==='arrow'
         ? { id:s.id, type:'arrow', x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend, strokeWidth:s.strokeWidth, color:s.color, userId:s.userId,
@@ -2296,10 +2315,10 @@ async function resyncFromServer() {
       const local = notes.find(n => n.id === sn.id);
       if (!local) { notes.push(sn); buildNoteEl(sn, false); return; }
       if (document.activeElement === local.el?.querySelector('.note-text')) return; // 지금 편집 중이면 건드리지 않음
-      local.x = sn.x; local.y = sn.y; local.w = sn.w; local.h = sn.h; local.text = sn.text;
+      local.x = sn.x; local.y = sn.y; local.w = sn.w; local.h = sn.h; local.text = sn.text; local.fontSize = sn.fontSize;
       local.el.style.left = sn.x+'px'; local.el.style.top = sn.y+'px'; local.el.style.width = sn.w+'px'; local.el.style.height = sn.h+'px';
       const t = local.el.querySelector('.note-text');
-      if (t) t.innerText = sn.text || '';
+      if (t) { t.innerText = sn.text || ''; t.style.fontSize = (sn.fontSize||13) + 'px'; }
       positionNoteConnectors(local);
     });
 
@@ -2449,6 +2468,14 @@ function initPusher(pusherKey, pusherCluster) {
       positionNoteConnectors(n);
       updateBoundArrows(n.id, false);
     }
+  });
+
+  channel.bind('note_font_size', data => {
+    const n = notes.find(n=>n.id===data.noteId);
+    if (!n) return;
+    n.fontSize = data.fontSize;
+    const t = n.el?.querySelector('.note-text');
+    if (t) t.style.fontSize = data.fontSize + 'px';
   });
 
   channel.bind('note_text', data => {
