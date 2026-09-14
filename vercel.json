@@ -5,6 +5,9 @@
   "functions": {
     "api/ai-transform.js": {
       "maxDuration": 60
+    },
+    "api/remove-bg.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
