@@ -22,6 +22,7 @@ function makeFakeKv() {
     },
     async del(k) { store.delete(k); },
     async incr(k) { const v = (store.get(k) || 0) + 1; store.set(k, v); return v; },
+    async expire() { /* 테스트에서는 TTL을 신경 쓰지 않는다 */ },
     async sadd(k, v) { const s = store.get(k) || new Set(); s.add(v); store.set(k, s); },
     async scard(k) { const s = store.get(k); return s ? s.size : 0; },
     async lpush(k, v) { const l = store.get(k) || []; l.unshift(v); store.set(k, l); },
@@ -104,4 +105,12 @@ function stubGoogleAuth(tokenToEmail) {
   return () => { global.fetch = original; };
 }
 
-module.exports = { installMocks, freshHandler, mockReq, mockRes, stubGoogleAuth };
+// 외부 API(예: Hugging Face 추론 엔드포인트) 호출을 흉내낸다.
+// responder(url, opts) => 원하는 fetch Response 모양의 객체를 반환하면 된다.
+function stubFetch(responder) {
+  const original = global.fetch;
+  global.fetch = async (url, opts) => responder(url, opts, original);
+  return () => { global.fetch = original; };
+}
+
+module.exports = { installMocks, freshHandler, mockReq, mockRes, stubGoogleAuth, stubFetch };

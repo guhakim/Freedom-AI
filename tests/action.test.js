@@ -75,6 +75,30 @@ test('note_delete removes a note created under a stale legacy userId (production
   assert.equal(state.notes.length, 0);
 });
 
+test('image_update replaces src (position/size untouched) and validates the data URI', async () => {
+  const { kv, triggers } = installMocks();
+  await kv.set(kvKey('r1'), {
+    strokes: [], notes: [], shapes: [],
+    images: [{ id: 'i1', src: 'data:image/png;base64,AA==', x: 10, y: 20, w: 100, h: 100, userId: 'old' }],
+  });
+  const handler = freshHandler(ACTION);
+
+  let res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'image_update', imageId: 'i1', src: 'data:image/png;base64,QUJD' } } }), res);
+  let state = await kv.get(kvKey('r1'));
+  assert.equal(state.images[0].src, 'data:image/png;base64,QUJD');
+  assert.equal(state.images[0].x, 10); // 위치는 그대로
+  assert.ok(triggers.some(t => t.event === 'image_update' && t.data.imageId === 'i1'));
+  // src 자체는 페이로드에 안 실림 (image_add와 동일한 이유 — Pusher 10KB 제한)
+  assert.equal(triggers.find(t => t.event === 'image_update').data.src, undefined);
+
+  // 잘못된 데이터 URI는 무시하고 기존 값을 지킨다
+  res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'image_update', imageId: 'i1', src: 'not-an-image' } } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.images[0].src, 'data:image/png;base64,QUJD');
+});
+
 test('image_move and shape_delete also ignore owner mismatch', async () => {
   const { kv } = installMocks();
   await kv.set(kvKey('r1'), {

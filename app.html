@@ -234,6 +234,13 @@
   #ai-go-btn:hover { background:var(--ink2); }
   #ai-go-btn:disabled { background:var(--ink3); cursor:default; }
   #ai-status { font-size:12px; color:var(--ink3); text-align:center; min-height:16px; }
+  #ai-removebg-btn { padding:10px; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
+    background:none; cursor:pointer; font-size:14px; font-weight:500;
+    font-family:'BM Dohyeon',sans-serif; color:var(--ink); transition:background .15s,border-color .15s; }
+  #ai-removebg-btn:hover { background:var(--paper); border-color:var(--ink); }
+  #ai-removebg-btn:disabled { color:var(--ink3); cursor:default; background:none; border-color:rgba(14,14,13,.1); }
+  #ai-modal-divider { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink3); margin:-4px 0; }
+  #ai-modal-divider::before, #ai-modal-divider::after { content:''; flex:1; height:1px; background:rgba(14,14,13,.12); }
 
   /* ── SELECT TOOL ── */
   #select-box { position:fixed; border:1.5px solid #3b82f6; background:rgba(59,130,246,.08);
@@ -622,6 +629,8 @@
 <div id="ai-modal">
   <div id="ai-modal-inner">
     <div id="ai-modal-title" data-i18n-en="AI Image Transform" data-i18n-ko="AI 이미지 변환">AI 이미지 변환</div>
+    <button id="ai-removebg-btn" data-i18n-en="✂️ Remove Background" data-i18n-ko="✂️ 배경 제거">✂️ 배경 제거</button>
+    <div id="ai-modal-divider" data-i18n-en="or transform with a prompt" data-i18n-ko="또는 프롬프트로 변환">또는 프롬프트로 변환</div>
     <div id="ai-modal-sub" data-i18n-en-html="Works best in English<br>e.g. watercolor style, cartoon, oil painting, sketch" data-i18n-ko-html="영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
     <textarea id="ai-prompt-input" rows="2" placeholder="e.g. watercolor painting style"></textarea>
     <div id="ai-status"></div>
@@ -1954,6 +1963,8 @@ function openAiModal(img) {
   document.getElementById('ai-prompt-input').value = '';
   document.getElementById('ai-status').textContent = '';
   document.getElementById('ai-go-btn').disabled = false;
+  document.getElementById('ai-cancel-btn').disabled = false;
+  document.getElementById('ai-removebg-btn').disabled = false;
   document.getElementById('ai-modal').classList.add('open');
   setTimeout(() => document.getElementById('ai-prompt-input').focus(), 50);
 }
@@ -1991,13 +2002,92 @@ async function runAiTransform() {
     }
 
     // 변환 성공: 이미지 교체
-    _aiTargetImg.src = data.imageBase64;
-    _aiTargetImg.el.querySelector('img').src = data.imageBase64;
-    scheduleLocalSave();
+    applyImageSrcUpdate(_aiTargetImg, data.imageBase64);
     closeAiModal();
   } catch (e) {
     statusEl.textContent = (window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message;
     goBtn.disabled = false;
+  }
+}
+
+// 변환/배경제거 결과 이미지를 화면에 반영하고 서버에도 저장한다.
+// (이전엔 로컬 src만 바꾸고 서버에 알리지 않아, 다른 협업자에게 안 보이고
+//  새로고침하면 변환 전 이미지로 되돌아가는 문제가 있었다 — image_update로 고침)
+function applyImageSrcUpdate(img, newSrc) {
+  img.src = newSrc;
+  img.el.querySelector('img').src = newSrc;
+  scheduleLocalSave();
+  sendAction({ type: 'image_update', imageId: img.id, src: newSrc });
+}
+
+function loadImageEl(src) {
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('image load failed'));
+    im.src = src;
+  });
+}
+
+// 배경제거 모델이 (모델에 따라) 잘라낸 이미지를 바로 주기도 하고,
+// 흑백 마스크(밝을수록 피사체)만 주기도 한다 — 후자는 원본 이미지의 알파 채널에
+// 마스크 밝기를 그대로 입혀서 투명 배경 PNG로 직접 합성한다.
+async function compositeImageWithMask(imageSrc, maskSrc) {
+  const [img, mask] = await Promise.all([loadImageEl(imageSrc), loadImageEl(maskSrc)]);
+  const w = img.naturalWidth, h = img.naturalHeight;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  const imgData = ctx.getImageData(0, 0, w, h);
+
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = w; maskCanvas.height = h;
+  const mctx = maskCanvas.getContext('2d');
+  mctx.drawImage(mask, 0, 0, w, h); // 원본 크기에 맞춰 리사이즈
+  const maskData = mctx.getImageData(0, 0, w, h);
+
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    imgData.data[i + 3] = maskData.data[i]; // 마스크 R값을 그대로 알파로 사용
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+async function runRemoveBg() {
+  if (!_aiTargetImg) return;
+  const goBtn      = document.getElementById('ai-go-btn');
+  const cancelBtn  = document.getElementById('ai-cancel-btn');
+  const removeBtn  = document.getElementById('ai-removebg-btn');
+  const statusEl   = document.getElementById('ai-status');
+  goBtn.disabled = cancelBtn.disabled = removeBtn.disabled = true;
+  statusEl.textContent = window._faLang==='en' ? '⏳ Removing background... (10–30s)' : '⏳ 배경을 제거하는 중입니다... (10~30초 소요)';
+
+  try {
+    const res = await fetch('/api/remove-bg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: _aiTargetImg.src }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.error === 'model_loading') {
+        statusEl.textContent = '🔄 ' + data.message;
+        goBtn.disabled = cancelBtn.disabled = removeBtn.disabled = false;
+        return;
+      }
+      throw new Error(data.error || res.status);
+    }
+
+    const finalSrc = data.imageBase64 || await compositeImageWithMask(_aiTargetImg.src, data.maskBase64);
+    applyImageSrcUpdate(_aiTargetImg, finalSrc);
+    closeAiModal();
+  } catch (e) {
+    statusEl.textContent = (window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message;
+    goBtn.disabled = cancelBtn.disabled = removeBtn.disabled = false;
   }
 }
 
@@ -2006,6 +2096,7 @@ document.getElementById('ai-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('ai-modal')) closeAiModal();
 });
 document.getElementById('ai-go-btn').addEventListener('click', runAiTransform);
+document.getElementById('ai-removebg-btn').addEventListener('click', runRemoveBg);
 document.getElementById('ai-prompt-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); runAiTransform(); }
 });
@@ -2332,6 +2423,25 @@ function initPusher(pusherKey, pusherCluster) {
       if (img && !images.find(i => i.id === img.id)) {
         images.push(img);
         buildImageEl(img);
+        scheduleLocalSave();
+      }
+    } catch(e) {}
+  });
+
+  // AI 변환/배경제거로 다른 협업자가 이미지 src를 바꾼 경우 — src는 image_add와 같은 이유로
+  // Pusher 페이로드에 못 실으므로, id만 받고 /api/room에서 새 src를 가져온다.
+  channel.bind('image_update', async data => {
+    const local = images.find(i => i.id === data.imageId);
+    if (!local) return;
+    try {
+      const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+      });
+      const state = await res.json();
+      const updated = state.images?.find(i => i.id === data.imageId);
+      if (updated) {
+        local.src = updated.src;
+        local.el.querySelector('img').src = updated.src;
         scheduleLocalSave();
       }
     } catch(e) {}

@@ -49,6 +49,7 @@ Freedom-AI/
 ├── api/
 │   ├── action.js        # 캔버스 액션 처리 (획·지우개·포스트잇)
 │   ├── ai-transform.js  # AI 이미지 변환 프록시 (HF_TOKEN 필요)
+│   ├── remove-bg.js     # AI 배경 제거 프록시 (HF_TOKEN 필요)
 │   ├── join.js          # 방 입장 & 초기 상태 반환
 │   ├── projects.js      # 프로젝트 목록 동기화 (Google 토큰 검증)
 │   ├── pusher-auth.js   # Pusher Presence 채널 인증
@@ -192,11 +193,12 @@ https://your-domain.vercel.app
 - 상단 툴바·좌측 사이드바 자유 이동 (PC, 위치 저장)
 - 모바일 터치 최적화 (핀치 줌, 터치 드로잉, 이미지 터치, safe-area 대응)
 - Vercel 서버리스 배포
+- 도형 도구 (사각형, 원, 삼각형, 화살표)
+- AI 이미지 변환 (프롬프트 스타일 변환) / AI 배경 제거
 
 ### 예정 🔜
 
-- 기본 도형 도구 (사각형, 원, 화살표)
-- AI 이미지 생성·편집 / AI 아이디어 제안
+- AI 아이디어 제안
 
 ---
 
