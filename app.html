@@ -2020,23 +2020,41 @@ document.addEventListener('drop', e => {
 });
 
 let _saveTimer = null;
+function saveLocalNow() {
+  if (!roomId) return;
+  try {
+    const data = {
+      strokes,
+      notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', userId:n.userId })),
+      images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
+      shapes: shapes.map(s => s.type==='arrow'
+        ? { id:s.id, type:'arrow', x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend, strokeWidth:s.strokeWidth, color:s.color, userId:s.userId,
+            fromId:s.fromId, fromSide:s.fromSide, toId:s.toId, toSide:s.toSide }
+        : { id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId }),
+    };
+    localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
+  } catch(e) {}
+}
 function scheduleLocalSave() {
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(() => {
-    if (!roomId) return;
-    try {
-      const data = {
-        strokes,
-        notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', userId:n.userId })),
-        images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
-        shapes: shapes.map(s => s.type==='arrow'
-          ? { id:s.id, type:'arrow', x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend, strokeWidth:s.strokeWidth, color:s.color, userId:s.userId,
-              fromId:s.fromId, fromSide:s.fromSide, toId:s.toId, toSide:s.toSide }
-          : { id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId }),
-      };
-      localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
-    } catch(e) {}
-  }, 600);
+  _saveTimer = setTimeout(saveLocalNow, 600);
+}
+
+// 사이드바 "저장" 메뉴용 — 그리기·이동 등은 매 동작마다 이미 서버로 즉시 전송되지만,
+// 포스트잇 텍스트는 입력 중 400ms 디바운스로 묶여 있어 그 사이에 누르면 최신 글자가
+// 누락될 수 있다. 지금 편집 중인 텍스트가 있으면 먼저 확정 전송한 뒤 로컬 저장까지 강제로 수행한다.
+function saveCurrentWork() {
+  const active = document.activeElement;
+  if (active?.classList?.contains('note-text')) {
+    const note = notes.find(n => n.el === active.closest('.note'));
+    if (note) {
+      note.text = active.innerText;
+      sendAction({ type:'note_text', noteId:note.id, text:note.text });
+    }
+  }
+  clearTimeout(_saveTimer);
+  saveLocalNow();
+  showToast(window._faLang==='en' ? 'Saved' : '저장했습니다');
 }
 
 function sendAction(action) {
@@ -3158,15 +3176,18 @@ async function main() {
     function onDocMousedownCloseCtx(e) {
       if (ctxMenuEl && !ctxMenuEl.contains(e.target)) closeCtxMenu();
     }
-    function showRenameMenu(x, y, onRename) {
+    // items: [{ label, onClick }, ...]
+    function showProjectMenu(x, y, items) {
       closeCtxMenu();
       const menu = document.createElement('div');
       menu.className = 'ctx-menu';
       menu.style.left = x + 'px'; menu.style.top = y + 'px';
-      const btn = document.createElement('button');
-      btn.textContent = window._faLang==='en' ? 'Rename' : '제목 바꾸기';
-      btn.addEventListener('click', () => { closeCtxMenu(); onRename(); });
-      menu.appendChild(btn);
+      items.forEach(({ label, onClick }) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.addEventListener('click', () => { closeCtxMenu(); onClick(); });
+        menu.appendChild(btn);
+      });
       document.body.appendChild(menu);
       ctxMenuEl = menu;
       setTimeout(() => document.addEventListener('mousedown', onDocMousedownCloseCtx, true), 0);
@@ -3261,7 +3282,15 @@ async function main() {
         });
         btn.addEventListener('contextmenu', e => {
           e.preventDefault();
-          showRenameMenu(e.clientX, e.clientY, () => startRenameProject(row, btn, name));
+          const items = [
+            { label: window._faLang==='en' ? 'Rename' : '제목 바꾸기', onClick: () => startRenameProject(row, btn, name) },
+          ];
+          // 지금 열려있는 프로젝트일 때만 "저장"을 보여준다 — 다른 프로젝트는 캔버스가
+          // 메모리에 로드돼 있지 않아 저장할 "지금 작업물"이 없다.
+          if (name.slice(0,32) === roomId) {
+            items.push({ label: window._faLang==='en' ? 'Save' : '저장', onClick: saveCurrentWork });
+          }
+          showProjectMenu(e.clientX, e.clientY, items);
         });
 
         const del = document.createElement('button');
