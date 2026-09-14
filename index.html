@@ -43,6 +43,10 @@
     font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    /* 한글은 기본값(word-break:normal)에서 음절 중간에서도 줄바꿈될 수 있어
+       "있어요"처럼 마지막 단어가 반토막 나 다음 줄에 혼자 떨어지는 경우가 생긴다.
+       단어(어절) 단위로만 줄바꿈되게 해서 이런 어색한 줄바꿈을 막는다. */
+    word-break: keep-all;
   }
 
   /* ── HEADER ── */
@@ -238,7 +242,7 @@
     font-size: 18px;
     font-weight: 300;
     color: var(--ink2);
-    max-width: 520px;
+    max-width: 560px;
     margin: 0 auto 40px;
     line-height: 1.65;
     letter-spacing: -0.01em;
