@@ -1269,7 +1269,13 @@ function cycleNoteFontSize(note) {
   const next = NOTE_FONT_SIZES[(idx === -1 ? 0 : idx + 1) % NOTE_FONT_SIZES.length];
   note.fontSize = next;
   const t = note.el.querySelector('.note-text');
-  if (t) t.style.fontSize = next + 'px';
+  if (t) {
+    t.style.fontSize = next + 'px';
+    // 다른 곳에서 복사해 붙여넣은 글자는 원본 서식이 담긴 <span style="font-size:...">로
+    // 남아있을 수 있다 — 부모(.note-text)의 font-size보다 우선 적용돼 그 글자만 안
+    // 바뀐 것처럼 보이므로, 크기를 바꿀 때마다 안에 남은 font-size 지정을 걷어낸다.
+    t.querySelectorAll('[style*="font-size"]').forEach(el => { el.style.fontSize = ''; });
+  }
   scheduleLocalSave();
   sendAction({ type:'note_font_size', noteId: note.id, fontSize: next });
 }
@@ -1314,6 +1320,16 @@ function setupNoteEvents(note) {
   el.querySelectorAll('.note-resize-handle').forEach(h => {
     h.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); startNoteResize(note,h.dataset.dir,e.clientX,e.clientY); });
     h.addEventListener('touchstart',e => { e.stopPropagation(); if(e.touches.length===1) startNoteResize(note,h.dataset.dir,e.touches[0].clientX,e.touches[0].clientY,true); }, {passive:true});
+  });
+
+  // 다른 곳(웹페이지·문서 등)에서 복사한 글자를 붙여넣으면 브라우저가 원본의 서식(글꼴
+  // 크기 등)이 담긴 <span style="..."> 그대로 붙여넣는다 — 그 span에 박힌 font-size가
+  // 부모(.note-text)의 font-size보다 우선 적용돼, "가" 버튼으로 크기를 바꿔도 그 글자만
+  // 안 바뀌는 것처럼 보인다. 서식은 버리고 글자만 붙여넣도록 강제한다.
+  txt.addEventListener('paste', e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
   });
 
   // text sync
