@@ -54,18 +54,18 @@
   .note.deleting { animation:noteOut .15s ease both; }
   @keyframes noteOut { to{opacity:0;transform:scale(.85)} }
 
-  .note-handle { height:28px; border-radius:10px 10px 0 0; display:flex;
-    align-items:center; justify-content:flex-end; gap:5px; padding:0 7px;
+  .note-handle { height:36px; border-radius:10px 10px 0 0; display:flex;
+    align-items:center; justify-content:flex-end; gap:6px; padding:0 8px;
     cursor:grab; background:rgba(0,0,0,.07); flex-shrink:0; }
   .note-handle:active { cursor:grabbing; }
 
-  .note-delete, .note-fontsize-btn { width:18px; height:18px; border:none; background:rgba(0,0,0,.12);
-    border-radius:50%; cursor:pointer; font-size:11px; color:rgba(14,14,13,.55);
+  .note-delete, .note-fontsize-btn { width:22px; height:22px; border:none; background:rgba(0,0,0,.12);
+    border-radius:50%; cursor:pointer; font-size:13px; color:rgba(14,14,13,.55);
     display:flex; align-items:center; justify-content:center;
     opacity:0; transition:opacity .15s,background .15s; padding:0; font-family:'BM Dohyeon',sans-serif; }
   .note:hover .note-delete, .note:hover .note-fontsize-btn { opacity:1; }
   .note-delete:hover, .note-fontsize-btn:hover { background:rgba(0,0,0,.25); color:var(--ink); }
-  .note-fontsize-btn { font-size:10px; }
+  .note-fontsize-btn { font-size:12px; }
 
   .note-text { flex:1; padding:9px 11px 4px; font-size:13px; line-height:1.55;
     color:var(--ink); outline:none; word-break:break-word; white-space:pre-wrap;
@@ -579,6 +579,12 @@
     <div class="color-swatch sticky-swatch" data-scolor="#bbf7d0" style="background:#bbf7d0;"></div>
     <div class="color-swatch sticky-swatch" data-scolor="#bae6fd" style="background:#bae6fd;"></div>
     <div class="color-swatch sticky-swatch" data-scolor="#fed7aa" style="background:#fed7aa;"></div>
+  </div>
+
+  <!-- 포스트잇 글자 크기 (포스트잇을 편집 중일 때만 표시) -->
+  <div id="note-font-toolbar" style="display:none;align-items:center;gap:3px;">
+    <div class="divider"></div>
+    <button class="tool-btn" id="note-font-toolbar-btn" title="글자 크기" data-i18n-en-title="Text size" data-i18n-ko-title="글자 크기" style="font-family:'BM Dohyeon',sans-serif;font-size:16px;font-weight:500;">가</button>
   </div>
 
   <!-- 도형 종류 옵션 -->
@@ -1256,6 +1262,21 @@ function resyncArrowBindings() {
 
 // 클릭할 때마다 작게 → 크게 순서로 돌아가며 바뀐다 (13px가 기존 기본값)
 const NOTE_FONT_SIZES = [13, 16, 20, 26];
+let focusedNote = null; // 지금 텍스트 편집 중인 포스트잇 — 상단 툴바의 "가" 버튼이 이걸 대상으로 동작한다
+
+function cycleNoteFontSize(note) {
+  const idx = NOTE_FONT_SIZES.indexOf(note.fontSize || 13);
+  const next = NOTE_FONT_SIZES[(idx === -1 ? 0 : idx + 1) % NOTE_FONT_SIZES.length];
+  note.fontSize = next;
+  const t = note.el.querySelector('.note-text');
+  if (t) t.style.fontSize = next + 'px';
+  scheduleLocalSave();
+  sendAction({ type:'note_font_size', noteId: note.id, fontSize: next });
+}
+
+function updateNoteFontToolbarVisibility() {
+  document.getElementById('note-font-toolbar').style.display = focusedNote ? 'flex' : 'none';
+}
 
 function setupNoteEvents(note) {
   const el      = note.el;
@@ -1282,15 +1303,12 @@ function setupNoteEvents(note) {
 
   del.addEventListener('click', e => { e.stopPropagation(); deleteNote(note); });
 
-  fontBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    const idx = NOTE_FONT_SIZES.indexOf(note.fontSize || 13);
-    const next = NOTE_FONT_SIZES[(idx === -1 ? 0 : idx + 1) % NOTE_FONT_SIZES.length];
-    note.fontSize = next;
-    txt.style.fontSize = next + 'px';
-    scheduleLocalSave();
-    sendAction({ type:'note_font_size', noteId: note.id, fontSize: next });
-  });
+  fontBtn.addEventListener('click', e => { e.stopPropagation(); cycleNoteFontSize(note); });
+
+  // 이 포스트잇을 편집 중인 동안엔 상단 툴바에도 "가" 버튼을 띄워, 작은 핸들 버튼 대신
+  // 거기서도 글자 크기를 바꿀 수 있게 한다.
+  txt.addEventListener('focus', () => { focusedNote = note; updateNoteFontToolbarVisibility(); });
+  txt.addEventListener('blur',  () => { if (focusedNote === note) { focusedNote = null; updateNoteFontToolbarVisibility(); } });
 
   // resize handles
   el.querySelectorAll('.note-resize-handle').forEach(h => {
@@ -1369,6 +1387,7 @@ function startNoteResize(note, dir, sx0, sy0, isTouch=false) {
 }
 
 function deleteNote(note) {
+  if (focusedNote === note) { focusedNote = null; updateNoteFontToolbarVisibility(); }
   lastDeleted = { type: 'note', data: { id:note.id, x:note.x, y:note.y, w:note.w, h:note.h, color:note.color, text:note.text||'' } };
   unbindArrowsForNote(note.id);
   note.connEl?.remove();
@@ -3023,6 +3042,11 @@ document.getElementById('btn-zoom-out').addEventListener('click',   ()=>zoomAt(c
 document.getElementById('btn-zoom-reset').addEventListener('click', centerView);
 
 document.getElementById('btn-undo').addEventListener('click', undo);
+
+// 포스트잇 편집 중일 때만 보이는 상단 툴바 글자 크기 버튼 — mousedown에서 기본 동작을
+// 막아, 클릭해도 지금 편집 중이던 포스트잇의 포커스(contenteditable)가 풀리지 않게 한다.
+document.getElementById('note-font-toolbar-btn').addEventListener('mousedown', e => e.preventDefault());
+document.getElementById('note-font-toolbar-btn').addEventListener('click', () => { if (focusedNote) cycleNoteFontSize(focusedNote); });
 document.getElementById('btn-share').addEventListener('click', openShareModal);
 
 document.getElementById('share-modal-close').addEventListener('click', closeShareModal);
