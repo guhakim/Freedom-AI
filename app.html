@@ -1261,10 +1261,15 @@ function setupNoteEvents(note) {
 
   hndl.addEventListener('mousedown', e => {
     e.stopPropagation();
+    if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(note.id)) { startSelMove(e.clientX,e.clientY); return; }
     if (e.target!==del) startNoteDrag(note,e.clientX,e.clientY);
   });
-  hndl.addEventListener('touchstart',e => { e.stopPropagation(); if(e.touches.length===1) startNoteDrag(note,e.touches[0].clientX,e.touches[0].clientY,true); }, {passive:true});
+  hndl.addEventListener('touchstart',e => {
+    e.stopPropagation();
+    if (activeTool==='hand') { if (e.touches.length===1) startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
+    if(e.touches.length===1) startNoteDrag(note,e.touches[0].clientX,e.touches[0].clientY,true);
+  }, {passive:true});
 
   del.addEventListener('click', e => { e.stopPropagation(); deleteNote(note); });
 
@@ -1488,6 +1493,7 @@ function setupImageEvents(img) {
   el.addEventListener('mousedown', e => {
     if (e.target === del || e.target === rsz || rsz.contains(e.target)) return;
     e.stopPropagation();
+    if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(img.id)) { startSelMove(e.clientX,e.clientY); return; }
     const ox = img.x, oy = img.y, sx0 = e.clientX, sy0 = e.clientY;
     let longPressFired = false;
@@ -1513,6 +1519,7 @@ function setupImageEvents(img) {
   el.addEventListener('touchstart', e => {
     if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target)) return;
     e.stopPropagation();
+    if (activeTool==='hand') { startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
     const t0 = e.touches[0];
     const ox = img.x, oy = img.y, sx0 = t0.clientX, sy0 = t0.clientY;
     let longPressFired = false;
@@ -1635,6 +1642,7 @@ function setupShapeEvents(shape) {
   el.addEventListener('mousedown', e => {
     if (e.target === del || e.target === rsz || rsz.contains(e.target)) return;
     e.stopPropagation();
+    if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(shape.id)) { startSelMove(e.clientX,e.clientY); return; }
     const ox = shape.x, oy = shape.y, sx0 = e.clientX, sy0 = e.clientY;
     const mm = e => {
@@ -1650,6 +1658,7 @@ function setupShapeEvents(shape) {
   el.addEventListener('touchstart', e => {
     if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target)) return;
     e.stopPropagation();
+    if (activeTool==='hand') { startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
     const t0 = e.touches[0];
     const ox = shape.x, oy = shape.y, sx0 = t0.clientX, sy0 = t0.clientY;
     const tm = e => {
@@ -1849,11 +1858,13 @@ function setupArrowEvents(shape) {
   }
   hit.addEventListener('mousedown', e => {
     e.stopPropagation();
+    if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(shape.id)) { startSelMove(e.clientX,e.clientY); return; }
     startBodyMove(e.clientX, e.clientY, false);
   });
   hit.addEventListener('touchstart', e => {
     e.stopPropagation();
+    if (activeTool==='hand') { if (e.touches.length===1) startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
     if (e.touches.length===1) startBodyMove(e.touches[0].clientX, e.touches[0].clientY, true);
   }, { passive:true });
 
@@ -2710,9 +2721,23 @@ function startSelMove(sx0, sy0) {
 // ═══════════════════════════════════════════════════════════════
 //  MOUSE / TOUCH / KEYBOARD
 // ═══════════════════════════════════════════════════════════════
+// 스페이스바(또는 이동 도구)로 캔버스를 패닝하는 동작을 한 곳에 모았다. 문서(document)
+// 레벨에서 계속 추적하므로, 드래그 도중 마우스가 포스트잇·이미지·도형 위를 지나가도
+// (그 요소들은 pointer-events:auto라 canvas 자체의 mousemove는 못 받는다) 끊기지 않는다.
+function startCanvasPan(clientX, clientY) {
+  isPanning = true;
+  panStartX = clientX - offsetX;
+  panStartY = clientY - offsetY;
+  updateCursor(true);
+  const mm = e => { offsetX = e.clientX - panStartX; offsetY = e.clientY - panStartY; invalidateStrokesCache(); requestDraw(); };
+  const mu = () => { isPanning = false; updateCursor(false); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+  document.addEventListener('mousemove', mm);
+  document.addEventListener('mouseup', mu);
+}
+
 canvas.addEventListener('mousedown', e => {
   e.preventDefault();
-  if (spaceHeld) { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); return; }
+  if (spaceHeld) { startCanvasPan(e.clientX, e.clientY); return; }
   if (activeTool==='select') {
     // 이미 선택된 획 위를 클릭하면 (note/image/shape처럼) 선택 해제 대신 바로 이동 시작
     if (hitSelectedStroke(e.clientX, e.clientY)) { startSelMove(e.clientX, e.clientY); return; }
@@ -2735,7 +2760,7 @@ canvas.addEventListener('mousedown', e => {
     document.addEventListener('mouseup',   mu);
     return;
   }
-  if (activeTool==='hand') { isPanning=true; panStartX=e.clientX-offsetX; panStartY=e.clientY-offsetY; updateCursor(true); }
+  if (activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); }
   else if (activeTool==='pen'||activeTool==='eraser') startDraw(e.clientX,e.clientY);
   else if (activeTool==='shape') { shapeType==='arrow' ? startArrowCreate(e.clientX,e.clientY) : startShapeCreate(e.clientX,e.clientY); }
 });
@@ -2751,8 +2776,8 @@ canvas.addEventListener('mousemove', e => {
     channel?.trigger('client-cursor', { userId:myUserId, x:wp.x, y:wp.y });
     lastCursorSend=now;
   }
-  if (isPanning) { offsetX=e.clientX-panStartX; offsetY=e.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
-  else if (!spaceHeld) continueDraw(e.clientX,e.clientY);
+  // 패닝(스페이스바/이동 도구)은 startCanvasPan()이 document 레벨에서 따로 추적한다.
+  if (!isPanning && !spaceHeld) continueDraw(e.clientX,e.clientY);
 
   // 선택된 획 위에서는 note/image/shape와 동일하게 이동 가능함을 나타내는 커서로 바꾼다
   // (스페이스바 팬 중에는 grab/grabbing 커서가 우선이어야 하므로 spaceHeld일 때는 건너뛴다)
@@ -2761,8 +2786,10 @@ canvas.addEventListener('mousemove', e => {
   }
 });
 
-canvas.addEventListener('mouseup',    () => { isPanning=false; stopDraw(); updateCursor(false); });
-canvas.addEventListener('mouseleave', () => { eraserRing.style.display='none'; isPanning=false; stopDraw(); });
+canvas.addEventListener('mouseup',    () => { stopDraw(); });
+// isPanning 리셋은 이제 startCanvasPan()의 document mouseup에서 처리한다 — 여기서 끄면
+// 드래그 도중 마우스가 캔버스 밖으로 잠깐 나갔다 들어올 때 그리기 도구와 혼동될 수 있다.
+canvas.addEventListener('mouseleave', () => { eraserRing.style.display='none'; stopDraw(); });
 
 canvas.addEventListener('click', e => {
   if (activeTool!=='sticky') return;
@@ -2778,12 +2805,29 @@ canvas.addEventListener('wheel', e => {
 // touch
 let lastTouchDist=null, tapStart=null;
 
+// startCanvasPan()의 터치판 — 마찬가지로 document 레벨에서 추적해, 손가락이 포스트잇·
+// 이미지·도형 위를 지나가도 (그 요소들 자신의 touchstart가 먼저 안 먹었다면) 안 끊긴다.
+function startCanvasPanTouch(clientX, clientY) {
+  isPanning = true;
+  panStartX = clientX - offsetX;
+  panStartY = clientY - offsetY;
+  const tm = e => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    offsetX = t.clientX - panStartX; offsetY = t.clientY - panStartY;
+    invalidateStrokesCache(); requestDraw();
+  };
+  const te = () => { isPanning = false; document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', te); };
+  document.addEventListener('touchmove', tm, { passive: true });
+  document.addEventListener('touchend', te, { passive: true });
+}
+
 let touchSelDrag = null;
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   if (e.touches.length===1) {
     const t=e.touches[0];
-    if (activeTool==='hand') { isPanning=true; panStartX=t.clientX-offsetX; panStartY=t.clientY-offsetY; }
+    if (activeTool==='hand') { startCanvasPanTouch(t.clientX, t.clientY); }
     else if (activeTool==='sticky') tapStart={x:t.clientX,y:t.clientY};
     else if (activeTool==='select') {
       clearSelection();
@@ -2802,13 +2846,13 @@ canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   if (e.touches.length===1) {
     const t=e.touches[0];
-    if (activeTool==='hand'&&isPanning) { offsetX=t.clientX-panStartX; offsetY=t.clientY-panStartY; invalidateStrokesCache(); requestDraw(); }
-    else if (activeTool==='select'&&touchSelDrag) {
+    // 'hand' 도구 패닝은 startCanvasPanTouch()가 document 레벨에서 따로 추적한다.
+    if (activeTool==='select'&&touchSelDrag) {
       const x=Math.min(t.clientX,touchSelDrag.sx0), y=Math.min(t.clientY,touchSelDrag.sy0);
       const w=Math.abs(t.clientX-touchSelDrag.sx0), h=Math.abs(t.clientY-touchSelDrag.sy0);
       selBox.style.cssText=`display:block;left:${x}px;top:${y}px;width:${w}px;height:${h}px;`;
     }
-    else if (activeTool!=='sticky' && activeTool!=='shape') continueDraw(t.clientX,t.clientY);
+    else if (activeTool!=='sticky' && activeTool!=='shape' && activeTool!=='hand') continueDraw(t.clientX,t.clientY);
   } else if (e.touches.length===2&&lastTouchDist) {
     const d=touchDist(e.touches);
     const mx=(e.touches[0].clientX+e.touches[1].clientX)/2;
