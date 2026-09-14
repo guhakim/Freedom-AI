@@ -198,6 +198,18 @@
   .trash-row:hover { background:none; }
   .trash-row:hover .sidebar-del { opacity:1; }
 
+  /* ── 사이드바 우클릭 메뉴 (제목 바꾸기) ── */
+  .ctx-menu { position:fixed; background:var(--white); border:.5px solid rgba(14,14,13,.14);
+    border-radius:9px; box-shadow:0 8px 28px rgba(14,14,13,.18); padding:4px; z-index:400;
+    min-width:128px; }
+  .ctx-menu button { display:block; width:100%; border:none; background:none;
+    border-radius:6px; padding:8px 10px; text-align:left; font-size:13px; color:var(--ink);
+    font-family:'BM Dohyeon',sans-serif; cursor:pointer; }
+  .ctx-menu button:hover { background:var(--paper2); }
+  .sidebar-rename-input { flex:1; font-size:14px; color:var(--ink); background:var(--white);
+    border:1px solid var(--ink); border-radius:8px; padding:7px 8px; min-width:0;
+    font-family:'BM Dohyeon',sans-serif; outline:none; }
+
   /* ── AI TRANSFORM MODAL ── */
   #ai-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
     backdrop-filter:blur(6px); z-index:600; display:none;
@@ -3137,6 +3149,98 @@ async function main() {
     const newForm  = document.getElementById('sidebar-new-form');
     const newInput = document.getElementById('sidebar-new-input');
 
+    // ── 우클릭 메뉴 (제목 바꾸기) ──
+    let ctxMenuEl = null;
+    function closeCtxMenu() {
+      ctxMenuEl?.remove(); ctxMenuEl = null;
+      document.removeEventListener('mousedown', onDocMousedownCloseCtx, true);
+    }
+    function onDocMousedownCloseCtx(e) {
+      if (ctxMenuEl && !ctxMenuEl.contains(e.target)) closeCtxMenu();
+    }
+    function showRenameMenu(x, y, onRename) {
+      closeCtxMenu();
+      const menu = document.createElement('div');
+      menu.className = 'ctx-menu';
+      menu.style.left = x + 'px'; menu.style.top = y + 'px';
+      const btn = document.createElement('button');
+      btn.textContent = window._faLang==='en' ? 'Rename' : '제목 바꾸기';
+      btn.addEventListener('click', () => { closeCtxMenu(); onRename(); });
+      menu.appendChild(btn);
+      document.body.appendChild(menu);
+      ctxMenuEl = menu;
+      setTimeout(() => document.addEventListener('mousedown', onDocMousedownCloseCtx, true), 0);
+    }
+
+    // 프로젝트 이름 = 협업 방(room) ID이기도 하므로, 라벨만 바꾸면 캔버스 내용이 있는
+    // 방과 연결이 끊어진다. 서버에 저장된 내용(및 비공개 방이면 멤버 목록)까지
+    // 새 이름으로 옮긴 뒤에야 로컬 목록을 갱신한다.
+    function startRenameProject(row, btn, oldName) {
+      const input = document.createElement('input');
+      input.className = 'sidebar-rename-input';
+      input.value = oldName;
+      input.maxLength = 32;
+      row.replaceChild(input, btn);
+      input.focus(); input.select();
+
+      const restore = () => { if (input.isConnected) row.replaceChild(btn, input); };
+
+      const finish = async commit => {
+        input.removeEventListener('blur', onBlur);
+        input.removeEventListener('keydown', onKey);
+        const newName = input.value.trim().slice(0, 32);
+        if (!commit || !newName || newName === oldName) { restore(); return; }
+
+        const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+        if (projects.some(p => p !== oldName && p === newName)) {
+          alert(window._faLang==='en' ? 'A project with that name already exists.' : '이미 같은 이름의 프로젝트가 있습니다.');
+          restore(); return;
+        }
+
+        try {
+          const res = await fetch('/api/rename-room', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token')||''}` },
+            body: JSON.stringify({ oldRoomId: oldName.slice(0,32), newRoomId: newName.slice(0,32), email: myEmail }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            alert(data.error==='name_taken'
+              ? (window._faLang==='en' ? 'A project with that name already exists.' : '이미 같은 이름의 프로젝트가 있습니다.')
+              : (window._faLang==='en' ? 'Failed to rename.' : '이름을 바꾸지 못했습니다.'));
+            restore(); return;
+          }
+        } catch (err) {
+          alert(window._faLang==='en' ? 'Failed to rename.' : '이름을 바꾸지 못했습니다.');
+          restore(); return;
+        }
+
+        const updated = projects.map(p => p === oldName ? newName : p);
+        localStorage.setItem('fa_projects', JSON.stringify(updated));
+        pushProjectsToServer(updated);
+        const oldLocal = localStorage.getItem('fa:room:' + oldName.slice(0,32));
+        if (oldLocal) {
+          localStorage.setItem('fa:room:' + newName.slice(0,32), oldLocal);
+          localStorage.removeItem('fa:room:' + oldName.slice(0,32));
+        }
+
+        const wasActive = oldName.slice(0,32) === roomId;
+        buildList();
+        if (wasActive) {
+          sessionStorage.setItem('fa_sidebar_nav', '1');
+          history.replaceState(null, '', `?room=${encodeURIComponent(newName.slice(0,32))}`);
+          location.reload();
+        }
+      };
+      const onBlur = () => finish(true);
+      const onKey = e => {
+        if (e.key==='Enter') { e.preventDefault(); input.blur(); }
+        else if (e.key==='Escape') { e.preventDefault(); finish(false); }
+      };
+      input.addEventListener('blur', onBlur);
+      input.addEventListener('keydown', onKey);
+    }
+
     function buildList() {
       const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
       sidebar.style.display = 'block';
@@ -3154,6 +3258,10 @@ async function main() {
           sessionStorage.setItem('fa_sidebar_nav', '1');
           history.replaceState(null, '', `?room=${encodeURIComponent(rid)}`);
           location.reload();
+        });
+        btn.addEventListener('contextmenu', e => {
+          e.preventDefault();
+          showRenameMenu(e.clientX, e.clientY, () => startRenameProject(row, btn, name));
         });
 
         const del = document.createElement('button');
