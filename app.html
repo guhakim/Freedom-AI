@@ -2147,15 +2147,121 @@ function loadImageEl(src) {
 // 배경제거 모델이 (모델에 따라) 잘라낸 이미지를 바로 주기도 하고,
 // 흑백 마스크(밝을수록 피사체)만 주기도 한다 — 후자는 원본 이미지의 알파 채널에
 // 마스크 밝기를 그대로 입혀서 투명 배경 PNG로 직접 합성한다.
+// 다운샘플된 이진 마스크에서 가장 큰 연결 영역만 남긴다 — 세그멘테이션 노이즈로
+// 생기는 작은 조각들 때문에 엉뚱한 곳부터 외곽선을 추적하는 걸 방지한다.
+function largestComponentMask(inside, cols, rows) {
+  const labels = new Int32Array(cols * rows).fill(-1);
+  let bestLabel = -1, bestSize = 0, label = 0;
+  const stack = [];
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const i = y * cols + x;
+    if (!inside[i] || labels[i] !== -1) continue;
+    let size = 0;
+    stack.length = 0; stack.push(i); labels[i] = label;
+    while (stack.length) {
+      const p = stack.pop(); size++;
+      const px = p % cols, py = (p / cols) | 0;
+      const neigh = [[px - 1, py], [px + 1, py], [px, py - 1], [px, py + 1]];
+      for (const [nx, ny] of neigh) {
+        if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+        const ni = ny * cols + nx;
+        if (inside[ni] && labels[ni] === -1) { labels[ni] = label; stack.push(ni); }
+      }
+    }
+    if (size > bestSize) { bestSize = size; bestLabel = label; }
+    label++;
+  }
+  if (bestLabel === -1) return inside;
+  const out = new Uint8Array(cols * rows);
+  for (let i = 0; i < cols * rows; i++) out[i] = labels[i] === bestLabel ? 1 : 0;
+  return out;
+}
+
+// Moore-neighbor tracing — 이진 마스크의 외곽 윤곽을 실제로 따라 걸으면서 좌표를
+// 순서대로 뽑아낸다. 중심각 정렬 방식과 달리 목/어깨 사이처럼 오목하게 들어간
+// 부분에서도 선이 서로 꼬이지 않는다.
+function traceContour(inside, cols, rows) {
+  const idx = (x, y) => y * cols + x;
+  const isInside = (x, y) => x >= 0 && y >= 0 && x < cols && y < rows && inside[idx(x, y)];
+  let start = null;
+  for (let y = 0; y < rows && !start; y++) {
+    for (let x = 0; x < cols; x++) if (inside[idx(x, y)]) { start = [x, y]; break; }
+  }
+  if (!start) return [];
+  const dirs = [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]]; // 서쪽부터 시계방향
+  const boundary = [start];
+  let current = start, backDir = 0, steps = 0;
+  const maxSteps = cols * rows * 4 + 16;
+  while (steps++ < maxSteps) {
+    let foundDir = -1, next = null;
+    for (let i = 1; i <= 8; i++) {
+      const d = (backDir + i) % 8;
+      const nx = current[0] + dirs[d][0], ny = current[1] + dirs[d][1];
+      if (isInside(nx, ny)) { foundDir = d; next = [nx, ny]; break; }
+    }
+    if (foundDir === -1) break; // 고립 픽셀
+    backDir = (foundDir + 4) % 8;
+    current = next;
+    if (current[0] === start[0] && current[1] === start[1]) break; // 시작점으로 복귀
+    boundary.push(current);
+  }
+  return boundary;
+}
+
+// 실루엣 알파 경계를 다운샘플 후 윤곽 추적해서 스티커 컷라인처럼 점선 테두리를 그린다.
+function drawStickerOutline(ctx, alphaData, w, h, pad, threshold = 40) {
+  const step = Math.max(1, Math.round(Math.max(w, h) / 220));
+  const cols = Math.ceil(w / step), rows = Math.ceil(h / step);
+  const inside0 = new Uint8Array(cols * rows);
+  for (let ry = 0; ry < rows; ry++) {
+    for (let rx = 0; rx < cols; rx++) {
+      const px = Math.min(w - 1, rx * step), py = Math.min(h - 1, ry * step);
+      inside0[ry * cols + rx] = alphaData[(py * w + px) * 4 + 3] > threshold ? 1 : 0;
+    }
+  }
+  const inside = largestComponentMask(inside0, cols, rows);
+  const contour = traceContour(inside, cols, rows);
+  if (contour.length < 8) return;
+
+  // 점이 너무 촘촘하면 점선이 지저분해지므로 적당히 솎아낸다
+  const simplifyEvery = Math.max(1, Math.floor(contour.length / 160));
+  const simplified = contour.filter((_, i) => i % simplifyEvery === 0);
+
+  const cx = simplified.reduce((s, p) => s + p[0], 0) / simplified.length;
+  const cy = simplified.reduce((s, p) => s + p[1], 0) / simplified.length;
+  const outlineGap = Math.max(8, Math.round(Math.max(w, h) * 0.02)); // 컷라인이 실루엣 밖으로 뜨는 간격
+  const pts = simplified.map(([gx, gy]) => {
+    const x = gx * step, y = gy * step;
+    const dx = x - cx * step, dy = y - cy * step;
+    const d = Math.hypot(dx, dy) || 1;
+    return [pad + x + (dx / d) * outlineGap, pad + y + (dy / d) * outlineGap];
+  });
+
+  ctx.save();
+  ctx.setLineDash([Math.max(6, step * 2), Math.max(5, step * 1.6)]);
+  ctx.lineWidth = Math.max(2, Math.round(Math.max(w, h) / 300));
+  ctx.strokeStyle = 'rgba(14,14,13,0.8)';
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+}
+
 async function compositeImageWithMask(imageSrc, maskSrc) {
   const [img, mask] = await Promise.all([loadImageEl(imageSrc), loadImageEl(maskSrc)]);
   const w = img.naturalWidth, h = img.naturalHeight;
+  // 점선 컷라인이 실루엣 바깥으로 튀어나가므로, 캔버스에 여백을 둬서 잘리지 않게 한다.
+  const pad = Math.max(12, Math.round(Math.max(w, h) * 0.04));
 
   const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
+  canvas.width = w + pad * 2; canvas.height = h + pad * 2;
   const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0, w, h);
-  const imgData = ctx.getImageData(0, 0, w, h);
+  ctx.drawImage(img, pad, pad, w, h);
+  const imgData = ctx.getImageData(pad, pad, w, h);
 
   const maskCanvas = document.createElement('canvas');
   maskCanvas.width = w; maskCanvas.height = h;
@@ -2166,7 +2272,11 @@ async function compositeImageWithMask(imageSrc, maskSrc) {
   for (let i = 0; i < imgData.data.length; i += 4) {
     imgData.data[i + 3] = maskData.data[i]; // 마스크 R값을 그대로 알파로 사용
   }
-  ctx.putImageData(imgData, 0, 0);
+  ctx.putImageData(imgData, pad, pad);
+
+  // 실루엣 주변에 스티커 컷라인처럼 점선 테두리를 그려 넣는다
+  drawStickerOutline(ctx, imgData.data, w, h, pad);
+
   return canvas.toDataURL('image/png');
 }
 
