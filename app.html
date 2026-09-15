@@ -416,8 +416,12 @@
   .toast { position:fixed; bottom:70px; left:50%; transform:translateX(-50%) translateY(10px);
     background:var(--ink); color:var(--paper); font-size:13px; padding:8px 18px;
     border-radius:100px; z-index:300; opacity:0; transition:opacity .25s,transform .25s;
-    pointer-events:none; white-space:nowrap; }
+    pointer-events:none; white-space:nowrap; display:flex; align-items:center; gap:7px; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  /* 선택 도구 아이콘과 같은 점선 원 — 이모지(🪄) 대신 써서 OS/폰트에 따라
+     깨져 보이는 문제 없이 항상 일관되게 렌더링된다 */
+  .toast-spin { flex-shrink:0; animation: toast-spin-rotate 1s linear infinite; }
+  @keyframes toast-spin-rotate { to { transform: rotate(360deg); } }
 
   /* ── MOBILE ── */
   #mob-sidebar-btn { display:none; position:fixed; z-index:102;
@@ -2193,7 +2197,7 @@ async function combineMasks(maskSrcs) {
 // setupImageEvents()의 long-press 감지에서 호출된다.
 async function autoRemoveBackground(img) {
   img.el.classList.add('bg-processing');
-  showToast(window._faLang==='en' ? '🪄 Analyzing image...' : '🪄 이미지를 분석하는 중입니다...');
+  showToast(window._faLang==='en' ? 'Analyzing image...' : '이미지를 분석하는 중입니다...', { icon: 'scan' });
   const prevSrc = img.src, prevBgRemoved = img.bgRemoved;
 
   try {
@@ -3266,9 +3270,19 @@ function closeShareModal() {
 // ═══════════════════════════════════════════════════════════════
 //  TOAST
 // ═══════════════════════════════════════════════════════════════
-function showToast(msg) {
+function showToast(msg, opts = {}) {
   const t = document.createElement('div');
-  t.className = 'toast'; t.textContent = msg;
+  t.className = 'toast';
+  if (opts.icon === 'scan') {
+    // 이모지(🪄)는 OS/폰트에 따라 깨진 네모로 보일 수 있어, 선택 도구와 같은
+    // 점선 원 SVG로 대체 — "분석 중"임을 계속 도는 애니메이션으로 표현
+    t.innerHTML = `<svg class="toast-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="5.4" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.6 2.6"/>
+    </svg><span></span>`;
+    t.querySelector('span').textContent = msg;
+  } else {
+    t.textContent = msg;
+  }
   document.body.appendChild(t);
   requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
   setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),300); }, 2500);
