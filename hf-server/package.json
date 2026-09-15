@@ -1,0 +1,15 @@
+{
+  "name": "freedom-ai-hf-server",
+  "version": "1.0.0",
+  "description": "Vercel 대시보드 접근 없이 배경제거/AI이미지변환(Hugging Face) 기능만 독립적으로 서빙하는 소형 서버 — Render 등에 배포",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

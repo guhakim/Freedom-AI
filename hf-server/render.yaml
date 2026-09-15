@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: freedom-ai-hf-server
+    runtime: node
+    rootDir: hf-server
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: HF_TOKEN
+        sync: false
