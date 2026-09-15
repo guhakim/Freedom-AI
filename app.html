@@ -806,6 +806,9 @@ const ERASER_SIZES = [20, 40, 80];
 let sizeIndex = 0;
 let spaceHeld = false;
 let lastDeleted = null; // { type:'note'|'image'|'shape', data:{...} } — 삭제 1회 undo용
+// AI 배경제거·이미지 변환처럼 이미지 내용 자체를 덮어쓰는 조작은 실패(엉뚱한 결과)해도
+// 되돌릴 방법이 없었다 — 직전 1건만 되돌릴 수 있게 원본을 잠깐 기억해둔다.
+let lastImageEdit = null; // { imageId, prevSrc, prevBgRemoved }
 
 // ═══════════════════════════════════════════════════════════════
 //  STROKE STATE
@@ -1114,6 +1117,13 @@ function stopDraw() {
 }
 
 function undo() {
+  if (lastImageEdit) {
+    const le = lastImageEdit;
+    lastImageEdit = null;
+    const img = images.find(i => i.id === le.imageId);
+    if (img) applyImageSrcUpdate(img, le.prevSrc, { bgRemoved: !!le.prevBgRemoved });
+    return;
+  }
   if (lastDeleted) {
     const ld = lastDeleted;
     lastDeleted = null;
@@ -2102,7 +2112,8 @@ async function runAiTransform() {
       throw new Error(data.error || res.status);
     }
 
-    // 변환 성공: 이미지 교체
+    // 변환 성공: 이미지 교체 (마음에 안 들면 Ctrl+Z로 원본 복구 가능)
+    lastImageEdit = { imageId: _aiTargetImg.id, prevSrc: _aiTargetImg.src, prevBgRemoved: _aiTargetImg.bgRemoved };
     applyImageSrcUpdate(_aiTargetImg, data.imageBase64);
     closeAiModal();
   } catch (e) {
@@ -2118,6 +2129,7 @@ function applyImageSrcUpdate(img, newSrc, extra = {}) {
   img.src = newSrc;
   img.el.querySelector('img').src = newSrc;
   Object.assign(img, extra);
+  if ('bgRemoved' in extra) img.el.classList.toggle('bg-removed', !!extra.bgRemoved);
   scheduleLocalSave();
   sendAction({ type: 'image_update', imageId: img.id, src: newSrc, ...extra });
 }
@@ -2178,6 +2190,7 @@ async function combineMasks(maskSrcs) {
 async function autoRemoveBackground(img) {
   img.el.classList.add('bg-processing');
   showToast(window._faLang==='en' ? '🪄 Analyzing image...' : '🪄 이미지를 분석하는 중입니다...');
+  const prevSrc = img.src, prevBgRemoved = img.bgRemoved;
 
   try {
     const res = await fetch(`${HF_SERVER_BASE}/remove-bg`, {
@@ -2209,8 +2222,10 @@ async function autoRemoveBackground(img) {
     // 그대로 남아있으면 인물 실루엣 주변에 네모난 테두리가 계속 보인다 — bgRemoved
     // 플래그를 함께 저장해서 새로고침 후에도 계속 숨겨지게 한다.
     applyImageSrcUpdate(img, finalSrc, { bgRemoved: true });
-    img.el.classList.add('bg-removed');
-    showToast(window._faLang==='en' ? '✂️ Background removed' : '✂️ 배경을 제거했습니다');
+    // 인물 파싱 모델이라 사진이 아닌 이미지(포스터·일러스트 등)에 쓰면 엉뚱하게
+    // 잘려나갈 수 있다 — Ctrl+Z로 바로 원본을 되돌릴 수 있게 기억해둔다.
+    lastImageEdit = { imageId: img.id, prevSrc, prevBgRemoved };
+    showToast(window._faLang==='en' ? '✂️ Background removed (Ctrl+Z to undo)' : '✂️ 배경을 제거했습니다 (Ctrl+Z로 되돌리기)');
   } catch (e) {
     showToast((window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message);
   } finally {
