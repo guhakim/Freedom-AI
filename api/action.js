@@ -393,11 +393,14 @@ module.exports = async (req, res) => {
     // AI 변환/배경제거로 기존 이미지의 픽셀 내용(src)만 교체 — 위치/크기는 그대로.
     case 'image_update': {
       if (!state.images) break;
-      const { imageId, src } = action;
+      const { imageId, src, bgRemoved } = action;
       const img = state.images.find(i => i.id === imageId);
       if (!img) break;
       if (typeof src !== 'string' || src.length > MAX_IMG_SRC || !VALID_IMG_SRC.test(src)) break;
       img.src = src;
+      // 배경 제거 결과인지 표시해둬야, 새로고침/재동기화 후에도 클라이언트가
+      // 투명 배경 이미지의 사각형 그림자를 계속 숨길 수 있다.
+      if (typeof bgRemoved === 'boolean') img.bgRemoved = bgRemoved;
       await kvSet(kvKey, state);
       // src는 image_add와 같은 이유로 Pusher 10KB 한도를 넘으므로 id만 알리고,
       // 수신 측은 /api/room에서 새 src를 가져온다.

@@ -122,6 +122,34 @@ test('image_update replaces src (position/size untouched) and validates the data
   assert.equal(state.images[0].src, 'data:image/png;base64,QUJD');
 });
 
+// 회귀 테스트: 배경제거 후 투명 PNG로 바뀌어도, 클라이언트가 사각형 그림자를 계속
+// 숨기려면 이 사실이 새로고침 후에도 남아있어야 한다 — bgRemoved 플래그로 저장한다.
+test('image_update persists the bgRemoved flag alongside a background-removal result', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), {
+    strokes: [], notes: [], shapes: [],
+    images: [{ id: 'i1', src: 'data:image/png;base64,AA==', x: 10, y: 20, w: 100, h: 100, userId: 'old' }],
+  });
+  const handler = freshHandler(ACTION);
+
+  const res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'me',
+    action: { type: 'image_update', imageId: 'i1', src: 'data:image/png;base64,QUJD', bgRemoved: true },
+  } }), res);
+  const state = await kv.get(kvKey('r1'));
+  assert.equal(state.images[0].bgRemoved, true);
+
+  // bgRemoved를 안 보내는 일반 업데이트(AI 변환 등)는 기존 값을 건드리지 않는다
+  const res2 = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'me',
+    action: { type: 'image_update', imageId: 'i1', src: 'data:image/png;base64,QUJD' },
+  } }), res2);
+  const state2 = await kv.get(kvKey('r1'));
+  assert.equal(state2.images[0].bgRemoved, true);
+});
+
 test('image_move and shape_delete also ignore owner mismatch', async () => {
   const { kv } = installMocks();
   await kv.set(kvKey('r1'), {

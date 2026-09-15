@@ -255,6 +255,9 @@
     user-select:none; }
   .canvas-img img { display:block; width:100%; height:100%;
     border-radius:6px; pointer-events:none; draggable:false; }
+  /* 배경 제거 후에는 투명 영역에 사각형 그림자/모서리가 비치지 않도록 제거 */
+  .canvas-img.bg-removed { border-radius:0; box-shadow:none; }
+  .canvas-img.bg-removed img { border-radius:0; }
   .canvas-img-del { position:absolute; top:-7px; right:-7px; width:18px; height:18px;
     border:none; background:var(--ink); border-radius:50%; cursor:pointer;
     font-size:12px; color:#fff; display:flex; align-items:center; justify-content:center;
@@ -1510,7 +1513,7 @@ function addImageToCanvas(src, natW, natH, screenX, screenY) {
 
 function buildImageEl(img) {
   const el = document.createElement('div');
-  el.className = 'canvas-img';
+  el.className = 'canvas-img' + (img.bgRemoved ? ' bg-removed' : '');
   el.dataset.id = img.id;
   el.style.cssText = `left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
   el.innerHTML = `
@@ -2111,11 +2114,12 @@ async function runAiTransform() {
 // 변환/배경제거 결과 이미지를 화면에 반영하고 서버에도 저장한다.
 // (이전엔 로컬 src만 바꾸고 서버에 알리지 않아, 다른 협업자에게 안 보이고
 //  새로고침하면 변환 전 이미지로 되돌아가는 문제가 있었다 — image_update로 고침)
-function applyImageSrcUpdate(img, newSrc) {
+function applyImageSrcUpdate(img, newSrc, extra = {}) {
   img.src = newSrc;
   img.el.querySelector('img').src = newSrc;
+  Object.assign(img, extra);
   scheduleLocalSave();
-  sendAction({ type: 'image_update', imageId: img.id, src: newSrc });
+  sendAction({ type: 'image_update', imageId: img.id, src: newSrc, ...extra });
 }
 
 function loadImageEl(src) {
@@ -2201,7 +2205,11 @@ async function autoRemoveBackground(img) {
     } else {
       throw new Error('unexpected_response');
     }
-    applyImageSrcUpdate(img, finalSrc);
+    // 배경을 투명하게 지워도 .canvas-img 래퍼의 사각형 box-shadow/border-radius가
+    // 그대로 남아있으면 인물 실루엣 주변에 네모난 테두리가 계속 보인다 — bgRemoved
+    // 플래그를 함께 저장해서 새로고침 후에도 계속 숨겨지게 한다.
+    applyImageSrcUpdate(img, finalSrc, { bgRemoved: true });
+    img.el.classList.add('bg-removed');
     showToast(window._faLang==='en' ? '✂️ Background removed' : '✂️ 배경을 제거했습니다');
   } catch (e) {
     showToast((window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message);
