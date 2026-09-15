@@ -266,6 +266,15 @@
     opacity:0; transition:opacity .15s; padding:0; z-index:2; line-height:1; }
   .canvas-img:hover .canvas-img-del { opacity:1; }
   .canvas-img-del:hover { background:#ef4444; }
+  /* 배경 제거 버튼 — 삭제 버튼과 대칭으로 반대쪽(좌상단)에 둔다.
+     꾹 누르기로도 여전히 되지만, 이 버튼이 있다는 걸 몰라 못 쓰는 경우가 많아 추가. */
+  .canvas-img-bg { position:absolute; top:-7px; left:-7px; width:18px; height:18px;
+    border:none; background:var(--ink); border-radius:50%; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s, background .15s; padding:0; z-index:2; }
+  .canvas-img:hover .canvas-img-bg { opacity:1; }
+  .canvas-img-bg:hover { background:var(--ink2); }
+  .canvas-img-bg svg { display:block; pointer-events:none; }
   .canvas-img-resize { position:absolute; bottom:-5px; right:-5px; width:14px; height:14px;
     cursor:se-resize; z-index:2; }
   .canvas-img-resize svg { display:block; pointer-events:none; }
@@ -1534,6 +1543,13 @@ function buildImageEl(img) {
   el.style.cssText = `left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
   el.innerHTML = `
     <img draggable="false">
+    <button class="canvas-img-bg" title="${window._faLang==='en'?'Remove background':'배경 제거'}">
+      <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
+        <circle cx="3.4" cy="3.4" r="1.7" stroke="#fff" stroke-width="1.1"/>
+        <circle cx="3.4" cy="11.6" r="1.7" stroke="#fff" stroke-width="1.1"/>
+        <path d="M12.8 2.2L4.7 8.3M8.4 8.4l4.4 4.4M4.7 6.7l1.8 1.7" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <button class="canvas-img-del" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
     <div class="canvas-img-resize">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -1559,6 +1575,7 @@ function setupImageEvents(img) {
   const el  = img.el;
   const del = el.querySelector('.canvas-img-del');
   const rsz = el.querySelector('.canvas-img-resize');
+  const bg  = el.querySelector('.canvas-img-bg');
 
   el.addEventListener('mousedown',  e => e.stopPropagation());
   el.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
@@ -1569,7 +1586,7 @@ function setupImageEvents(img) {
   const LONG_PRESS_MOVE_TOLERANCE = 4; // px, 이 이상 움직이면 드래그로 간주
 
   el.addEventListener('mousedown', e => {
-    if (e.target === del || e.target === rsz || rsz.contains(e.target)) return;
+    if (e.target === del || e.target === rsz || rsz.contains(e.target) || e.target === bg || bg.contains(e.target)) return;
     e.stopPropagation();
     if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(img.id)) { startSelMove(e.clientX,e.clientY); return; }
@@ -1595,7 +1612,7 @@ function setupImageEvents(img) {
 
   // 터치 드래그 (동일하게 꾹 누르면 배경 제거)
   el.addEventListener('touchstart', e => {
-    if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target)) return;
+    if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target) || e.target === bg || bg.contains(e.target)) return;
     e.stopPropagation();
     if (activeTool==='hand') { startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
     const t0 = e.touches[0];
@@ -1659,6 +1676,12 @@ function setupImageEvents(img) {
   del.addEventListener('click', e => {
     e.stopPropagation();
     deleteImage(img);
+  });
+
+  // 배경 제거 — 꾹 누르기를 몰라도 바로 찾을 수 있는 명시적 버튼
+  bg.addEventListener('click', e => {
+    e.stopPropagation();
+    autoRemoveBackground(img);
   });
 
   // 더블클릭 → AI 변환 모달
