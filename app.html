@@ -2365,12 +2365,35 @@ async function resyncFromServer() {
     const serverImgIds = new Set((state.images || []).map(i => i.id));
     images.filter(i => !serverImgIds.has(i.id)).forEach(i => i.el?.remove());
     images = images.filter(i => serverImgIds.has(i.id));
-    (state.images || []).forEach(si => { if (!images.find(i => i.id === si.id)) { images.push(si); buildImageEl(si); } });
+    (state.images || []).forEach(si => {
+      const idx = images.findIndex(i => i.id === si.id);
+      if (idx === -1) { images.push(si); buildImageEl(si); return; }
+      // 다른 사용자가 옮기거나(위치/크기) AI로 이미지를 바꾼(src) 경우, 기존 항목만
+      // 추가/삭제하고 내용은 그대로 두면 화면이 새로고침 전까지 계속 낡은 채로 남는다 —
+      // 노트와 동일하게 서버 값으로 갱신한다. (드래그/리사이즈 중이면 다음 요소 재구축이
+      // 진행 중인 조작을 끊을 수 있지만, resync 자체가 흔치 않은 복구 경로라 감수한다.)
+      const local = images[idx];
+      if (local.x===si.x && local.y===si.y && local.w===si.w && local.h===si.h && local.src===si.src) return;
+      local.el?.remove();
+      images[idx] = si;
+      buildImageEl(si);
+    });
 
     const serverShapeIds = new Set((state.shapes || []).map(s => s.id));
     shapes.filter(s => !serverShapeIds.has(s.id)).forEach(s => s.el?.remove());
     shapes = shapes.filter(s => serverShapeIds.has(s.id));
-    (state.shapes || []).forEach(ss => { if (!shapes.find(s => s.id === ss.id)) { shapes.push(ss); buildShapeEl(ss); } });
+    (state.shapes || []).forEach(ss => {
+      const idx = shapes.findIndex(s => s.id === ss.id);
+      if (idx === -1) { shapes.push(ss); buildShapeEl(ss); return; }
+      const local = shapes[idx];
+      const same = ss.type === 'arrow'
+        ? (local.x1===ss.x1 && local.y1===ss.y1 && local.x2===ss.x2 && local.y2===ss.y2 && local.bend===ss.bend && local.color===ss.color)
+        : (local.x===ss.x && local.y===ss.y && local.w===ss.w && local.h===ss.h && local.color===ss.color);
+      if (same) return;
+      local.el?.remove();
+      shapes[idx] = ss;
+      buildShapeEl(ss);
+    });
 
     resyncArrowBindings();
     scheduleLocalSave();
@@ -2688,7 +2711,7 @@ function applySelHighlight() {
 
 function clearSelection() { selectedIds.clear(); applySelHighlight(); }
 
-// 선택으로 획 삭제 (지우개 도구와 달리, 소유자 본인 것만 삭제 가능 — 다른 선택 삭제와 동일한 정책)
+// 선택으로 획 삭제 (지우개와 동일하게 소유자 구분 없이 방의 누구나 삭제 가능)
 function deleteStroke(stroke) {
   strokes = strokes.filter(s => s.id !== stroke.id);
   invalidateStrokesCache(); requestDraw();

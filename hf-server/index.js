@@ -18,12 +18,14 @@ app.get('/', (req, res) => res.json({ ok: true, service: 'freedom-ai-hf-server' 
 // 레이트리밋을 관리해도 충분하다 (Vercel 서버리스처럼 인스턴스가 매번 사라지지 않음).
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const hitsByIp = new Map();
-function checkRateLimit(ip) {
+// 원래 Vercel 함수들처럼 엔드포인트별로 독립된 한도를 준다(합쳐서 5개가 아니라 각각 5개).
+const hitsByIpAndEndpoint = new Map();
+function checkRateLimit(ip, endpoint) {
+  const key = `${endpoint}:${ip}`;
   const now = Date.now();
-  const hits = (hitsByIp.get(ip) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  const hits = (hitsByIpAndEndpoint.get(key) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
   hits.push(now);
-  hitsByIp.set(ip, hits);
+  hitsByIpAndEndpoint.set(key, hits);
   return hits.length <= RATE_LIMIT_MAX;
 }
 function clientIp(req) {
@@ -31,7 +33,7 @@ function clientIp(req) {
 }
 
 app.post('/remove-bg', async (req, res) => {
-  if (!checkRateLimit(clientIp(req))) {
+  if (!checkRateLimit(clientIp(req), 'remove-bg')) {
     return res.status(429).json({ error: 'rate_limited', message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
   }
 
@@ -97,7 +99,7 @@ app.post('/remove-bg', async (req, res) => {
 });
 
 app.post('/ai-transform', async (req, res) => {
-  if (!checkRateLimit(clientIp(req))) {
+  if (!checkRateLimit(clientIp(req), 'ai-transform')) {
     return res.status(429).json({ error: 'rate_limited', message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
   }
 
@@ -120,6 +122,7 @@ app.post('/ai-transform', async (req, res) => {
         headers: {
           'Authorization': `Bearer ${HF_TOKEN}`,
           'Content-Type': 'application/json',
+          'X-Wait-For-Model': 'true',
         },
         body: JSON.stringify({
           inputs: base64Data,

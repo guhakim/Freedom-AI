@@ -172,18 +172,57 @@ test('private room (has :members) rejects an action without a valid member email
 
 test('erase_result deletes originals and inserts split fragments', async () => {
   const { kv } = installMocks();
-  await kv.set(kvKey('r1'), { strokes: [{ id: 'orig1', tool: 'pen', color: '#000', width: 2, points: [{ x: 0, y: 0 }] }], notes: [], images: [], shapes: [] });
+  await kv.set(kvKey('r1'), { strokes: [{ id: 'orig1', tool: 'pen', color: '#000000', width: 2, points: [{ x: 0, y: 0 }] }], notes: [], images: [], shapes: [] });
   const handler = freshHandler(ACTION);
   const res = mockRes();
 
   await handler(mockReq({ body: {
     roomId: 'r1', userId: 'me',
-    action: { type: 'erase_result', deletedIds: ['orig1'], newStrokes: [{ id: 'frag1', tool: 'pen', color: '#000', width: 2, points: [{ x: 5, y: 5 }] }] },
+    action: { type: 'erase_result', deletedIds: ['orig1'], newStrokes: [{ id: 'frag1', tool: 'pen', color: '#000000', width: 2, points: [{ x: 5, y: 5 }] }] },
   } }), res);
 
   const state = await kv.get(kvKey('r1'));
   assert.equal(state.strokes.find(s => s.id === 'orig1'), undefined);
   assert.ok(state.strokes.find(s => s.id === 'frag1'));
+});
+
+// 회귀 테스트: erase_result가 deletedIds/newStrokes를 배열인지도 검증 안 하던 시절엔,
+// 조작된(또는 버그 있는) 요청 하나로 "x is not iterable" 같은 TypeError가 나며 500이
+// 발생할 수 있었다. 또한 newStrokes 각 항목의 필드 검증이 전혀 없어서 MAX_STROKES
+// 캡을 우회하거나 임의 필드를 주입할 수 있었다.
+test('erase_result rejects malformed payloads instead of crashing, and validates each fragment', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), { strokes: [{ id: 'orig1', tool: 'pen', color: '#000000', width: 2, points: [{ x: 0, y: 0 }] }], notes: [], images: [], shapes: [] });
+  const handler = freshHandler(ACTION);
+
+  // deletedIds/newStrokes가 배열이 아니면 크래시 없이 그냥 무시(break)해야 한다
+  let res = mockRes();
+  await assert.doesNotReject(handler(mockReq({ body: {
+    roomId: 'r1', userId: 'me',
+    action: { type: 'erase_result', deletedIds: null, newStrokes: null },
+  } }), res));
+  assert.deepEqual(res.body, { ok: true });
+  let state = await kv.get(kvKey('r1'));
+  assert.ok(state.strokes.find(s => s.id === 'orig1')); // 아무 것도 안 지워짐
+
+  // 유효하지 않은 조각(색상 형식 불량, tool이 pen이 아님, points가 배열이 아님)은
+  // 저장되지 않고 조용히 걸러져야 한다
+  res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'me',
+    action: {
+      type: 'erase_result', deletedIds: ['orig1'],
+      newStrokes: [
+        { id: 'bad1', tool: 'pen', color: 'not-a-color', width: 2, points: [{ x: 1, y: 1 }] },
+        { id: 'bad2', tool: 'eraser', color: '#000000', width: 2, points: [{ x: 1, y: 1 }] },
+        { id: 'bad3', tool: 'pen', color: '#000000', width: 2, points: 'not-an-array' },
+        { id: 'good1', tool: 'pen', color: '#000000', width: 2, points: [{ x: 1, y: 1 }] },
+      ],
+    },
+  } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.strokes.length, 1);
+  assert.equal(state.strokes[0].id, 'good1');
 });
 
 test('rejects non-POST methods and malformed bodies', async () => {

@@ -174,13 +174,31 @@ module.exports = async (req, res) => {
   switch (action.type) {
 
     case 'erase_result': {
-      const { deletedIds = [], newStrokes = [] } = action;
-      state.strokes = state.strokes.filter(s => !deletedIds.includes(s.id));
-      state.strokes.push(...newStrokes.map(s => ({ ...s, userId })));
+      const { deletedIds, newStrokes } = action;
+      if (!Array.isArray(deletedIds) || !Array.isArray(newStrokes)) break;
+
+      const ids = deletedIds.filter(id => typeof id === 'string');
+      // 지우개로 잘린 조각들도 stroke_end와 동일한 기준(펜 도구, 유효한 색상/좌표)으로
+      // 검증한다 — 이 검증이 없으면 조작된 요청으로 MAX_STROKES 제한을 우회하거나
+      // 저장 상태에 임의 필드를 주입할 수 있었다.
+      const valid = newStrokes
+        .filter(s => s && typeof s.id === 'string' && s.tool === 'pen'
+          && VALID_COLOR.test(s.color) && typeof s.width === 'number' && s.width > 0 && s.width <= 100
+          && Array.isArray(s.points))
+        .map(s => ({
+          id: s.id, tool: 'pen', color: s.color, width: s.width, userId,
+          points: s.points.slice(0, 5000).filter(p => typeof p?.x === 'number' && typeof p?.y === 'number'),
+        }))
+        .filter(s => s.points.length);
+
+      state.strokes = state.strokes.filter(s => !ids.includes(s.id));
+      const room = Math.max(0, MAX_STROKES - state.strokes.length);
+      const toAdd = valid.slice(0, room);
+      state.strokes.push(...toAdd);
       await kvSet(kvKey, state);
-      for (const id of deletedIds)
+      for (const id of ids)
         await pusher.trigger(channel, 'stroke_delete', { strokeId: id }, excl);
-      for (const ns of newStrokes)
+      for (const ns of toAdd)
         await pusher.trigger(channel, 'stroke_end', { strokeId: ns.id, stroke: ns }, excl);
       break;
     }
