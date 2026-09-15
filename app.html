@@ -720,6 +720,11 @@
 <canvas id="canvas"></canvas>
 
 <script>
+// Vercel 대시보드(계정 잠김) 접근 없이 HF_TOKEN을 등록/교체할 수 있도록,
+// 배경제거·AI이미지변환 두 기능만 별도 서버(hf-server/, Render 배포)로 분리했다.
+// 배포 후 실제 주소로 아래 값을 바꿔야 한다.
+const HF_SERVER_BASE = 'https://freedom-ai-vxhn.onrender.com';
+
 // ═══════════════════════════════════════════════════════════════
 //  LANGUAGE (EN/KO)
 // ═══════════════════════════════════════════════════════════════
@@ -2078,7 +2083,7 @@ async function runAiTransform() {
   statusEl.textContent = window._faLang==='en' ? '⏳ AI is transforming your image... (30–60s)' : '⏳ AI가 이미지를 변환 중입니다... (30~60초 소요)';
 
   try {
-    const res = await fetch('/api/ai-transform', {
+    const res = await fetch(`${HF_SERVER_BASE}/ai-transform`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: _aiTargetImg.src, prompt }),
@@ -2171,7 +2176,7 @@ async function autoRemoveBackground(img) {
   showToast(window._faLang==='en' ? '🪄 Analyzing image...' : '🪄 이미지를 분석하는 중입니다...');
 
   try {
-    const res = await fetch('/api/remove-bg', {
+    const res = await fetch(`${HF_SERVER_BASE}/remove-bg`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64: img.src }),
