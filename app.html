@@ -1590,6 +1590,9 @@ function setupImageEvents(img) {
     e.stopPropagation();
     if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(img.id)) { startSelMove(e.clientX,e.clientY); return; }
+    // 선택 도구에서는 클릭만으로 이 이미지를 선택 상태로 만든다 — 이게 없으면
+    // 드래그로 범위를 그려야만 선택되고, 단일 클릭으로는 Backspace 삭제 대상이 되지 않았다.
+    if (activeTool==='select') { selectedIds.clear(); selectedIds.add(img.id); applySelHighlight(); return; }
     const ox = img.x, oy = img.y, sx0 = e.clientX, sy0 = e.clientY;
     let longPressFired = false;
     const longPressTimer = setTimeout(() => {
@@ -1615,6 +1618,7 @@ function setupImageEvents(img) {
     if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target) || e.target === bg || bg.contains(e.target)) return;
     e.stopPropagation();
     if (activeTool==='hand') { startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
+    if (activeTool==='select' && !selectedIds.has(img.id)) { selectedIds.clear(); selectedIds.add(img.id); applySelHighlight(); return; }
     const t0 = e.touches[0];
     const ox = img.x, oy = img.y, sx0 = t0.clientX, sy0 = t0.clientY;
     let longPressFired = false;
