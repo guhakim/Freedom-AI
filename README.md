@@ -4,7 +4,8 @@
 
 🔗 https://freedomai-app.vercel.app/
 
-<img width="1276" height="549" alt="CleanShot 2026-08-15 at 23 20 17" src="https://github.com/user-attachments/assets/53c8eccc-3edd-420f-a2b7-01631345ee34" />
+<img width="1276" height="553" alt="CleanShot 2026-09-16 at 09 00 03" src="https://github.com/user-attachments/assets/468c1752-6513-4502-8c65-ad7a469d4538" />
+
 
 
 ---
