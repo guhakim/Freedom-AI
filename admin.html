@@ -141,6 +141,11 @@
   </div>
   <div class="note">가입자 수는 Google 로그인 후 프로젝트 목록을 최소 한 번 동기화한 고유 이메일 수 기준입니다.</div>
 
+  <div id="users-section" style="display:none;">
+    <h2>가입자 목록 (<span id="users-count">0</span>명)</h2>
+    <div class="contact-list" id="users-list"></div>
+  </div>
+
   <div id="contact-section" style="display:none;">
     <h2>최근 문의 (<span id="contact-count">0</span>건)</h2>
     <div class="contact-list" id="contact-list"></div>
@@ -173,10 +178,33 @@ async function load(key) {
     document.getElementById('v-app').textContent = data.pageviewsApp;
     grid.style.display = 'grid';
 
+    renderUserEmails(data.userEmails || []);
     loadContacts(key);
   } catch (e) {
     msg.textContent = '네트워크 오류';
   }
+}
+
+function renderUserEmails(emails) {
+  const section = document.getElementById('users-section');
+  const list = document.getElementById('users-list');
+  const countEl = document.getElementById('users-count');
+  countEl.textContent = emails.length;
+  list.innerHTML = '';
+  if (!emails.length) {
+    list.innerHTML = '<div class="empty">아직 가입자가 없습니다.</div>';
+  } else {
+    for (const email of emails) {
+      const item = document.createElement('div');
+      item.className = 'contact-item';
+      const emailEl = document.createElement('div');
+      emailEl.className = 'email';
+      emailEl.textContent = email;
+      item.appendChild(emailEl);
+      list.appendChild(item);
+    }
+  }
+  section.style.display = 'block';
 }
 
 async function loadContacts(key) {

@@ -1,0 +1,55 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { installMocks, freshHandler, mockReq, mockRes } = require('./helpers/mockBackend');
+
+const STATS = path.join(__dirname, '..', 'api', 'stats.js');
+
+test('GET without a key is rejected, and with the wrong key is unauthorized', async () => {
+  installMocks();
+  process.env.ADMIN_STATS_KEY = 'right-key';
+  const handler = freshHandler(STATS);
+
+  let res = mockRes();
+  await handler(mockReq({ method: 'GET', query: {} }), res);
+  assert.equal(res.statusCode, 401);
+
+  res = mockRes();
+  await handler(mockReq({ method: 'GET', query: { key: 'wrong-key' } }), res);
+  assert.equal(res.statusCode, 401);
+
+  delete process.env.ADMIN_STATS_KEY;
+});
+
+// 회귀 테스트: 가입자 "수"만 보여주고 실제로 누가 가입했는지(이메일 목록)는 확인할
+// 방법이 없었다 — 관리자 페이지에서 목록까지 보여주려면 API가 이메일 배열도 함께
+// 내려줘야 한다.
+test('GET with the correct key returns the signup count and the actual email list', async () => {
+  const { kv } = installMocks();
+  await kv.sadd('fa:stats:users', 'a@example.com');
+  await kv.sadd('fa:stats:users', 'b@example.com');
+  process.env.ADMIN_STATS_KEY = 'right-key';
+  const handler = freshHandler(STATS);
+
+  const res = mockRes();
+  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.users, 2);
+  assert.deepEqual(res.body.userEmails.sort(), ['a@example.com', 'b@example.com']);
+
+  delete process.env.ADMIN_STATS_KEY;
+});
+
+test('POST records a pageview without requiring the admin key', async () => {
+  const { kv } = installMocks();
+  const handler = freshHandler(STATS);
+  const res = mockRes();
+
+  await handler(mockReq({ method: 'POST', body: { page: 'app' } }), res);
+
+  assert.equal(res.statusCode, 204);
+  assert.equal(await kv.get('fa:stats:pageviews'), 1);
+  assert.equal(await kv.get('fa:stats:pageviews:app'), 1);
+});

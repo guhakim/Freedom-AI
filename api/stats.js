@@ -35,8 +35,9 @@ module.exports = async (req, res) => {
       return res.json({ kvConnected: false, users: 0, pageviews: 0, pageviewsIndex: 0, pageviewsApp: 0 });
     }
     try {
-      const [users, pageviews, pageviewsIndex, pageviewsApp] = await Promise.all([
+      const [users, userEmails, pageviews, pageviewsIndex, pageviewsApp] = await Promise.all([
         kv.scard('fa:stats:users'),
+        kv.smembers('fa:stats:users'),
         kv.get('fa:stats:pageviews'),
         kv.get('fa:stats:pageviews:index'),
         kv.get('fa:stats:pageviews:app'),
@@ -44,6 +45,7 @@ module.exports = async (req, res) => {
       return res.json({
         kvConnected: true,
         users: users || 0,
+        userEmails: (userEmails || []).sort(),
         pageviews: Number(pageviews) || 0,
         pageviewsIndex: Number(pageviewsIndex) || 0,
         pageviewsApp: Number(pageviewsApp) || 0,

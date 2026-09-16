@@ -25,6 +25,7 @@ function makeFakeKv() {
     async expire() { /* 테스트에서는 TTL을 신경 쓰지 않는다 */ },
     async sadd(k, v) { const s = store.get(k) || new Set(); s.add(v); store.set(k, s); },
     async scard(k) { const s = store.get(k); return s ? s.size : 0; },
+    async smembers(k) { const s = store.get(k); return s ? [...s] : []; },
     async lpush(k, v) { const l = store.get(k) || []; l.unshift(v); store.set(k, l); },
     async ltrim(k, start, end) { const l = store.get(k) || []; store.set(k, l.slice(start, end + 1)); },
     async lrange(k, start, end) { const l = store.get(k) || []; return l.slice(start, end === -1 ? undefined : end + 1); },
