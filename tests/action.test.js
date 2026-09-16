@@ -150,6 +150,34 @@ test('image_update persists the bgRemoved flag alongside a background-removal re
   assert.equal(state2.images[0].bgRemoved, true);
 });
 
+// 배경제거된 이미지끼리 겹칠 때 앞뒤 순서를 사용자가 직접 조절할 수 있게 하는 기능.
+test('image_reorder updates z and rejects invalid values', async () => {
+  const { kv, triggers } = installMocks();
+  await kv.set(kvKey('r1'), {
+    strokes: [], notes: [], shapes: [],
+    images: [{ id: 'i1', src: 'data:image/png;base64,AA==', x: 0, y: 0, w: 100, h: 100, z: 0, userId: 'old' }],
+  });
+  const handler = freshHandler(ACTION);
+
+  let res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'image_reorder', imageId: 'i1', z: 5 } } }), res);
+  let state = await kv.get(kvKey('r1'));
+  assert.equal(state.images[0].z, 5);
+  assert.ok(triggers.some(t => t.event === 'image_reorder' && t.data.imageId === 'i1' && t.data.z === 5));
+
+  // 숫자가 아니면 무시하고 기존 값을 지킨다
+  res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'image_reorder', imageId: 'i1', z: 'front' } } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.images[0].z, 5);
+
+  // 극단적인 값은 범위 안으로 clamp된다
+  res = mockRes();
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'me', action: { type: 'image_reorder', imageId: 'i1', z: 99_999_999 } } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.images[0].z, 1_000_000);
+});
+
 test('image_move and shape_delete also ignore owner mismatch', async () => {
   const { kv } = installMocks();
   await kv.set(kvKey('r1'), {

@@ -347,6 +347,7 @@ module.exports = async (req, res) => {
         y:      typeof image.y === 'number' ? image.y : 0,
         w:      Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, image.w || 200)),
         h:      Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, image.h || 200)),
+        z:      typeof image.z === 'number' ? image.z : 0,
         userId,
       };
       state.images.push(img);
@@ -405,6 +406,17 @@ module.exports = async (req, res) => {
       // src는 image_add와 같은 이유로 Pusher 10KB 한도를 넘으므로 id만 알리고,
       // 수신 측은 /api/room에서 새 src를 가져온다.
       await pusher.trigger(channel, 'image_update', { imageId }, excl);
+      break;
+    }
+
+    case 'image_reorder': {
+      if (!state.images) break;
+      const { imageId, z } = action;
+      const img = state.images.find(i => i.id === imageId);
+      if (!img || typeof z !== 'number' || !Number.isFinite(z)) break;
+      img.z = Math.min(1_000_000, Math.max(-1_000_000, z));
+      await kvSet(kvKey, state);
+      await pusher.trigger(channel, 'image_reorder', { imageId, z: img.z }, excl);
       break;
     }
 

@@ -1536,7 +1536,7 @@ function addImageToCanvas(src, natW, natH, screenX, screenY) {
   sendAction({ type: 'image_add', image: img });
 }
 
-function buildImageEl(img) {
+function buildImageEl(img, appendMode = false) {
   const el = document.createElement('div');
   el.className = 'canvas-img' + (img.bgRemoved ? ' bg-removed' : '');
   el.dataset.id = img.id;
@@ -1558,8 +1558,11 @@ function buildImageEl(img) {
     </div>`;
   el.querySelector('img').src = img.src;
   img.el = el;
-  // 이미지는 노트보다 아래(DOM 맨 앞에 삽입)
-  notesLayer.insertBefore(el, notesLayer.firstChild);
+  // 이미지는 기본적으로 노트보다 아래(DOM 맨 앞에 삽입)로 들어간다. 초기 로드시
+  // 저장된 z 순서를 그대로 복원할 때만(appendMode) 뒤에 붙여서, z가 낮은 이미지부터
+  // 순서대로 넣으면 자연스럽게 서로간의 앞뒤 순서가 유지된다.
+  if (appendMode) notesLayer.appendChild(el);
+  else notesLayer.insertBefore(el, notesLayer.firstChild);
   setupImageEvents(img);
 }
 
@@ -1569,6 +1572,48 @@ function deleteImage(img) {
   images = images.filter(i => i.id !== img.id);
   scheduleLocalSave();
   sendAction({ type: 'image_delete', imageId: img.id });
+}
+
+// 배경을 제거한 이미지끼리 겹칠 때 어느 게 위/아래로 보일지 사용자가 직접 조절한다.
+function bringImageToFront(img) {
+  const maxZ = images.reduce((m, i) => Math.max(m, i.z || 0), 0);
+  img.z = maxZ + 1;
+  notesLayer.appendChild(img.el);
+  scheduleLocalSave();
+  sendAction({ type: 'image_reorder', imageId: img.id, z: img.z });
+}
+function sendImageToBack(img) {
+  const minZ = images.reduce((m, i) => Math.min(m, i.z || 0), 0);
+  img.z = minZ - 1;
+  notesLayer.insertBefore(img.el, notesLayer.firstChild);
+  scheduleLocalSave();
+  sendAction({ type: 'image_reorder', imageId: img.id, z: img.z });
+}
+
+// 우클릭(롱프레스) 메뉴 — 사이드바 프로젝트 메뉴와 캔버스 이미지 앞뒤 순서 메뉴가
+// 함께 쓰는 범용 컴포넌트. items: [{ label, onClick }, ...]
+let ctxMenuEl = null;
+function closeCtxMenu() {
+  ctxMenuEl?.remove(); ctxMenuEl = null;
+  document.removeEventListener('mousedown', onDocMousedownCloseCtx, true);
+}
+function onDocMousedownCloseCtx(e) {
+  if (ctxMenuEl && !ctxMenuEl.contains(e.target)) closeCtxMenu();
+}
+function showProjectMenu(x, y, items) {
+  closeCtxMenu();
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu';
+  menu.style.left = x + 'px'; menu.style.top = y + 'px';
+  items.forEach(({ label, onClick }) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.addEventListener('click', () => { closeCtxMenu(); onClick(); });
+    menu.appendChild(btn);
+  });
+  document.body.appendChild(menu);
+  ctxMenuEl = menu;
+  setTimeout(() => document.addEventListener('mousedown', onDocMousedownCloseCtx, true), 0);
 }
 
 function setupImageEvents(img) {
@@ -1692,6 +1737,16 @@ function setupImageEvents(img) {
   el.addEventListener('dblclick', e => {
     e.stopPropagation();
     openAiModal(img);
+  });
+
+  // 우클릭 → 겹친 이미지끼리 앞뒤 순서 조절 (배경 제거한 이미지들이 겹칠 때 유용)
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    showProjectMenu(e.clientX, e.clientY, [
+      { label: window._faLang==='en' ? 'Bring to front' : '맨 앞으로 가져오기', onClick: () => bringImageToFront(img) },
+      { label: window._faLang==='en' ? 'Send to back' : '맨 뒤로 보내기', onClick: () => sendImageToBack(img) },
+    ]);
   });
 }
 
@@ -2522,7 +2577,7 @@ async function resyncFromServer() {
       // 노트와 동일하게 서버 값으로 갱신한다. (드래그/리사이즈 중이면 다음 요소 재구축이
       // 진행 중인 조작을 끊을 수 있지만, resync 자체가 흔치 않은 복구 경로라 감수한다.)
       const local = images[idx];
-      if (local.x===si.x && local.y===si.y && local.w===si.w && local.h===si.h && local.src===si.src) return;
+      if (local.x===si.x && local.y===si.y && local.w===si.w && local.h===si.h && local.src===si.src && (local.z||0)===(si.z||0)) return;
       local.el?.remove();
       images[idx] = si;
       buildImageEl(si);
@@ -2743,6 +2798,19 @@ function initPusher(pusherKey, pusherCluster) {
         scheduleLocalSave();
       }
     } catch(e) {}
+  });
+
+  // 다른 협업자가 이미지 앞뒤 순서를 바꾸면, z는 페이로드에 바로 실려오므로
+  // (숫자라 10KB 제한과 무관) 재조회 없이 바로 반영한다.
+  channel.bind('image_reorder', data => {
+    const local = images.find(i => i.id === data.imageId);
+    if (!local || typeof data.z !== 'number') return;
+    local.z = data.z;
+    const maxZ = images.reduce((m, i) => Math.max(m, i.z || 0), 0);
+    const minZ = images.reduce((m, i) => Math.min(m, i.z || 0), 0);
+    if (data.z >= maxZ) notesLayer.appendChild(local.el);
+    else if (data.z <= minZ) notesLayer.insertBefore(local.el, notesLayer.firstChild);
+    scheduleLocalSave();
   });
 
   channel.bind('image_move', data => {
@@ -3662,7 +3730,9 @@ async function main() {
   remoteCursors.clear();
   avatarStack.innerHTML = '';
   // 이미지를 먼저 (노트 아래에 표시), 도형은 그 다음, 노트가 맨 위
-  (resolvedState.images || []).forEach(i => { images.push(i); buildImageEl(i); });
+  // z 오름차순으로 하나씩 뒤에 붙여야(appendMode) 저장해둔 이미지 간 앞뒤 순서가
+  // 새로고침 후에도 그대로 유지된다 (bring to front / send to back 결과 보존).
+  [...(resolvedState.images || [])].sort((a, b) => (a.z||0) - (b.z||0)).forEach(i => { images.push(i); buildImageEl(i, true); });
   (resolvedState.shapes || []).forEach(s => { shapes.push(s); buildShapeEl(s); });
   (resolvedState.notes  || []).forEach(n => { notes.push(n);  buildNoteEl(n, false); });
   resyncArrowBindings(); // 노트가 마지막에 로드되므로, bound 화살표 끝점을 현재 노트 위치로 재계산
@@ -3675,32 +3745,6 @@ async function main() {
     const addBtn   = document.getElementById('sidebar-add-btn');
     const newForm  = document.getElementById('sidebar-new-form');
     const newInput = document.getElementById('sidebar-new-input');
-
-    // ── 우클릭 메뉴 (제목 바꾸기) ──
-    let ctxMenuEl = null;
-    function closeCtxMenu() {
-      ctxMenuEl?.remove(); ctxMenuEl = null;
-      document.removeEventListener('mousedown', onDocMousedownCloseCtx, true);
-    }
-    function onDocMousedownCloseCtx(e) {
-      if (ctxMenuEl && !ctxMenuEl.contains(e.target)) closeCtxMenu();
-    }
-    // items: [{ label, onClick }, ...]
-    function showProjectMenu(x, y, items) {
-      closeCtxMenu();
-      const menu = document.createElement('div');
-      menu.className = 'ctx-menu';
-      menu.style.left = x + 'px'; menu.style.top = y + 'px';
-      items.forEach(({ label, onClick }) => {
-        const btn = document.createElement('button');
-        btn.textContent = label;
-        btn.addEventListener('click', () => { closeCtxMenu(); onClick(); });
-        menu.appendChild(btn);
-      });
-      document.body.appendChild(menu);
-      ctxMenuEl = menu;
-      setTimeout(() => document.addEventListener('mousedown', onDocMousedownCloseCtx, true), 0);
-    }
 
     // 프로젝트 이름 = 협업 방(room) ID이기도 하므로, 라벨만 바꾸면 캔버스 내용이 있는
     // 방과 연결이 끊어진다. 서버에 저장된 내용(및 비공개 방이면 멤버 목록)까지
