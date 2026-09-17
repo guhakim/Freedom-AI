@@ -229,6 +229,7 @@ https://your-domain.vercel.app
 - "Freedom AI" 로고 글씨체를 KOTRA 볼드체로 변경 (상단바·랜딩 페이지 헤더)
 - 로고 옆 "Freedom AI" 글씨를 "FREEDOM AI" 대문자로 변경 (상단바·랜딩 페이지 헤더·푸터)
 - 위 대문자 표기를 "freedom ai" 소문자로 변경
+- 표기를 "Freedom Ai"로 최종 변경
 
 ### 2026-09-16
 - 이미지에 배경 제거 전용 버튼 추가 (호버 시 좌상단에 가위 아이콘, 꾹 누르기 없이도 바로 실행 가능)
