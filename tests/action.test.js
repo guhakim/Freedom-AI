@@ -293,3 +293,56 @@ test('rejects non-POST methods and malformed bodies', async () => {
   await handler(mockReq({ body: { roomId: 'r1' } }), res); // userId, action.type 없음
   assert.equal(res.statusCode, 400);
 });
+
+// 게스트가 만든 방은 아무도 다시 찾아올 수 없으니 방치되면 KV에 영원히 남는다 — 처음
+// 만들어질 때 TTL이 걸리고(24시간), 이후 게스트 액션마다 새로 걸려서 활동 중엔 안 지워지는지 확인.
+test('a brand-new room created by a guest gets tagged and TTL\'d, refreshed on later guest writes', async () => {
+  const { kv } = installMocks();
+  const setCalls = [];
+  const originalSet = kv.set.bind(kv);
+  kv.set = async (k, v, opts) => { setCalls.push({ k, v, opts }); return originalSet(k, v, opts); };
+  const handler = freshHandler(ACTION);
+
+  const res1 = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'guest-room', userId: 'g1', isGuest: true,
+    action: { type: 'stroke_end', strokeId: 's1', stroke: { id: 's1', tool: 'pen', color: '#000000', width: 2, points: [{ x: 1, y: 1 }] } },
+  } }), res1);
+  assert.equal(res1.statusCode, 200);
+
+  const roomSetCalls = setCalls.filter(c => c.k === kvKey('guest-room'));
+  assert.equal(roomSetCalls.length, 1);
+  assert.equal(roomSetCalls[0].opts?.ex, 60 * 60 * 24);
+  assert.equal(roomSetCalls[0].v._guest, true);
+
+  // 같은 방에 두 번째 게스트 액션 — TTL이 계속 갱신돼야 한다(옵션 없이 set하면 Redis가
+  // 기존 TTL을 지워버리므로, 매번 ex를 다시 넘기는지가 핵심).
+  const res2 = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'guest-room', userId: 'g1', isGuest: true,
+    action: { type: 'stroke_end', strokeId: 's2', stroke: { id: 's2', tool: 'pen', color: '#000000', width: 2, points: [{ x: 2, y: 2 }] } },
+  } }), res2);
+  const secondCall = setCalls.filter(c => c.k === kvKey('guest-room'))[1];
+  assert.equal(secondCall.opts?.ex, 60 * 60 * 24);
+});
+
+// 게스트가 이미 존재하는(진짜 로그인 사용자의) 방과 같은 이름을 우연히 입력해도,
+// 그 기존 방에 만료가 걸려서는 안 된다.
+test('a guest writing into a pre-existing room does not get it TTL\'d', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('real-project'), { strokes: [], notes: [], images: [], shapes: [] });
+  const setCalls = [];
+  const originalSet = kv.set.bind(kv);
+  kv.set = async (k, v, opts) => { setCalls.push({ k, v, opts }); return originalSet(k, v, opts); };
+  const handler = freshHandler(ACTION);
+
+  const res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'real-project', userId: 'g1', isGuest: true,
+    action: { type: 'stroke_end', strokeId: 's1', stroke: { id: 's1', tool: 'pen', color: '#000000', width: 2, points: [{ x: 1, y: 1 }] } },
+  } }), res);
+
+  const call = setCalls.find(c => c.k === kvKey('real-project'));
+  assert.equal(call.opts, undefined);
+  assert.equal(call.v._guest, undefined);
+});

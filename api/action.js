@@ -12,13 +12,19 @@ async function kvGet(key) {
     return await kv.get(key);
   } catch { return null; }
 }
-async function kvSet(key, val) {
+async function kvSet(key, val, opts) {
   try {
     const kv = await getKv();
     if (!kv || !process.env.KV_REST_API_URL) return;
-    await kv.set(key, val);
+    await kv.set(key, val, opts);
   } catch { /* ignore */ }
 }
+
+// 게스트가 만든 방은 계정에 귀속되지 않아 아무도 다시 찾아올 수 없으므로, 방치되면 KV에
+// 영원히 남는다. 게스트 액션으로 쓸 때마다 TTL을 새로 걸어(마지막 활동 기준 24시간 후 자동
+// 삭제) 실제 사용 중에는 안 지워지되 방치된 방은 정리되게 한다. (kv.set은 ex 옵션 없이 쓰면
+// Redis 기본 동작상 기존 TTL을 지우므로, 로그인 사용자가 같은 방을 쓰면 TTL이 자연히 해제된다.)
+const GUEST_ROOM_TTL_SECONDS = 60 * 60 * 24;
 
 // 토큰→이메일 검증 결과를 짧게 캐싱한다. 비공개 방에서는 그리기 액션마다 checkAccess가 호출되는데,
 // 매번 Google userinfo API를 왕복하면 획 하나 그릴 때마다 지연이 생긴다.
@@ -152,7 +158,7 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).end();
 
-  const { roomId, userId, socketId, action, email } = req.body || {};
+  const { roomId, userId, socketId, action, email, isGuest } = req.body || {};
   if (!roomId || !userId || !action?.type) return res.status(400).json({ error: 'invalid' });
 
   const pusher  = getPusher();
@@ -165,11 +171,18 @@ module.exports = async (req, res) => {
   const lockKey = await acquireRoomLock(kv, kvKey);
   try {
 
-  let state = (await kvGet(kvKey)) || { strokes: [], notes: [], images: [], shapes: [] };
+  const existingState = await kvGet(kvKey);
+  let state = existingState || { strokes: [], notes: [], images: [], shapes: [] };
   if (!state.strokes) state.strokes = [];
   if (!state.notes)   state.notes   = [];
   if (!state.images)  state.images  = [];
   if (!state.shapes)  state.shapes  = [];
+
+  // 이 요청으로 방이 처음 생기는 것이고 게스트가 만든 것이면 표시해 둔다. 이미 존재하던
+  // 방(진짜 로그인 사용자의 프로젝트일 수 있음)에는 절대 새로 붙이지 않는다 — 그래야 게스트가
+  // 우연히 같은 이름을 입력해도 기존 방에 만료가 걸리는 일이 없다.
+  if (existingState === null && isGuest) state._guest = true;
+  const kvSetOpts = state._guest ? { ex: GUEST_ROOM_TTL_SECONDS } : undefined;
 
   switch (action.type) {
 
@@ -195,7 +208,7 @@ module.exports = async (req, res) => {
       const room = Math.max(0, MAX_STROKES - state.strokes.length);
       const toAdd = valid.slice(0, room);
       state.strokes.push(...toAdd);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       for (const id of ids)
         await pusher.trigger(channel, 'stroke_delete', { strokeId: id }, excl);
       for (const ns of toAdd)
@@ -213,7 +226,7 @@ module.exports = async (req, res) => {
           && VALID_COLOR.test(stroke.color)) {
         state.strokes.push({ ...stroke, userId });
       }
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'stroke_end', { strokeId, stroke }, excl);
       break;
     }
@@ -223,7 +236,7 @@ module.exports = async (req, res) => {
       const idx = state.strokes.findIndex(s => s.id === strokeId && s.userId === userId);
       if (idx !== -1) {
         state.strokes.splice(idx, 1);
-        await kvSet(kvKey, state);
+        await kvSet(kvKey, state, kvSetOpts);
         await pusher.trigger(channel, 'stroke_undo', { strokeId }, excl);
       }
       break;
@@ -237,7 +250,7 @@ module.exports = async (req, res) => {
       const idx = state.strokes.findIndex(s => s.id === strokeId);
       if (idx === -1) break;
       state.strokes.splice(idx, 1);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'stroke_delete', { strokeId }, excl);
       break;
     }
@@ -252,7 +265,7 @@ module.exports = async (req, res) => {
       const pts = points.slice(0, 5000).filter(p => typeof p?.x === 'number' && typeof p?.y === 'number');
       if (!pts.length) break;
       s.points = pts;
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'stroke_move', { strokeId, points: pts }, excl);
       break;
     }
@@ -272,7 +285,7 @@ module.exports = async (req, res) => {
         userId,
       };
       state.notes.push(n);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'note_add', { note: n }, excl);
       break;
     }
@@ -286,7 +299,7 @@ module.exports = async (req, res) => {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.x = action.x; n.y = action.y;
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'note_move', { noteId: action.noteId, x: n.x, y: n.y }, excl);
       break;
     }
@@ -297,7 +310,7 @@ module.exports = async (req, res) => {
       if (typeof action.x === 'number') n.x = action.x;
       n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w ?? n.w));
       n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, action.h ?? n.h));
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'note_resize', { noteId: action.noteId, x: n.x, w: n.w, h: n.h }, excl);
       break;
     }
@@ -306,7 +319,7 @@ module.exports = async (req, res) => {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n || typeof action.fontSize !== 'number') break;
       n.fontSize = Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, action.fontSize));
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'note_font_size', { noteId: action.noteId, fontSize: n.fontSize }, excl);
       break;
     }
@@ -318,7 +331,7 @@ module.exports = async (req, res) => {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.text = String(action.text ?? '').slice(0, MAX_NOTE_TXT);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'note_text', { noteId: action.noteId, text: n.text }, excl);
       break;
     }
@@ -327,7 +340,7 @@ module.exports = async (req, res) => {
       const idx = state.notes.findIndex(n => n.id === action.noteId);
       if (idx === -1) break;
       state.notes.splice(idx, 1);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'note_delete', { noteId: action.noteId }, excl);
       break;
     }
@@ -351,7 +364,7 @@ module.exports = async (req, res) => {
         userId,
       };
       state.images.push(img);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       // src는 Pusher 10KB 한도를 초과하므로 메타데이터만 전송, 수신 측은 /api/room에서 fetch
       await pusher.trigger(channel, 'image_add', { id: img.id, x: img.x, y: img.y, w: img.w, h: img.h, userId }, excl);
       break;
@@ -364,7 +377,7 @@ module.exports = async (req, res) => {
       const img = state.images.find(i => i.id === action.imageId);
       if (!img) break;
       img.x = action.x; img.y = action.y;
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'image_move', { imageId: action.imageId, x: img.x, y: img.y }, excl);
       break;
     }
@@ -376,7 +389,7 @@ module.exports = async (req, res) => {
       img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, action.w ?? img.w));
       img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, action.h ?? img.h));
       if (typeof action.x === 'number') img.x = action.x;
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'image_resize', { imageId: action.imageId, x: img.x, w: img.w, h: img.h }, excl);
       break;
     }
@@ -386,7 +399,7 @@ module.exports = async (req, res) => {
       const idx = state.images.findIndex(i => i.id === action.imageId);
       if (idx === -1) break;
       state.images.splice(idx, 1);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'image_delete', { imageId: action.imageId }, excl);
       break;
     }
@@ -402,7 +415,7 @@ module.exports = async (req, res) => {
       // 배경 제거 결과인지 표시해둬야, 새로고침/재동기화 후에도 클라이언트가
       // 투명 배경 이미지의 사각형 그림자를 계속 숨길 수 있다.
       if (typeof bgRemoved === 'boolean') img.bgRemoved = bgRemoved;
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       // src는 image_add와 같은 이유로 Pusher 10KB 한도를 넘으므로 id만 알리고,
       // 수신 측은 /api/room에서 새 src를 가져온다.
       await pusher.trigger(channel, 'image_update', { imageId }, excl);
@@ -415,7 +428,7 @@ module.exports = async (req, res) => {
       const img = state.images.find(i => i.id === imageId);
       if (!img || typeof z !== 'number' || !Number.isFinite(z)) break;
       img.z = Math.min(1_000_000, Math.max(-1_000_000, z));
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'image_reorder', { imageId, z: img.z }, excl);
       break;
     }
@@ -455,7 +468,7 @@ module.exports = async (req, res) => {
         };
       }
       state.shapes.push(s);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_add', { shape: s }, excl);
       break;
     }
@@ -466,7 +479,7 @@ module.exports = async (req, res) => {
       const s = state.shapes.find(s => s.id === action.shapeId);
       if (!s || s.type === 'arrow') break;
       s.x = action.x; s.y = action.y;
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_move', { shapeId: action.shapeId, x: s.x, y: s.y }, excl);
       break;
     }
@@ -477,7 +490,7 @@ module.exports = async (req, res) => {
       if (!s || s.type === 'arrow') break;
       s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w ?? s.w));
       s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h ?? s.h));
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_resize', { shapeId: action.shapeId, w: s.w, h: s.h }, excl);
       break;
     }
@@ -491,7 +504,7 @@ module.exports = async (req, res) => {
       if (typeof action.x2 === 'number') s.x2 = action.x2;
       if (typeof action.y2 === 'number') s.y2 = action.y2;
       if (typeof action.bend === 'number') s.bend = Math.min(2000, Math.max(-2000, action.bend));
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_arrow_update', { shapeId: action.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend }, excl);
       break;
     }
@@ -501,7 +514,7 @@ module.exports = async (req, res) => {
       const idx = state.shapes.findIndex(s => s.id === action.shapeId);
       if (idx === -1) break;
       state.shapes.splice(idx, 1);
-      await kvSet(kvKey, state);
+      await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_delete', { shapeId: action.shapeId }, excl);
       break;
     }

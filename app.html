@@ -2514,6 +2514,7 @@ function sendAction(action) {
       socketId: pusher?.connection?.socket_id,
       action,
       email: myEmail,
+      isGuest,
     }),
   });
   // resyncFromServer가 이 요청이 서버에 반영되기 *전에* 방 상태를 읽어가면, 방금 한 삭제/이동이
