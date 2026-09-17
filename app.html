@@ -3646,7 +3646,7 @@ function getGoogleUser() {
       const isEn = window._faLang === 'en';
       const warned = confirm(isEn
         ? 'As a guest, none of your work will be saved. Continue?'
-        : '게스트로 입장 시 작업한 내용 전부가 저장되지 않습니다. 계속하시겠습니까?');
+        : '게스트로 입장 시 작업한 내용이 저장되지 않습니다. 계속하시겠습니까?');
       if (!warned) return;
       isGuest = true;
       modal.style.display = 'none';
