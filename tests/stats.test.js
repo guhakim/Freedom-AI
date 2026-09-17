@@ -78,3 +78,27 @@ test('POST increments a per-day counter, and GET returns dailyStats newest-first
 
   delete process.env.ADMIN_STATS_KEY;
 });
+
+// 회귀 테스트: 월별 방문 수도 일별과 같은 방식(KST 기준, 최신순)으로 집계·조회돼야 한다.
+test('POST increments a per-month counter, and GET returns monthlyStats newest-first', async () => {
+  const { kv } = installMocks();
+  const handler = freshHandler(STATS);
+  process.env.ADMIN_STATS_KEY = 'right-key';
+
+  const kstThisMonth = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7);
+
+  await handler(mockReq({ method: 'POST', body: { page: 'index' } }), mockRes());
+  await handler(mockReq({ method: 'POST', body: { page: 'app' } }), mockRes());
+  await kv.sadd('fa:stats:monthly:months', '2020-01');
+  await kv.set('fa:stats:monthly:2020-01', 99);
+
+  const res = mockRes();
+  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(await kv.get(`fa:stats:monthly:${kstThisMonth}`), 2);
+  assert.deepEqual(res.body.monthlyStats[0], { month: kstThisMonth, count: 2 });
+  assert.deepEqual(res.body.monthlyStats[1], { month: '2020-01', count: 99 });
+
+  delete process.env.ADMIN_STATS_KEY;
+});

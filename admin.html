@@ -135,7 +135,7 @@
     font-size: 12px;
   }
   .daily-row .date {
-    width: 46px;
+    width: 56px;
     flex-shrink: 0;
     color: #999;
   }
@@ -176,6 +176,11 @@
     <div class="stat"><div class="label">앱 진입 수</div><div class="value" id="v-app">-</div></div>
   </div>
   <div class="note">가입자 수는 Google 로그인 후 프로젝트 목록을 최소 한 번 동기화한 고유 이메일 수 기준입니다.</div>
+
+  <div id="monthly-section" style="display:none;">
+    <h2>월별 방문 수 (최근 <span id="monthly-months">0</span>개월)</h2>
+    <div class="daily-chart" id="monthly-chart"></div>
+  </div>
 
   <div id="daily-section" style="display:none;">
     <h2>일별 방문 수 (최근 <span id="daily-days">0</span>일)</h2>
@@ -219,6 +224,7 @@ async function load(key) {
     document.getElementById('v-app').textContent = data.pageviewsApp;
     grid.style.display = 'grid';
 
+    renderMonthlyStats(data.monthlyStats || []);
     renderDailyStats(data.dailyStats || []);
     renderUserEmails(data.userEmails || []);
     loadContacts(key);
@@ -227,29 +233,47 @@ async function load(key) {
   }
 }
 
-function renderDailyStats(dailyStats) {
-  const section = document.getElementById('daily-section');
-  const chart = document.getElementById('daily-chart');
-  document.getElementById('daily-days').textContent = dailyStats.length;
+// stats: [{date|month, count}], chartId/sectionId/countId는 DOM id, labelFn(item)은 막대 왼쪽에 쓸 라벨,
+// emptyMsg는 데이터가 하나도 없을 때 문구.
+function renderBarStats(stats, { sectionId, chartId, countId, labelFn, emptyMsg }) {
+  const section = document.getElementById(sectionId);
+  const chart = document.getElementById(chartId);
+  document.getElementById(countId).textContent = stats.length;
   chart.innerHTML = '';
-  if (!dailyStats.length) {
-    chart.innerHTML = '<div class="empty">아직 기록된 일별 방문 데이터가 없습니다.</div>';
+  if (!stats.length) {
+    chart.innerHTML = `<div class="empty">${emptyMsg}</div>`;
   } else {
-    const max = Math.max(1, ...dailyStats.map(d => d.count));
-    for (const { date, count } of dailyStats) {
+    const max = Math.max(1, ...stats.map(d => d.count));
+    for (const item of stats) {
       const row = document.createElement('div');
       row.className = 'daily-row';
       row.innerHTML = `
         <span class="date"></span>
-        <span class="bar-track"><span class="bar-fill" style="width:${Math.round((count / max) * 100)}%"></span></span>
+        <span class="bar-track"><span class="bar-fill" style="width:${Math.round((item.count / max) * 100)}%"></span></span>
         <span class="count"></span>
       `;
-      row.querySelector('.date').textContent = date.slice(5); // MM-DD
-      row.querySelector('.count').textContent = count;
+      row.querySelector('.date').textContent = labelFn(item);
+      row.querySelector('.count').textContent = item.count;
       chart.appendChild(row);
     }
   }
   section.style.display = 'block';
+}
+
+function renderDailyStats(dailyStats) {
+  renderBarStats(dailyStats, {
+    sectionId: 'daily-section', chartId: 'daily-chart', countId: 'daily-days',
+    labelFn: d => d.date.slice(5), // MM-DD
+    emptyMsg: '아직 기록된 일별 방문 데이터가 없습니다.',
+  });
+}
+
+function renderMonthlyStats(monthlyStats) {
+  renderBarStats(monthlyStats, {
+    sectionId: 'monthly-section', chartId: 'monthly-chart', countId: 'monthly-months',
+    labelFn: d => d.month, // YYYY-MM
+    emptyMsg: '아직 기록된 월별 방문 데이터가 없습니다.',
+  });
 }
 
 function renderUserEmails(emails) {
