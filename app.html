@@ -3968,15 +3968,17 @@ async function main() {
   })();
 
   const logoutBtn = document.getElementById('btn-logout');
-  logoutBtn.style.display = 'inline';
-  logoutBtn.addEventListener('click', () => {
-    const token = localStorage.getItem('fa_google_token');
-    if (token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(token, () => {});
-    if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
-    localStorage.removeItem('fa_user');
-    localStorage.removeItem('fa_google_token');
-    location.href = location.pathname;
-  });
+  if (!isGuest) {
+    logoutBtn.style.display = 'inline';
+    logoutBtn.addEventListener('click', () => {
+      const token = localStorage.getItem('fa_google_token');
+      if (token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(token, () => {});
+      if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
+      localStorage.removeItem('fa_user');
+      localStorage.removeItem('fa_google_token');
+      location.href = location.pathname;
+    });
+  }
 
   // 모바일 사이드바 토글
   const mobBtn = document.getElementById('mob-sidebar-btn');
