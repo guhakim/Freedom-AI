@@ -873,6 +873,7 @@ let myColor    = '#8b5cf6';
 let roomId     = '';
 let userName   = '';
 let myEmail    = '';
+let isGuest    = false;
 
 // 이 브라우저의 고정 식별자 — 새로고침·재접속해도 항상 같은 값을 써서
 // "본인 것만 삭제/이동" 같은 소유권 체크가 계속 유효하도록 한다.
@@ -3542,7 +3543,9 @@ function getProjectName() {
     const modal = document.getElementById('project-modal');
     const input = document.getElementById('project-input');
     modal.style.display = 'flex';
-    renderRecentProjects(resolve);
+    // 게스트는 다른 사람(이전 로그인 사용자)의 프로젝트 이름이 이 브라우저에
+    // 남아있어도 그걸 볼 수 없어야 하므로 최근 프로젝트 목록을 아예 띄우지 않는다.
+    if (!isGuest) renderRecentProjects(resolve);
     requestAnimationFrame(() => input.focus());
 
     document.getElementById('project-form').addEventListener('submit', e => {
@@ -3640,6 +3643,7 @@ function getGoogleUser() {
         ? 'As a guest, none of your work will be saved. Continue?'
         : '게스트로 입장 시 작업한 내용 전부가 저장되지 않습니다. 계속하시겠습니까?');
       if (!warned) return;
+      isGuest = true;
       modal.style.display = 'none';
       resolve({ name: isEn ? 'Guest' : '게스트', email: '' });
     });
@@ -3755,6 +3759,11 @@ async function main() {
 
   // 사이드바 렌더
   (function renderSidebar() {
+    // 게스트는 계정이 없어 프로젝트 목록 개념 자체가 없고, 이 브라우저에 남아있는
+    // 다른 사용자(이전 로그인 계정)의 프로젝트 이름을 봐서도/들어가서도 안 되므로
+    // 사이드바를 아예 띄우지 않는다 (#sidebar는 기본 display:none으로 시작함).
+    if (isGuest) return;
+
     const sidebar  = document.getElementById('sidebar');
     const list     = document.getElementById('sidebar-list');
     const addBtn   = document.getElementById('sidebar-add-btn');
