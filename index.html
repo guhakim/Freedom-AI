@@ -17,6 +17,15 @@
          url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff') format('woff');
   }
 
+  /* Freedom AI 로고 글씨 전용 — KOTRA 볼드체 (KOTRA 배포 상업용 무료 폰트) */
+  @font-face {
+    font-family: 'KOTRA Bold';
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10-21@1.1/KOTRA_BOLD-Bold.woff') format('woff');
+  }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -88,7 +97,7 @@
   .logo-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
 
   .logo-text {
-    font-family: 'BM Dohyeon', serif;
+    font-family: 'KOTRA Bold', serif;
     font-size: 19px;
     font-weight: 700;
     color: var(--ink);
