@@ -1093,6 +1093,17 @@ function continueDraw(sx, sy) {
   requestDraw();
 }
 
+// 점 p에서 선분 (ax,ay)-(bx,by)까지의 최단 거리 제곱.
+function distToSegSq(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay;
+  const lenSq = dx*dx + dy*dy;
+  if (lenSq === 0) return (px-ax)**2 + (py-ay)**2;
+  let t = ((px-ax)*dx + (py-ay)*dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t*dx, cy = ay + t*dy;
+  return (px-cx)**2 + (py-cy)**2;
+}
+
 function applyErasureLocal(eraserStroke) {
   const r2   = (eraserStroke.width / 2) ** 2;
   const ePts = eraserStroke.points;
@@ -1100,11 +1111,20 @@ function applyErasureLocal(eraserStroke) {
   const newStrokes = [];
   const remaining  = [];
 
+  // 지우개 경로를 점 하나하나가 아니라 점들을 잇는 선분으로 취급한다. 빠르게 드래그하면
+  // 마우스무브 샘플 간격이 벌어지는데, 점 대 점 거리만 재면(예전 방식) 지우개가 작을수록
+  // 화면에 그려진 원 궤적은 획을 지나갔는데도 실제로는 안 지워지는 일이 자주 생겼다.
+  const hitsEraser = p => {
+    if (ePts.length === 1) return (p.x-ePts[0].x)**2 + (p.y-ePts[0].y)**2 <= r2;
+    for (let i = 0; i < ePts.length - 1; i++) {
+      if (distToSegSq(p.x, p.y, ePts[i].x, ePts[i].y, ePts[i+1].x, ePts[i+1].y) <= r2) return true;
+    }
+    return false;
+  };
+
   for (const s of strokes) {
     if (s.tool === 'eraser') { remaining.push(s); continue; }
-    const hitMask = s.points.map(p =>
-      ePts.some(ep => (p.x-ep.x)**2 + (p.y-ep.y)**2 <= r2)
-    );
+    const hitMask = s.points.map(hitsEraser);
     if (!hitMask.some(Boolean)) { remaining.push(s); continue; }
     deletedIds.push(s.id);
     let seg = [];
