@@ -1309,29 +1309,8 @@ fetch('/api/stats', {
   body: JSON.stringify({ page: 'index' }),
 }).catch(() => {});
 
-const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.googleusercontent.com';
-
 document.querySelector('.btn-ghost').addEventListener('click', () => {
-  if (!window.google?.accounts?.oauth2) {
-    alert(window._faLang === 'en' ? 'Google library is still loading. Please try again in a moment.' : 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
-    return;
-  }
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: GOOGLE_CLIENT_ID,
-    scope: 'openid profile email',
-    callback: async (res) => {
-      if (res.error) return;
-      try {
-        const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: 'Bearer ' + res.access_token }
-        }).then(r => r.json());
-        localStorage.setItem('fa_user', JSON.stringify({ name: info.name, email: info.email, picture: info.picture }));
-        location.href = 'app.html';
-      } catch (e) { console.error(e); }
-    },
-    error_callback: () => {},
-  });
-  client.requestAccessToken({ prompt: 'select_account' });
+  location.href = 'app.html';
 });
 </script>
 
