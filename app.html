@@ -3485,6 +3485,10 @@ function showToast(msg, opts = {}) {
 //  INIT
 // ═══════════════════════════════════════════════════════════════
 async function saveRecentProject(name) {
+  // 게스트가 만든 방 이름이 이 브라우저의 localStorage에 남으면, 나중에 같은
+  // 브라우저에서 실제 계정으로 로그인할 때 그대로 병합되어 "최근 프로젝트"로
+  // 보여버린다. 게스트 세션은 로컬 기록 자체를 남기지 않아야 한다.
+  if (isGuest) return;
   const list = JSON.parse(localStorage.getItem('fa_projects') || '[]');
   const updated = [name, ...list.filter(p => p !== name)].slice(0, 5);
   localStorage.setItem('fa_projects', JSON.stringify(updated));
