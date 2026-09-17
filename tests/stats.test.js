@@ -53,3 +53,28 @@ test('POST records a pageview without requiring the admin key', async () => {
   assert.equal(await kv.get('fa:stats:pageviews'), 1);
   assert.equal(await kv.get('fa:stats:pageviews:app'), 1);
 });
+
+// 회귀 테스트: 날짜별 방문 수를 관리자 페이지에서 보여주려면, 페이지뷰를 기록할 때마다
+// KST 기준 오늘 날짜 카운터도 함께 올라가고, 조회 시 최신 날짜부터 내려와야 한다.
+test('POST increments a per-day counter, and GET returns dailyStats newest-first', async () => {
+  const { kv } = installMocks();
+  const handler = freshHandler(STATS);
+  process.env.ADMIN_STATS_KEY = 'right-key';
+
+  const kstToday = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  await handler(mockReq({ method: 'POST', body: { page: 'index' } }), mockRes());
+  await handler(mockReq({ method: 'POST', body: { page: 'app' } }), mockRes());
+  await kv.sadd('fa:stats:daily:dates', '2020-01-01');
+  await kv.set('fa:stats:daily:2020-01-01', 5);
+
+  const res = mockRes();
+  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(await kv.get(`fa:stats:daily:${kstToday}`), 2);
+  assert.deepEqual(res.body.dailyStats[0], { date: kstToday, count: 2 });
+  assert.deepEqual(res.body.dailyStats[1], { date: '2020-01-01', count: 5 });
+
+  delete process.env.ADMIN_STATS_KEY;
+});
