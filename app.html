@@ -2328,19 +2328,18 @@ async function maskCoverageRatio(maskSrc) {
   return total ? on / total : 0;
 }
 
-// 이미지 가장자리(네 귀퉁이 + 상하좌우 중앙) 밝기 평균으로 배경이 어두운 계열인지
-// 추정한다. 흰 배경 위 검은 글씨뿐 아니라 검은 배경 위 흰 글씨도 다뤄야 해서 필요.
-function isDarkBackground(d, w, h) {
-  const pts = [
-    [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
-    [(w / 2) | 0, 0], [(w / 2) | 0, h - 1], [0, (h / 2) | 0], [w - 1, (h / 2) | 0],
-  ];
-  let sum = 0;
-  for (const [x, y] of pts) {
-    const i = (y * w + x) * 4;
-    sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+// 배경이 어두운 계열인지 추정한다. 모서리 몇 점만 찍으면 "FONT"처럼 글씨가 가장자리
+// 끝까지 꽉 차는 타이포그래피에서 샘플이 배경이 아니라 글씨 위에 찍혀버릴 수 있다 —
+// 그래서 이미지 전체를 훑어 아주 어두운 픽셀과 아주 밝은 픽셀의 개수를 세고, 배경은
+// 항상 글씨보다 넓은 면적을 차지한다고 보고 더 많은 쪽을 배경으로 판단한다.
+function isDarkBackground(d) {
+  let dark = 0, light = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    if (luma < 100) dark++;
+    else if (luma > 180) light++;
   }
-  return (sum / pts.length) < 128;
+  return dark > light;
 }
 
 // AI 인물 파싱이 못 쓰는 이미지(로고·타이포그래피 등)에 대한 대체 배경제거 —
@@ -2357,7 +2356,7 @@ async function simpleLumaKeyCutout(imageSrc) {
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
   const lowT = 140, highT = 215; // lowT~highT는 경계 구간(부드러운 전환)
-  const bgIsDark = isDarkBackground(d, w, h);
+  const bgIsDark = isDarkBackground(d);
   for (let i = 0; i < d.length; i += 4) {
     const luma = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
     let alpha;
