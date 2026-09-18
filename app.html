@@ -1410,6 +1410,34 @@ function setupNoteEvents(note) {
   });
 }
 
+// 드래그 중인 포스트잇을 다른 포스트잇 가장자리 가까이 가져가면 자석처럼 딱 붙게
+// 한다. 회의 중 같은 의견을 보완할 때 포스트잇끼리 깔끔하게 이어붙이기 위함.
+// 대략 같은 열(가로 위치 비슷)일 때만 위/아래 붙이기를, 같은 행(세로 위치 비슷)일
+// 때만 좌/우 붙이기를 고려해서, 전혀 안 가까운 포스트잇에 엉뚱하게 붙지 않게 한다.
+function computeNoteSnap(note) {
+  const SNAP = 24, GAP = 8;
+  let best = null, bestDist = SNAP;
+  for (const n2 of notes) {
+    if (n2 === note) continue;
+    const sameColumn = Math.abs(note.x - n2.x) < Math.max(note.w, n2.w);
+    const sameRow    = Math.abs(note.y - n2.y) < Math.max(note.h, n2.h);
+
+    if (sameColumn) {
+      const dBelow = Math.abs(note.y - (n2.y + n2.h));
+      if (dBelow < bestDist) { bestDist = dBelow; best = { x: n2.x, y: n2.y + n2.h + GAP }; }
+      const dAbove = Math.abs((note.y + note.h) - n2.y);
+      if (dAbove < bestDist) { bestDist = dAbove; best = { x: n2.x, y: n2.y - note.h - GAP }; }
+    }
+    if (sameRow) {
+      const dRight = Math.abs(note.x - (n2.x + n2.w));
+      if (dRight < bestDist) { bestDist = dRight; best = { x: n2.x + n2.w + GAP, y: n2.y }; }
+      const dLeft = Math.abs((note.x + note.w) - n2.x);
+      if (dLeft < bestDist) { bestDist = dLeft; best = { x: n2.x - note.w - GAP, y: n2.y }; }
+    }
+  }
+  return best;
+}
+
 function startNoteDrag(note, sx0, sy0, isTouch=false) {
   const ox=note.x, oy=note.y;
   note.el.querySelector('.note-handle').style.cursor='grabbing';
@@ -1417,6 +1445,8 @@ function startNoteDrag(note, sx0, sy0, isTouch=false) {
 
   function onMove(sx,sy) {
     note.x = ox+(sx-sx0)/scale; note.y = oy+(sy-sy0)/scale;
+    const snap = computeNoteSnap(note);
+    if (snap) { note.x = snap.x; note.y = snap.y; }
     note.el.style.left=note.x+'px'; note.el.style.top=note.y+'px';
     positionNoteConnectors(note);
     updateBoundArrows(note.id, false);
