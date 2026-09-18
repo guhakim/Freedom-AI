@@ -192,7 +192,6 @@
   #sidebar-list { display:flex; flex-direction:column; padding:0 6px 6px; gap:2px; }
   .sidebar-row { display:flex; align-items:center; border-radius:8px; transition:background .15s; }
   .sidebar-row:hover { background:var(--paper); }
-  .template-item:hover { background:var(--paper2); }
   .sidebar-row.active { background:var(--paper2); }
   .sidebar-item { flex:1; font-size:14px; color:var(--ink); background:none; border:none;
     border-radius:8px; padding:8px 9px; text-align:left; cursor:pointer;
@@ -584,13 +583,6 @@
       <path d="M3.12 6.25h6.88a2.5 2.5 0 1 1 0 5h-0.62" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="btn-templates" title="템플릿" data-i18n-en-title="Templates" data-i18n-ko-title="템플릿">
-    <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
-      <rect x="1.5" y="2.5" width="3.5" height="10" rx="1" stroke="currentColor" stroke-width="1.1"/>
-      <rect x="5.75" y="2.5" width="3.5" height="10" rx="1" stroke="currentColor" stroke-width="1.1"/>
-      <rect x="10" y="2.5" width="3.5" height="10" rx="1" stroke="currentColor" stroke-width="1.1"/>
-    </svg>
-  </button>
 
   <!-- 펜 옵션 -->
   <div id="pen-options" style="display:flex;align-items:center;gap:3px;">
@@ -661,14 +653,6 @@
   <span id="zoom-label">100%</span>
   <button class="zoom-btn" id="btn-zoom-in">+</button>
   <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;" data-i18n-en="Reset" data-i18n-ko="초기화">초기화</button>
-</div>
-
-<!-- ── 템플릿 팝오버 ── -->
-<div id="template-popover" style="display:none;position:fixed;background:var(--white);border:.5px solid rgba(14,14,13,.12);border-radius:14px;box-shadow:0 4px 16px rgba(14,14,13,.08);padding:6px;z-index:150;min-width:180px;">
-  <button class="template-item" data-template="kanban" type="button" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;background:none;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:13px;color:var(--ink);">
-    <span style="font-size:17px;">🗂️</span>
-    <span data-i18n-en="Kanban board" data-i18n-ko="칸반보드">칸반보드</span>
-  </button>
 </div>
 
 <div class="hint" id="hint" data-i18n-en="P: Pen · E: Eraser · S: Sticky · R: Shape · H: Move · Ctrl+Z: Undo" data-i18n-ko="P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
@@ -3409,76 +3393,6 @@ document.getElementById('btn-zoom-out').addEventListener('click',   ()=>zoomAt(c
 document.getElementById('btn-zoom-reset').addEventListener('click', centerView);
 
 document.getElementById('btn-undo').addEventListener('click', undo);
-
-// ═══════════════════════════════════════════════════════════════
-//  템플릿 (도형·포스트잇만으로 만든 미리 짜인 보드 레이아웃)
-// ═══════════════════════════════════════════════════════════════
-// addNote()/startShapeCreate()는 각각 stickyColor 전역 상태를 쓰거나 드래그로만 생성되므로,
-// 템플릿처럼 색상·텍스트를 지정해 한 번에 여러 개 만들 때 쓸 직접 생성 버전.
-function addTemplateNote(wx, wy, color, text) {
-  const note = { id: genId(), x: wx, y: wy, w: NOTE_W, h: NOTE_H, color, text };
-  notes.push(note);
-  buildNoteEl(note, false);
-  sendAction({ type: 'note_add', note });
-}
-function addTemplateShape(x, y, w, h, color) {
-  const shape = { id: genId(), type: 'rect', x, y, w, h, color, userId: myUserId };
-  buildShapeEl(shape);
-  shapes.push(shape);
-  sendAction({ type: 'shape_add', shape: { id:shape.id, type:shape.type, x:shape.x, y:shape.y, w:shape.w, h:shape.h, color:shape.color } });
-}
-
-function insertKanbanTemplate() {
-  const center = s2w(canvas.width / 2, canvas.height / 2);
-  const colW = 200, colH = 460, gap = 30;
-  const totalW = colW * 3 + gap * 2;
-  const startX = center.x - totalW / 2;
-  const startY = center.y - colH / 2;
-  const isEn = window._faLang === 'en';
-
-  const columns = [
-    { color: '#f59e0b', card: '#fed7aa',
-      title: isEn ? '📋 To Do' : '📋 할 일',
-      sample: isEn ? 'e.g. Kickoff meeting' : '예: 킥오프 회의 일정 잡기' },
-    { color: '#3b82f6', card: '#bae6fd',
-      title: isEn ? '🚧 In Progress' : '🚧 진행 중',
-      sample: isEn ? 'e.g. Draw wireframes' : '예: 와이어프레임 그리기' },
-    { color: '#22c55e', card: '#bbf7d0',
-      title: isEn ? '✅ Done' : '✅ 완료',
-      sample: isEn ? 'e.g. Define project goals' : '예: 프로젝트 목표 정의' },
-  ];
-
-  columns.forEach((col, i) => {
-    const x = startX + i * (colW + gap);
-    addTemplateShape(x, startY, colW, colH, col.color);
-    addTemplateNote(x + (colW - NOTE_W) / 2, startY + 20, col.card, col.title);
-    addTemplateNote(x + (colW - NOTE_W) / 2, startY + 20 + NOTE_H + 16, col.card, col.sample);
-  });
-
-  scheduleLocalSave();
-  showToast(isEn ? '🗂️ Kanban board added' : '🗂️ 칸반보드를 추가했습니다');
-}
-
-const templatePopover = document.getElementById('template-popover');
-document.getElementById('btn-templates').addEventListener('click', e => {
-  e.stopPropagation();
-  const willOpen = templatePopover.style.display !== 'block';
-  if (willOpen) {
-    const r = e.currentTarget.getBoundingClientRect();
-    templatePopover.style.top = (r.bottom + 8) + 'px';
-    templatePopover.style.left = r.left + 'px';
-  }
-  templatePopover.style.display = willOpen ? 'block' : 'none';
-});
-document.addEventListener('click', e => {
-  if (templatePopover.style.display === 'block' && !templatePopover.contains(e.target) && e.target.closest('#btn-templates') === null) {
-    templatePopover.style.display = 'none';
-  }
-});
-document.querySelector('[data-template="kanban"]').addEventListener('click', () => {
-  insertKanbanTemplate();
-  templatePopover.style.display = 'none';
-});
 
 // 포스트잇 편집 중일 때만 보이는 상단 툴바 글자 크기 버튼 — mousedown에서 기본 동작을
 // 막아, 클릭해도 지금 편집 중이던 포스트잇의 포커스(contenteditable)가 풀리지 않게 한다.
