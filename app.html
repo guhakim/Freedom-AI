@@ -277,6 +277,30 @@
   .calendar-day.other-month { color:var(--ink3); opacity:.4; }
   .calendar-day.today { border:1.5px solid var(--ink); }
   .calendar-day.selected { background:var(--ink); color:#fff; }
+  .calendar-day { position:relative; }
+  .calendar-day.has-todo::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%);
+    width:4px; height:4px; border-radius:50%; background:var(--gold); }
+  .calendar-day.selected.has-todo::after { background:#fff; }
+
+  #calendar-todo-date { font-size:13px; font-weight:500; color:var(--ink); margin-bottom:8px; }
+  #calendar-todo-list { display:flex; flex-direction:column; gap:4px; max-height:180px; overflow-y:auto; margin-bottom:10px; }
+  .todo-item { display:flex; align-items:center; gap:8px; padding:6px 4px; border-radius:8px; }
+  .todo-item:hover { background:var(--paper2); }
+  .todo-item:hover .todo-delete { opacity:1; }
+  .todo-checkbox { width:16px; height:16px; border-radius:5px; border:1.5px solid rgba(14,14,13,.3);
+    flex-shrink:0; cursor:pointer; background:none; display:flex; align-items:center; justify-content:center; padding:0; }
+  .todo-item.done .todo-checkbox { background:var(--ink); border-color:var(--ink); }
+  .todo-text { flex:1; font-size:13px; color:var(--ink); font-family:'BM Dohyeon',sans-serif;
+    text-align:left; word-break:break-word; }
+  .todo-item.done .todo-text { color:var(--ink3); text-decoration:line-through; }
+  .todo-delete { width:20px; height:20px; border:none; background:none; cursor:pointer; color:var(--ink3);
+    opacity:0; transition:opacity .15s; flex-shrink:0; font-size:14px; line-height:1; }
+  .todo-delete:hover { color:var(--ink); }
+  .todo-empty { font-size:12px; color:var(--ink3); padding:4px; }
+  #calendar-todo-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
+    padding:8px 10px; font-size:13px; font-family:'BM Dohyeon',sans-serif; color:var(--ink);
+    outline:none; box-sizing:border-box; }
+  #calendar-todo-input:focus { border-color:var(--ink); }
   /* 배경 제거는 모달 버튼이 아니라 이미지를 꾹 누르는 제스처로 트리거된다 (아래 .canvas-img.bg-processing).
      처리 중에만 점선 테두리로 "지금 잘라내는 중"임을 보여주고, 끝나면(클래스 제거) 사라진다. */
   .canvas-img.bg-processing { opacity: .45; transition: opacity .15s;
@@ -725,6 +749,16 @@
       <span data-i18n-en="Su" data-i18n-ko="일">일</span><span data-i18n-en="Mo" data-i18n-ko="월">월</span><span data-i18n-en="Tu" data-i18n-ko="화">화</span><span data-i18n-en="We" data-i18n-ko="수">수</span><span data-i18n-en="Th" data-i18n-ko="목">목</span><span data-i18n-en="Fr" data-i18n-ko="금">금</span><span data-i18n-en="Sa" data-i18n-ko="토">토</span>
     </div>
     <div id="calendar-grid"></div>
+
+    <!-- 선택한 날짜의 To-Do 목록 -->
+    <div id="calendar-todo-panel" style="display:none;">
+      <div class="divider" style="width:100%;height:.5px;margin:14px 0 12px;background:rgba(14,14,13,.1);"></div>
+      <div id="calendar-todo-date"></div>
+      <div id="calendar-todo-list"></div>
+      <form id="calendar-todo-form">
+        <input id="calendar-todo-input" type="text" maxlength="200" placeholder="할 일 추가..." data-i18n-en-placeholder="Add a to-do..." data-i18n-ko-placeholder="할 일 추가..." autocomplete="off">
+      </form>
+    </div>
   </div>
 </div>
 
@@ -913,6 +947,7 @@ let strokeFlushTimer= null;
 const NOTE_W = 160, NOTE_H = 130, MIN_NOTE_W = 100, MIN_NOTE_H = 80;
 let notes  = [];
 let images = [];
+let todos  = {}; // { "YYYY-M-D": [{id, text, done, userId}, ...] }
 
 // ═══════════════════════════════════════════════════════════════
 //  SHAPE STATE
@@ -2697,6 +2732,9 @@ async function resyncFromServer() {
     strokes = state.strokes || [];
     invalidateStrokesCache(); requestDraw();
 
+    todos = state.todos || {};
+    if (calendarModalOpen()) renderCalendarTodos();
+
     const serverNoteIds = new Set((state.notes || []).map(n => n.id));
     notes.filter(n => !serverNoteIds.has(n.id)).forEach(n => { unbindArrowsForNote(n.id); n.connEl?.remove(); n.el?.remove(); });
     notes = notes.filter(n => serverNoteIds.has(n.id));
@@ -3017,6 +3055,30 @@ function initPusher(pusherKey, pusherCluster) {
       renderArrowEl(s); setupArrowEvents(s);
       scheduleLocalSave();
     }
+  });
+
+  // 캘린더 To-Do — 다른 협업자가 추가/체크/삭제한 내용을 실시간으로 반영.
+  // 지금 캘린더 모달이 열려 있고 같은 날짜를 보고 있으면 목록도 바로 다시 그린다.
+  channel.bind('todo_add', data => {
+    if (!todos[data.date]) todos[data.date] = [];
+    if (todos[data.date].some(t => t.id === data.todo.id)) return;
+    todos[data.date].push(data.todo);
+    if (calendarModalOpen()) { renderCalendar(); if (calendarSelectedDate === data.date) renderCalendarTodos(); }
+  });
+  channel.bind('todo_toggle', data => {
+    const t = (todos[data.date] || []).find(t => t.id === data.todoId);
+    if (!t) return;
+    t.done = data.done;
+    if (calendarModalOpen() && calendarSelectedDate === data.date) renderCalendarTodos();
+  });
+  channel.bind('todo_delete', data => {
+    const list = todos[data.date];
+    if (!list) return;
+    const idx = list.findIndex(t => t.id === data.todoId);
+    if (idx === -1) return;
+    list.splice(idx, 1);
+    if (!list.length) delete todos[data.date];
+    if (calendarModalOpen()) { renderCalendar(); if (calendarSelectedDate === data.date) renderCalendarTodos(); }
   });
 }
 
@@ -3453,7 +3515,11 @@ document.getElementById('btn-undo').addEventListener('click', undo);
 //  캘린더 모달
 // ═══════════════════════════════════════════════════════════════
 let calendarViewDate = new Date(); // 현재 보고 있는 달(일자는 항상 1일로 취급)
-let calendarSelectedDate = null;
+let calendarSelectedDate = null; // "YYYY-M-D" (월은 1-indexed) — 서버에 저장되는 todos의 키와 동일한 형식
+
+function calendarModalOpen() {
+  return document.getElementById('calendar-modal').classList.contains('open');
+}
 
 function renderCalendar() {
   const isEn = window._faLang === 'en';
@@ -3488,16 +3554,17 @@ function renderCalendar() {
     week.className = 'calendar-week';
     for (const cell of cells.slice(row, row + 7)) {
       const btn = document.createElement('button');
-      btn.className = 'calendar-day' + (cell.otherMonth ? ' other-month' : '');
+      const dateKey = `${cell.y}-${cell.m + 1}-${cell.day}`;
+      btn.className = 'calendar-day' + (cell.otherMonth ? ' other-month' : '') + (todos[dateKey]?.length ? ' has-todo' : '');
       btn.textContent = cell.day;
       const isToday = !cell.otherMonth && cell.y === today.getFullYear() && cell.m === today.getMonth() && cell.day === today.getDate();
       if (isToday) btn.classList.add('today');
-      const dateKey = `${cell.y}-${cell.m}-${cell.day}`;
       if (calendarSelectedDate === dateKey) btn.classList.add('selected');
       btn.addEventListener('click', () => {
         calendarSelectedDate = dateKey;
         calendarViewDate = new Date(cell.y, cell.m, 1);
         renderCalendar();
+        renderCalendarTodos();
       });
       week.appendChild(btn);
     }
@@ -3505,9 +3572,77 @@ function renderCalendar() {
   }
 }
 
+function renderCalendarTodos() {
+  const panel = document.getElementById('calendar-todo-panel');
+  if (!calendarSelectedDate) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+
+  const isEn = window._faLang === 'en';
+  const [y, m, d] = calendarSelectedDate.split('-').map(Number);
+  document.getElementById('calendar-todo-date').textContent = isEn
+    ? new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })
+    : `${m}월 ${d}일 할 일`;
+
+  const list = document.getElementById('calendar-todo-list');
+  list.innerHTML = '';
+  const items = todos[calendarSelectedDate] || [];
+  if (!items.length) {
+    list.innerHTML = `<div class="todo-empty" data-i18n-en="No to-dos yet" data-i18n-ko="아직 할 일이 없어요">${isEn ? 'No to-dos yet' : '아직 할 일이 없어요'}</div>`;
+  }
+  items.forEach(todo => {
+    const row = document.createElement('div');
+    row.className = 'todo-item' + (todo.done ? ' done' : '');
+    row.innerHTML = `
+      <button class="todo-checkbox" title="${isEn ? 'Toggle done' : '완료 체크'}">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="${todo.done ? '' : 'display:none;'}"><path d="M1.5 5l2.5 2.5L8.5 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <span class="todo-text"></span>
+      <button class="todo-delete" title="${isEn ? 'Delete' : '삭제'}">×</button>
+    `;
+    row.querySelector('.todo-text').textContent = todo.text;
+    row.querySelector('.todo-checkbox').addEventListener('click', () => toggleCalendarTodo(todo.id));
+    row.querySelector('.todo-delete').addEventListener('click', () => deleteCalendarTodo(todo.id));
+    list.appendChild(row);
+  });
+}
+
+function addCalendarTodo(text) {
+  text = text.trim();
+  if (!text || !calendarSelectedDate) return;
+  const todo = { id: genId(), text, done: false, userId: myUserId };
+  if (!todos[calendarSelectedDate]) todos[calendarSelectedDate] = [];
+  todos[calendarSelectedDate].push(todo);
+  renderCalendarTodos();
+  renderCalendar();
+  sendAction({ type: 'todo_add', date: calendarSelectedDate, todo: { id: todo.id, text } });
+}
+function toggleCalendarTodo(todoId) {
+  const t = (todos[calendarSelectedDate] || []).find(t => t.id === todoId);
+  if (!t) return;
+  t.done = !t.done;
+  renderCalendarTodos();
+  sendAction({ type: 'todo_toggle', date: calendarSelectedDate, todoId });
+}
+function deleteCalendarTodo(todoId) {
+  const list = todos[calendarSelectedDate];
+  if (!list) return;
+  const idx = list.findIndex(t => t.id === todoId);
+  if (idx === -1) return;
+  list.splice(idx, 1);
+  if (!list.length) delete todos[calendarSelectedDate];
+  renderCalendarTodos();
+  renderCalendar();
+  sendAction({ type: 'todo_delete', date: calendarSelectedDate, todoId });
+}
+
 function openCalendarModal() {
   document.getElementById('calendar-modal').classList.add('open');
+  if (!calendarSelectedDate) {
+    const t = new Date();
+    calendarSelectedDate = `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}`;
+  }
   renderCalendar();
+  renderCalendarTodos();
 }
 function closeCalendarModal() {
   document.getElementById('calendar-modal').classList.remove('open');
@@ -3525,6 +3660,12 @@ document.getElementById('calendar-prev').addEventListener('click', () => {
 document.getElementById('calendar-next').addEventListener('click', () => {
   calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
   renderCalendar();
+});
+document.getElementById('calendar-todo-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = document.getElementById('calendar-todo-input');
+  addCalendarTodo(input.value);
+  input.value = '';
 });
 
 // 포스트잇 편집 중일 때만 보이는 상단 툴바 글자 크기 버튼 — mousedown에서 기본 동작을
@@ -3974,6 +4115,7 @@ async function main() {
   [...(resolvedState.images || [])].sort((a, b) => (a.z||0) - (b.z||0)).forEach(i => { images.push(i); buildImageEl(i, true); });
   (resolvedState.shapes || []).forEach(s => { shapes.push(s); buildShapeEl(s); });
   (resolvedState.notes  || []).forEach(n => { notes.push(n);  buildNoteEl(n, false); });
+  todos = resolvedState.todos || {};
   resyncArrowBindings(); // 노트가 마지막에 로드되므로, bound 화살표 끝점을 현재 노트 위치로 재계산
   invalidateStrokesCache();
 

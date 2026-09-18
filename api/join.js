@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
     ? clientId
     : Math.random().toString(36).slice(2, 10);
   let color = COLORS[colorCounter++ % 8];
-  let state = { strokes: [], notes: [], images: [], shapes: [] };
+  let state = { strokes: [], notes: [], images: [], shapes: [], todos: {} };
 
   const kv = await getKv();
   if (!(await checkAccess(kv, req, roomId, email))) return res.status(403).json({ error: 'access_denied' });

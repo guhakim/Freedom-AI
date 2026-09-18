@@ -77,6 +77,9 @@ const MIN_SHAPE_W = 20, MAX_SHAPE_W = 3_000;
 const MIN_SHAPE_H = 20, MAX_SHAPE_H = 3_000;
 const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
 const VALID_SIDE = new Set(['top', 'right', 'bottom', 'left']);
+const MAX_TODO_TEXT = 200;
+const MAX_TODOS_PER_DATE = 50;
+const VALID_DATE_KEY = /^\d{4}-\d{1,2}-\d{1,2}$/;
 
 // 화살표를 노트 가장자리에 연결(binding)할 때, 대상 노트 id/방향이 유효한 경우에만 통과시킨다.
 function resolveBinding(state, id, side) {
@@ -177,6 +180,7 @@ module.exports = async (req, res) => {
   if (!state.notes)   state.notes   = [];
   if (!state.images)  state.images  = [];
   if (!state.shapes)  state.shapes  = [];
+  if (!state.todos)   state.todos   = {};
 
   // 이 요청으로 방이 처음 생기는 것이고 게스트가 만든 것이면 표시해 둔다. 이미 존재하던
   // 방(진짜 로그인 사용자의 프로젝트일 수 있음)에는 절대 새로 붙이지 않는다 — 그래야 게스트가
@@ -516,6 +520,49 @@ module.exports = async (req, res) => {
       state.shapes.splice(idx, 1);
       await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_delete', { shapeId: action.shapeId }, excl);
+      break;
+    }
+
+    // 캘린더에서 날짜별로 적는 To-Do 목록. date는 "YYYY-M-D" 형식 키 문자열 하나당
+    // 항목 배열을 들고 있다(다른 컬렉션들처럼 room state 안에 함께 저장·동기화됨).
+    case 'todo_add': {
+      const { date, todo } = action;
+      if (!VALID_DATE_KEY.test(date)) break;
+      if (!todo?.id || typeof todo.text !== 'string') break;
+      const text = todo.text.trim().slice(0, MAX_TODO_TEXT);
+      if (!text) break;
+      if (!state.todos[date]) state.todos[date] = [];
+      if (state.todos[date].find(t => t.id === todo.id)) break;
+      if (state.todos[date].length >= MAX_TODOS_PER_DATE) break;
+      const t = { id: todo.id, text, done: false, userId };
+      state.todos[date].push(t);
+      await kvSet(kvKey, state, kvSetOpts);
+      await pusher.trigger(channel, 'todo_add', { date, todo: t }, excl);
+      break;
+    }
+
+    case 'todo_toggle': {
+      const { date, todoId } = action;
+      const list = state.todos[date];
+      if (!list) break;
+      const t = list.find(t => t.id === todoId);
+      if (!t) break;
+      t.done = !t.done;
+      await kvSet(kvKey, state, kvSetOpts);
+      await pusher.trigger(channel, 'todo_toggle', { date, todoId, done: t.done }, excl);
+      break;
+    }
+
+    case 'todo_delete': {
+      const { date, todoId } = action;
+      const list = state.todos[date];
+      if (!list) break;
+      const idx = list.findIndex(t => t.id === todoId);
+      if (idx === -1) break;
+      list.splice(idx, 1);
+      if (!list.length) delete state.todos[date];
+      await kvSet(kvKey, state, kvSetOpts);
+      await pusher.trigger(channel, 'todo_delete', { date, todoId }, excl);
       break;
     }
   }

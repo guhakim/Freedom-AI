@@ -346,3 +346,63 @@ test('a guest writing into a pre-existing room does not get it TTL\'d', async ()
   assert.equal(call.opts, undefined);
   assert.equal(call.v._guest, undefined);
 });
+
+test('todo_add creates a to-do item under the given date, rejects invalid dates/empty text', async () => {
+  const { kv } = installMocks();
+  const handler = freshHandler(ACTION);
+
+  let res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'u1',
+    action: { type: 'todo_add', date: '2026-9-18', todo: { id: 't1', text: '  회의 준비  ' } },
+  } }), res);
+  assert.equal(res.statusCode, 200);
+  let state = await kv.get(kvKey('r1'));
+  assert.deepEqual(state.todos['2026-9-18'], [{ id: 't1', text: '회의 준비', done: false, userId: 'u1' }]);
+
+  // 날짜 형식이 아니면 조용히 무시(크래시 없이)
+  res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'u1',
+    action: { type: 'todo_add', date: 'not-a-date', todo: { id: 't2', text: 'x' } },
+  } }), res);
+  assert.equal(res.statusCode, 200);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.todos['not-a-date'], undefined);
+
+  // 공백만 있는 텍스트는 추가되지 않음
+  res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'u1',
+    action: { type: 'todo_add', date: '2026-9-18', todo: { id: 't3', text: '   ' } },
+  } }), res);
+  state = await kv.get(kvKey('r1'));
+  assert.equal(state.todos['2026-9-18'].length, 1);
+});
+
+test('todo_toggle flips done, todo_delete removes the item and cleans up the empty date', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), {
+    strokes: [], notes: [], images: [], shapes: [],
+    todos: { '2026-9-18': [{ id: 't1', text: '회의 준비', done: false, userId: 'u1' }] },
+  });
+  const handler = freshHandler(ACTION);
+
+  let res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'u1',
+    action: { type: 'todo_toggle', date: '2026-9-18', todoId: 't1' },
+  } }), res);
+  assert.equal(res.statusCode, 200);
+  let state = await kv.get(kvKey('r1'));
+  assert.equal(state.todos['2026-9-18'][0].done, true);
+
+  res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'u1',
+    action: { type: 'todo_delete', date: '2026-9-18', todoId: 't1' },
+  } }), res);
+  state = await kv.get(kvKey('r1'));
+  // 그 날짜에 항목이 하나도 안 남으면 date 키 자체가 정리돼야 한다
+  assert.equal(state.todos['2026-9-18'], undefined);
+});
