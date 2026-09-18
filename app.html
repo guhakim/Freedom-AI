@@ -249,6 +249,34 @@
   #ai-go-btn:hover { background:var(--ink2); }
   #ai-go-btn:disabled { background:var(--ink3); cursor:default; }
   #ai-status { font-size:12px; color:var(--ink3); text-align:center; min-height:16px; }
+
+  /* ── CALENDAR MODAL ── */
+  #calendar-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
+    backdrop-filter:blur(6px); z-index:600; display:none;
+    align-items:center; justify-content:center; }
+  #calendar-modal.open { display:flex; }
+  #calendar-modal-inner { background:var(--white); border-radius:20px;
+    padding:22px 24px 24px; width:320px; position:relative; }
+  #calendar-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-right:26px; }
+  #calendar-title { font-size:15px; font-weight:500; color:var(--ink); }
+  .calendar-nav-btn { width:28px; height:28px; border:none; background:none; border-radius:8px;
+    cursor:pointer; color:var(--ink2); display:flex; align-items:center; justify-content:center;
+    transition:background .15s; }
+  .calendar-nav-btn:hover { background:var(--paper); }
+  #calendar-close { position:absolute; top:16px; right:18px; width:26px; height:26px; border:none;
+    background:none; cursor:pointer; color:var(--ink3); font-size:18px; line-height:1; }
+  #calendar-close:hover { color:var(--ink); }
+  #calendar-weekdays, .calendar-week { display:grid; grid-template-columns:repeat(7,1fr); }
+  #calendar-weekdays { font-size:11px; color:var(--ink3); text-align:center; margin-bottom:4px; }
+  #calendar-weekdays span { padding:4px 0; }
+  #calendar-grid { display:flex; flex-direction:column; gap:2px; }
+  .calendar-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--ink); border-radius:8px; cursor:pointer; border:none; background:none;
+    font-family:'BM Dohyeon',sans-serif; transition:background .15s; }
+  .calendar-day:hover { background:var(--paper); }
+  .calendar-day.other-month { color:var(--ink3); opacity:.4; }
+  .calendar-day.today { border:1.5px solid var(--ink); }
+  .calendar-day.selected { background:var(--ink); color:#fff; }
   /* 배경 제거는 모달 버튼이 아니라 이미지를 꾹 누르는 제스처로 트리거된다 (아래 .canvas-img.bg-processing).
      처리 중에만 점선 테두리로 "지금 잘라내는 중"임을 보여주고, 끝나면(클래스 제거) 사라진다. */
   .canvas-img.bg-processing { opacity: .45; transition: opacity .15s;
@@ -583,6 +611,13 @@
       <path d="M3.12 6.25h6.88a2.5 2.5 0 1 1 0 5h-0.62" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
+  <button class="tool-btn" id="btn-calendar" title="캘린더" data-i18n-en-title="Calendar" data-i18n-ko-title="캘린더">
+    <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
+      <rect x="1.75" y="2.75" width="11.5" height="10.5" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M1.75 5.75h11.5" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M4.5 1.5v2.5M10.5 1.5v2.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>
+  </button>
 
   <!-- 펜 옵션 -->
   <div id="pen-options" style="display:flex;align-items:center;gap:3px;">
@@ -670,6 +705,26 @@
       <button id="ai-cancel-btn" data-i18n-en="Cancel" data-i18n-ko="취소">취소</button>
       <button id="ai-go-btn" data-i18n-en="✦ AI Transform" data-i18n-ko="✦ AI 변환">✦ AI 변환</button>
     </div>
+  </div>
+</div>
+
+<!-- ── CALENDAR MODAL ── -->
+<div id="calendar-modal">
+  <div id="calendar-modal-inner">
+    <button id="calendar-close" title="닫기" data-i18n-en-title="Close" data-i18n-ko-title="닫기">×</button>
+    <div id="calendar-header">
+      <button class="calendar-nav-btn" id="calendar-prev">
+        <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M9.5 3.5l-4 4 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div id="calendar-title"></div>
+      <button class="calendar-nav-btn" id="calendar-next">
+        <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M5.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div id="calendar-weekdays">
+      <span data-i18n-en="Su" data-i18n-ko="일">일</span><span data-i18n-en="Mo" data-i18n-ko="월">월</span><span data-i18n-en="Tu" data-i18n-ko="화">화</span><span data-i18n-en="We" data-i18n-ko="수">수</span><span data-i18n-en="Th" data-i18n-ko="목">목</span><span data-i18n-en="Fr" data-i18n-ko="금">금</span><span data-i18n-en="Sa" data-i18n-ko="토">토</span>
+    </div>
+    <div id="calendar-grid"></div>
   </div>
 </div>
 
@@ -3393,6 +3448,84 @@ document.getElementById('btn-zoom-out').addEventListener('click',   ()=>zoomAt(c
 document.getElementById('btn-zoom-reset').addEventListener('click', centerView);
 
 document.getElementById('btn-undo').addEventListener('click', undo);
+
+// ═══════════════════════════════════════════════════════════════
+//  캘린더 모달
+// ═══════════════════════════════════════════════════════════════
+let calendarViewDate = new Date(); // 현재 보고 있는 달(일자는 항상 1일로 취급)
+let calendarSelectedDate = null;
+
+function renderCalendar() {
+  const isEn = window._faLang === 'en';
+  const year = calendarViewDate.getFullYear();
+  const month = calendarViewDate.getMonth(); // 0-11
+  document.getElementById('calendar-title').textContent = isEn
+    ? calendarViewDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+    : `${year}년 ${month + 1}월`;
+
+  const today = new Date();
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = firstOfMonth.getDay(); // 이번 달 1일이 무슨 요일인지 (0=일)
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) {
+    cells.push({ day: daysInPrevMonth - startOffset + 1 + i, otherMonth: true, y: month===0?year-1:year, m: month===0?11:month-1 });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ day: d, otherMonth: false, y: year, m: month });
+  }
+  while (cells.length % 7 !== 0 || cells.length < 42) {
+    const idx = cells.length - (startOffset + daysInMonth);
+    cells.push({ day: idx + 1, otherMonth: true, y: month===11?year+1:year, m: month===11?0:month+1 });
+  }
+
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+  for (let row = 0; row < cells.length; row += 7) {
+    const week = document.createElement('div');
+    week.className = 'calendar-week';
+    for (const cell of cells.slice(row, row + 7)) {
+      const btn = document.createElement('button');
+      btn.className = 'calendar-day' + (cell.otherMonth ? ' other-month' : '');
+      btn.textContent = cell.day;
+      const isToday = !cell.otherMonth && cell.y === today.getFullYear() && cell.m === today.getMonth() && cell.day === today.getDate();
+      if (isToday) btn.classList.add('today');
+      const dateKey = `${cell.y}-${cell.m}-${cell.day}`;
+      if (calendarSelectedDate === dateKey) btn.classList.add('selected');
+      btn.addEventListener('click', () => {
+        calendarSelectedDate = dateKey;
+        calendarViewDate = new Date(cell.y, cell.m, 1);
+        renderCalendar();
+      });
+      week.appendChild(btn);
+    }
+    grid.appendChild(week);
+  }
+}
+
+function openCalendarModal() {
+  document.getElementById('calendar-modal').classList.add('open');
+  renderCalendar();
+}
+function closeCalendarModal() {
+  document.getElementById('calendar-modal').classList.remove('open');
+}
+
+document.getElementById('btn-calendar').addEventListener('click', openCalendarModal);
+document.getElementById('calendar-close').addEventListener('click', closeCalendarModal);
+document.getElementById('calendar-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('calendar-modal')) closeCalendarModal();
+});
+document.getElementById('calendar-prev').addEventListener('click', () => {
+  calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() - 1, 1);
+  renderCalendar();
+});
+document.getElementById('calendar-next').addEventListener('click', () => {
+  calendarViewDate = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth() + 1, 1);
+  renderCalendar();
+});
 
 // 포스트잇 편집 중일 때만 보이는 상단 툴바 글자 크기 버튼 — mousedown에서 기본 동작을
 // 막아, 클릭해도 지금 편집 중이던 포스트잇의 포커스(contenteditable)가 풀리지 않게 한다.
