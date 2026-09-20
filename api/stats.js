@@ -18,9 +18,16 @@ module.exports = async (req, res) => {
     // 페이지뷰 기록 (누구나 호출 가능, 단순 카운터 증가만 수행)
     const page = req.body?.page === 'app' ? 'app' : 'index';
     if (kvOk) {
+      // 두 그룹을 따로 try/catch한다 — 예전부터 쓰던 pageviews 카운터와, 나중에 추가된
+      // daily/monthly 카운터 중 한쪽만 조용히 실패해도(예: 잘못된 KV 명령) 서로 영향 없이
+      // 계속 동작하고, 어느 쪽이 실패했는지 Vercel 함수 로그에 남아 원인을 알 수 있게 한다.
       try {
         await kv.incr('fa:stats:pageviews');
         await kv.incr(`fa:stats:pageviews:${page}`);
+      } catch (e) {
+        console.error('stats: pageview counter failed', e);
+      }
+      try {
         // KST(UTC+9) 기준 날짜로 집계 — 한국 사용자 기준 "오늘"과 자정이 맞도록.
         const kstIso = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString();
         const kstDate  = kstIso.slice(0, 10);
@@ -29,7 +36,9 @@ module.exports = async (req, res) => {
         await kv.sadd('fa:stats:daily:dates', kstDate);
         await kv.incr(`fa:stats:monthly:${kstMonth}`);
         await kv.sadd('fa:stats:monthly:months', kstMonth);
-      } catch { /* ignore */ }
+      } catch (e) {
+        console.error('stats: daily/monthly counter failed', e);
+      }
     }
     return res.status(204).end();
   }
