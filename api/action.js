@@ -181,6 +181,9 @@ module.exports = async (req, res) => {
   if (!state.images)  state.images  = [];
   if (!state.shapes)  state.shapes  = [];
   if (!state.todos)   state.todos   = {};
+  // 특정 액션이 유효성 검사에 걸려 조용히 무시된 경우(예: 날짜당 할 일 개수 한도 초과)를
+  // 클라이언트에 알려주기 위한 값. 기본은 null(정상 처리)이고, 아래 각 case에서 필요할 때만 채운다.
+  let rejected = null;
 
   // 이 요청으로 방이 처음 생기는 것이고 게스트가 만든 것이면 표시해 둔다. 이미 존재하던
   // 방(진짜 로그인 사용자의 프로젝트일 수 있음)에는 절대 새로 붙이지 않는다 — 그래야 게스트가
@@ -533,7 +536,7 @@ module.exports = async (req, res) => {
       if (!text) break;
       if (!state.todos[date]) state.todos[date] = [];
       if (state.todos[date].find(t => t.id === todo.id)) break;
-      if (state.todos[date].length >= MAX_TODOS_PER_DATE) break;
+      if (state.todos[date].length >= MAX_TODOS_PER_DATE) { rejected = 'todo_limit'; break; }
       const t = { id: todo.id, text, done: false, userId };
       state.todos[date].push(t);
       await kvSet(kvKey, state, kvSetOpts);
@@ -543,6 +546,7 @@ module.exports = async (req, res) => {
 
     case 'todo_toggle': {
       const { date, todoId } = action;
+      if (!VALID_DATE_KEY.test(date)) break;
       const list = state.todos[date];
       if (!list) break;
       const t = list.find(t => t.id === todoId);
@@ -555,6 +559,7 @@ module.exports = async (req, res) => {
 
     case 'todo_delete': {
       const { date, todoId } = action;
+      if (!VALID_DATE_KEY.test(date)) break;
       const list = state.todos[date];
       if (!list) break;
       const idx = list.findIndex(t => t.id === todoId);
@@ -567,7 +572,7 @@ module.exports = async (req, res) => {
     }
   }
 
-  res.json({ ok: true });
+  res.json(rejected ? { ok: true, rejected } : { ok: true });
   } finally {
     await releaseRoomLock(kv, lockKey);
   }

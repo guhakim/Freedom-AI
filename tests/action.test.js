@@ -406,3 +406,51 @@ test('todo_toggle flips done, todo_delete removes the item and cleans up the emp
   // 그 날짜에 항목이 하나도 안 남으면 date 키 자체가 정리돼야 한다
   assert.equal(state.todos['2026-9-18'], undefined);
 });
+
+// 회귀 테스트: todo_add는 날짜 형식을 검증하지만 todo_toggle/todo_delete는 검증이
+// 빠져있었다. state.todos는 평범한 {}라서 date:"__proto__"를 넣으면
+// state.todos[date]가 Object.prototype을 반환해(truthy) list.find가 없는 메서드라
+// 크래시했다. 셋 다 크래시 없이 조용히 무시되는지 확인한다.
+test('todo_toggle/todo_delete reject non-date-shaped "date" values instead of crashing', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), { strokes: [], notes: [], images: [], shapes: [], todos: {} });
+  const handler = freshHandler(ACTION);
+
+  for (const type of ['todo_toggle', 'todo_delete']) {
+    for (const badDate of ['__proto__', 'constructor', 'not-a-date']) {
+      const res = mockRes();
+      await assert.doesNotReject(handler(mockReq({ body: {
+        roomId: 'r1', userId: 'u1',
+        action: { type, date: badDate, todoId: 't1' },
+      } }), res));
+      assert.equal(res.statusCode, 200);
+    }
+  }
+});
+
+// 회귀 테스트: 날짜당 개수 제한에 걸려 조용히 버려지면, 서버는 항상 {ok:true}만 보내서
+// 클라이언트가 실패를 알 방법이 없었다. 한도 초과 시 rejected 플래그가 내려오는지 확인.
+test('todo_add signals rejection via response body when the per-date cap is hit', async () => {
+  const { kv } = installMocks();
+  const many = Array.from({ length: 50 }, (_, i) => ({ id: `t${i}`, text: `item ${i}`, done: false, userId: 'u1' }));
+  await kv.set(kvKey('r1'), { strokes: [], notes: [], images: [], shapes: [], todos: { '2026-9-18': many } });
+  const handler = freshHandler(ACTION);
+
+  const res = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r1', userId: 'u1',
+    action: { type: 'todo_add', date: '2026-9-18', todo: { id: 't-overflow', text: '넘치는 항목' } },
+  } }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.rejected, 'todo_limit');
+  const state = await kv.get(kvKey('r1'));
+  assert.equal(state.todos['2026-9-18'].length, 50); // 추가되지 않아야 함
+
+  // 정상 케이스는 rejected 필드가 아예 없어야 한다(기존 클라이언트 호환)
+  const res2 = mockRes();
+  await handler(mockReq({ body: {
+    roomId: 'r2', userId: 'u1',
+    action: { type: 'todo_add', date: '2026-9-18', todo: { id: 't-ok', text: '정상 항목' } },
+  } }), res2);
+  assert.equal(res2.body.rejected, undefined);
+});

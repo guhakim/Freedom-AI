@@ -1505,7 +1505,10 @@ function setupNoteEvents(note) {
 // 대략 같은 열(가로 위치 비슷)일 때만 위/아래 붙이기를, 같은 행(세로 위치 비슷)일
 // 때만 좌/우 붙이기를 고려해서, 전혀 안 가까운 포스트잇에 엉뚱하게 붙지 않게 한다.
 function computeNoteSnap(note) {
-  const SNAP = 24, GAP = 8;
+  // note.x/y/w/h는 월드 좌표인데 SNAP은 "화면에서 이 정도 가까우면 붙는다"는 감각이어야
+  // 하므로, 줌 배율로 나눠서 화면상 체감 거리가 확대/축소와 무관하게 일정하게 만든다.
+  // (안 그러면 많이 확대했을 때 너무 쉽게 붙고, 축소했을 땐 거의 안 붙었다.)
+  const SNAP = 24 / scale, GAP = 8;
   let best = null, bestDist = SNAP;
   for (const n2 of notes) {
     if (n2 === note) continue;
@@ -3606,15 +3609,30 @@ function renderCalendarTodos() {
   });
 }
 
-function addCalendarTodo(text) {
+async function addCalendarTodo(text) {
   text = text.trim();
   if (!text || !calendarSelectedDate) return;
+  const date = calendarSelectedDate;
   const todo = { id: genId(), text, done: false, userId: myUserId };
-  if (!todos[calendarSelectedDate]) todos[calendarSelectedDate] = [];
-  todos[calendarSelectedDate].push(todo);
+  if (!todos[date]) todos[date] = [];
+  todos[date].push(todo);
   renderCalendarTodos();
   renderCalendar();
-  sendAction({ type: 'todo_add', date: calendarSelectedDate, todo: { id: todo.id, text } });
+
+  // 서버는 날짜당 개수 한도(MAX_TODOS_PER_DATE)를 넘으면 조용히 거부하고도 항상
+  // {ok:true}만 보냈었다 — 방금 낙관적으로 화면에 넣은 항목을 응답의 rejected 플래그로
+  // 확인해서, 거부됐으면 도로 빼고 알려준다.
+  const res = await sendAction({ type: 'todo_add', date, todo: { id: todo.id, text } });
+  const data = res ? await res.json().catch(() => null) : null;
+  if (data?.rejected === 'todo_limit') {
+    const list = todos[date];
+    const idx = list ? list.findIndex(t => t.id === todo.id) : -1;
+    if (idx > -1) list.splice(idx, 1);
+    if (list && !list.length) delete todos[date];
+    if (calendarSelectedDate === date) renderCalendarTodos();
+    renderCalendar();
+    showToast(window._faLang==='en' ? '⚠️ Too many to-dos for this date (max 50)' : '⚠️ 이 날짜엔 할 일을 더 추가할 수 없어요 (최대 50개)');
+  }
 }
 function toggleCalendarTodo(todoId) {
   const t = (todos[calendarSelectedDate] || []).find(t => t.id === todoId);
@@ -4342,10 +4360,12 @@ async function main() {
     });
   }
 
-  // 모바일 사이드바 토글
+  // 모바일 사이드바 토글 — 게스트는 사이드바 자체가 없으므로(renderSidebar가 바로
+  // return함) 이 버튼도 함께 숨긴다. 안 그러면 눌러도 아무 반응 없는 죽은 버튼으로 남는다.
   const mobBtn = document.getElementById('mob-sidebar-btn');
   const sidebarEl = document.getElementById('sidebar');
-  if (mobBtn) {
+  if (isGuest && mobBtn) mobBtn.style.display = 'none';
+  if (mobBtn && !isGuest) {
     mobBtn.addEventListener('click', () => {
       sidebarEl.classList.toggle('mob-hidden');
     });

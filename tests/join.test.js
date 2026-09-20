@@ -52,6 +52,21 @@ test('missing roomId is rejected', async () => {
   assert.equal(res.statusCode, 400);
 });
 
+// 회귀 테스트: todos 기능이 생기기 전에 만들어진 방은 저장된 state에 todos 키가
+// 아예 없다. join.js가 kv에서 읽어온 기존 state로 기본값을 통째로 덮어쓰기 때문에,
+// 이 백필이 없으면 프론트엔드가 state.todos를 객체로 가정하고 바로 써버려서 깨진다.
+test('joining a pre-existing (legacy) room without a todos key backfills todos:{}', async () => {
+  const { kv } = installMocks();
+  await kv.set('fa:room:legacy1', { strokes: [], notes: [], images: [], shapes: [] }); // todos 없음
+  const handler = freshHandler(JOIN);
+  const res = mockRes();
+
+  await handler(mockReq({ body: { roomId: 'legacy1', clientId: 'abc12345' } }), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.state.todos, {});
+});
+
 test('joining a private room without a verified member email is denied', async () => {
   const { kv } = installMocks();
   await kv.set('fa:room:priv1:members', ['owner@x.com']);

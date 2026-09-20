@@ -35,6 +35,22 @@ test('a normal GET still returns room state as before', async () => {
   assert.equal(res.body.strokes.length, 1);
 });
 
+// 회귀 테스트: todos 기능 이전에 만들어진 방은 state에 todos 키가 없다. 이전엔
+// state가 존재하면(=falsy가 아니면) 기본값이 적용 안 돼서 todos가 undefined인 채로
+// 그대로 내려갔다 — resyncFromServer가 이 응답을 그대로 쓰는 주기적 재동기화 경로라
+// 조용히 프론트를 깨뜨릴 수 있었다.
+test('a pre-existing (legacy) room without a todos key gets todos:{} backfilled', async () => {
+  const { kv } = installMocks();
+  await kv.set('fa:room:legacy1', { strokes: [], notes: [], images: [], shapes: [] }); // todos 없음
+  const handler = freshHandler(ROOM);
+  const res = mockRes();
+
+  await handler(mockReq({ method: 'GET', query: { roomId: 'legacy1' } }), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.todos, {});
+});
+
 test('non-GET, non-OPTIONS methods are still rejected', async () => {
   installMocks();
   const handler = freshHandler(ROOM);

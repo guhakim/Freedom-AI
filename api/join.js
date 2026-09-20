@@ -68,6 +68,8 @@ module.exports = async (req, res) => {
     if (kv && process.env.KV_REST_API_URL) {
       color = COLORS[Number(await kv.incr('fa:colorIdx')) % 8];
       state = (await kv.get(`fa:room:${roomId}`)) || state;
+      // todos 기능 이전에 만들어진 방은 저장된 state에 todos 키가 없을 수 있다.
+      if (!state.todos) state.todos = {};
     }
   } catch (e) { /* KV 없으면 빈 캔버스로 시작 */ }
 

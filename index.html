@@ -296,7 +296,7 @@
     font-size: 18px;
     font-weight: 400;
     color: var(--ink2);
-    max-width: 780px;
+    max-width: 560px;
     margin: 0 auto 40px;
     line-height: 1.65;
     letter-spacing: -0.01em;
@@ -411,9 +411,6 @@
   .sticky-green  { background: #bbf7d0; color: #14532d; top: 30px; left: 400px; transform: rotate(-1deg); }
   .sticky-blue   { background: #bae6fd; color: #0c4a6e; top: 170px; left: 120px; transform: rotate(2deg); }
   .sticky-peach  { background: #fed7aa; color: #7c2d12; top: 160px; left: 320px; transform: rotate(-1.5deg); }
-  .sticky-purple { background: #e9d5ff; color: #581c87; top: 40px;  left: 570px; transform: rotate(2deg); }
-  .sticky-mint   { background: #99f6e4; color: #134e4a; top: 150px; left: 600px; transform: rotate(-1.5deg); }
-  .sticky-rose   { background: #fecdd3; color: #881337; top: 225px; left: 440px; transform: rotate(1.5deg); }
 
   /* cursor dots */
   .cursor-dot {
@@ -958,9 +955,6 @@
         <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
         <div class="sticky sticky-blue" data-i18n-en-html="Phase 1<br>build the skeleton" data-i18n-ko-html="Phase 1<br>뼈대부터 시작">Phase 1<br>뼈대부터 시작</div>
         <div class="sticky sticky-peach" data-i18n-en-html="AI image<br>editing 🤖" data-i18n-ko-html="AI 이미지<br>편집 기능 🤖">AI 이미지<br>편집 기능 🤖</div>
-        <div class="sticky sticky-purple" data-i18n-en-html="🔗 Share link<br>invite teammates" data-i18n-ko-html="🔗 링크 공유로<br>팀원 초대하기">🔗 링크 공유로<br>팀원 초대하기</div>
-        <div class="sticky sticky-mint" data-i18n-en-html="📱 Mobile<br>friendly too" data-i18n-ko-html="📱 모바일에서도<br>편하게">📱 모바일에서도<br>편하게</div>
-        <div class="sticky sticky-rose" data-i18n-en-html="🔐 Google login<br>one click start" data-i18n-ko-html="🔐 구글 로그인<br>한 번에 시작">🔐 구글 로그인<br>한 번에 시작</div>
 
         <!-- live cursors -->
         <div class="cursor-dot cursor-a">
@@ -1025,7 +1019,7 @@
           </svg>
         </div>
         <h3 data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</h3>
-        <p data-i18n-en="From preset colors to direct HEX input. Paint the canvas your way." data-i18n-ko="기본 색상부터 HEX 직접 입력까지. 내 감각대로 캔버스를 색칠하세요.">기본 색상부터 HEX 직접 입력까지. 내 감각대로 캔버스를 색칠하세요.</p>
+        <p data-i18n-en="Pick from preset colors for pens and sticky notes. Paint the canvas your way." data-i18n-ko="펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.">펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.</p>
         <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
@@ -1133,6 +1127,7 @@
           <div class="phase-item" data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</div>
           <div class="phase-item" data-i18n-en="Sticky notes" data-i18n-ko="포스트잇">포스트잇</div>
           <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
+          <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
         </div>
       </div>
 
@@ -1143,7 +1138,6 @@
         <div class="phase-items">
           <div class="phase-item" data-i18n-en="Basic shape tools" data-i18n-ko="기본 도형 도구">기본 도형 도구</div>
           <div class="phase-item" data-i18n-en="Image drag &amp; drop" data-i18n-ko="이미지 드래그 & 드롭">이미지 드래그 & 드롭</div>
-          <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
           <div class="phase-item" data-i18n-en="Share link generation" data-i18n-ko="공유 링크 생성">공유 링크 생성</div>
           <div class="phase-item" data-i18n-en="Mobile optimization" data-i18n-ko="모바일 최적화">모바일 최적화</div>
         </div>
@@ -1169,7 +1163,7 @@
 <!-- ══════════════════════════
      FOOTER
 ══════════════════════════ -->
-<footer>
+<footer id="about">
   <div class="footer-inner">
     <div class="footer-top">
 
@@ -1208,7 +1202,7 @@
     </div>
 
     <div class="footer-bottom">
-      <p>© 2025 Freedom AI. All rights reserved.</p>
+      <p>© 2026 Freedom AI. All rights reserved.</p>
       <div class="footer-links">
         <a href="#" data-i18n-en="Privacy Policy" data-i18n-ko="개인정보처리방침">개인정보처리방침</a>
         <a href="#" data-i18n-en="Terms of Service" data-i18n-ko="이용약관">이용약관</a>
