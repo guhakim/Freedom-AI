@@ -314,7 +314,9 @@ async function loadContacts(key) {
   const countEl = document.getElementById('contact-count');
   try {
     const r = await fetch(`/api/contact?key=${encodeURIComponent(key)}`);
-    if (!r.ok) return;
+    // 실패 시 이전 조회의 문의 목록이 화면에 그대로 남아 최신인 것처럼 보이지 않도록 숨긴다
+    // (통계 그리드 자체는 이 실패와 무관하게 계속 보여준다 — 의도된 동작).
+    if (!r.ok) { section.style.display = 'none'; return; }
     const { submissions } = await r.json();
     countEl.textContent = submissions.length;
     list.innerHTML = '';
@@ -340,7 +342,7 @@ async function loadContacts(key) {
       }
     }
     section.style.display = '';
-  } catch (e) { /* 문의 목록은 실패해도 통계는 보여줌 */ }
+  } catch (e) { section.style.display = 'none'; }
 }
 </script>
 </body>
