@@ -79,26 +79,49 @@ test('POST increments a per-day counter, and GET returns dailyStats newest-first
   delete process.env.ADMIN_STATS_KEY;
 });
 
-// 회귀 테스트: 월별 방문 수도 일별과 같은 방식(KST 기준, 최신순)으로 집계·조회돼야 한다.
-test('POST increments a per-month counter, and GET returns monthlyStats newest-first', async () => {
+// 회귀 테스트: 월별 방문 수는 더 이상 별도 카운터를 두지 않고, 같은 달에 속한 일별
+// 카운터들을 합산해서 계산한다 — 일별/월별이 서로 다른 시점에 따로 증가하다 어긋나는
+// 일(과거에 실제로 겪었던 1건 차이 같은 것)이 구조적으로 생길 수 없어야 한다.
+test('monthlyStats is derived by summing dailyStats within the same month, so it can never drift out of sync', async () => {
   const { kv } = installMocks();
   const handler = freshHandler(STATS);
   process.env.ADMIN_STATS_KEY = 'right-key';
 
-  const kstThisMonth = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 7);
-
-  await handler(mockReq({ method: 'POST', body: { page: 'index' } }), mockRes());
-  await handler(mockReq({ method: 'POST', body: { page: 'app' } }), mockRes());
-  await kv.sadd('fa:stats:monthly:months', '2020-01');
-  await kv.set('fa:stats:monthly:2020-01', 99);
+  for (const [date, count] of [['2026-09-17', 84], ['2026-09-18', 42], ['2026-09-19', 2], ['2020-01-05', 99]]) {
+    await kv.sadd('fa:stats:daily:dates', date);
+    await kv.set(`fa:stats:daily:${date}`, count);
+  }
 
   const res = mockRes();
   await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
 
   assert.equal(res.statusCode, 200);
-  assert.equal(await kv.get(`fa:stats:monthly:${kstThisMonth}`), 2);
-  assert.deepEqual(res.body.monthlyStats[0], { month: kstThisMonth, count: 2 });
-  assert.deepEqual(res.body.monthlyStats[1], { month: '2020-01', count: 99 });
+  const sep = res.body.monthlyStats.find(m => m.month === '2026-09');
+  assert.equal(sep.count, 84 + 42 + 2); // 별도 카운터 없이 일별 값을 합산한 값과 정확히 같아야 함
+  const jan2020 = res.body.monthlyStats.find(m => m.month === '2020-01');
+  assert.equal(jan2020.count, 99);
+
+  delete process.env.ADMIN_STATS_KEY;
+});
+
+// 회귀 테스트: 오늘 아직 방문이 0건이면 fa:stats:daily:dates 집합에 오늘 날짜 키 자체가
+// 없다 — 그렇다고 관리자 페이지에 오늘이 아예 안 보이면 "카운터가 고장났나" 싶어 보인다.
+// 항상 목록 맨 앞에 오늘을 0건으로라도 채워 넣어야 한다.
+test('GET always includes today in dailyStats even with zero visits so far, instead of omitting it', async () => {
+  const { kv } = installMocks();
+  const handler = freshHandler(STATS);
+  process.env.ADMIN_STATS_KEY = 'right-key';
+  const kstToday = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  // 어제까지만 방문 기록이 있고 오늘은 전혀 없는 상태를 흉내낸다
+  await kv.sadd('fa:stats:daily:dates', '2020-01-01');
+  await kv.set('fa:stats:daily:2020-01-01', 5);
+
+  const res = mockRes();
+  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.dailyStats[0], { date: kstToday, count: 0 });
 
   delete process.env.ADMIN_STATS_KEY;
 });
