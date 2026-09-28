@@ -311,6 +311,21 @@
     border-radius:3px; pointer-events:none; display:none; z-index:50; }
   .note.sel-active    { outline:2px solid #3b82f6; outline-offset:2px; }
   .canvas-img.sel-active { outline:2px solid #3b82f6; outline-offset:2px; }
+  /* 여러 항목을 선택했을 때 전체를 감싸는 박스 — 모서리 핸들로 한꺼번에 크기 조절 */
+  #sel-group-box { position:fixed; border:1.5px dashed #3b82f6; pointer-events:none; display:none; z-index:45; }
+  #sel-group-box.grouped { border-style:solid; }
+  .sgb-h { position:absolute; width:12px; height:12px; background:#fff; border:2px solid #3b82f6;
+    border-radius:3px; pointer-events:auto; box-sizing:border-box; touch-action:none; }
+  .sgb-h[data-c="nw"] { left:-7px;  top:-7px;    cursor:nwse-resize; }
+  .sgb-h[data-c="ne"] { right:-7px; top:-7px;    cursor:nesw-resize; }
+  .sgb-h[data-c="sw"] { left:-7px;  bottom:-7px; cursor:nesw-resize; }
+  .sgb-h[data-c="se"] { right:-7px; bottom:-7px; cursor:nwse-resize; }
+  #sel-group-bar { position:absolute; left:50%; bottom:calc(100% + 10px); transform:translateX(-50%);
+    display:flex; gap:4px; pointer-events:auto; white-space:nowrap; }
+  #sel-group-bar button { font:600 12px/1 inherit; padding:6px 10px; border-radius:8px; cursor:pointer;
+    background:#fff; color:#111; border:1.5px solid #111; box-shadow:2px 2px 0 #111; }
+  #sel-group-bar button:hover { background:#f3f4f6; }
+  #sel-group-bar button[hidden] { display:none; }
 
   /* ── CANVAS IMAGE ── */
   .canvas-img { position:absolute; cursor:move; pointer-events:auto;
@@ -717,6 +732,14 @@
 <div class="hint" id="hint" data-i18n-en="P: Pen · E: Eraser · S: Sticky · R: Shape · H: Move · Ctrl+Z: Undo" data-i18n-ko="P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 <div id="select-box"></div>
+<div id="sel-group-box">
+  <div id="sel-group-bar">
+    <button id="sel-group-btn" type="button" title="그룹 (Ctrl/Cmd+G)" data-i18n-ko-title="그룹 (Ctrl/Cmd+G)" data-i18n-en-title="Group (Ctrl/Cmd+G)" data-i18n-en="Group" data-i18n-ko="그룹">그룹</button>
+    <button id="sel-ungroup-btn" type="button" title="그룹 해제 (Ctrl/Cmd+Shift+G)" data-i18n-ko-title="그룹 해제 (Ctrl/Cmd+Shift+G)" data-i18n-en-title="Ungroup (Ctrl/Cmd+Shift+G)" data-i18n-en="Ungroup" data-i18n-ko="그룹 해제">그룹 해제</button>
+  </div>
+  <div class="sgb-h" data-c="nw"></div><div class="sgb-h" data-c="ne"></div>
+  <div class="sgb-h" data-c="sw"></div><div class="sgb-h" data-c="se"></div>
+</div>
 
 <!-- ── AI TRANSFORM MODAL ── -->
 <div id="ai-modal">
@@ -1011,6 +1034,7 @@ function draw() {
   drawSelectedStrokeHighlights();
 
   notesLayer.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
+  updateGroupBox();
   updateAllRemoteCursors();
   zoomLabel.textContent = Math.round(scale * 100) + '%';
 }
@@ -1457,6 +1481,7 @@ function setupNoteEvents(note) {
     e.stopPropagation();
     if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(note.id)) { startSelMove(e.clientX,e.clientY); return; }
+    if (activeTool==='select' && selectGroupAndMove(note, e.clientX, e.clientY)) return;
     if (e.target!==del && e.target!==fontBtn) startNoteDrag(note,e.clientX,e.clientY);
   });
   hndl.addEventListener('touchstart',e => {
@@ -1796,6 +1821,7 @@ function setupImageEvents(img) {
     if (activeTool==='select' && selectedIds.has(img.id)) { startSelMove(e.clientX,e.clientY); return; }
     // 선택 도구에서는 클릭만으로 이 이미지를 선택 상태로 만든다 — 이게 없으면
     // 드래그로 범위를 그려야만 선택되고, 단일 클릭으로는 Backspace 삭제 대상이 되지 않았다.
+    if (activeTool==='select' && selectGroupAndMove(img, e.clientX, e.clientY)) return;
     if (activeTool==='select') { selectedIds.clear(); selectedIds.add(img.id); applySelHighlight(); return; }
     const ox = img.x, oy = img.y, sx0 = e.clientX, sy0 = e.clientY;
     let longPressFired = false;
@@ -1822,7 +1848,7 @@ function setupImageEvents(img) {
     if (e.touches.length !== 1 || e.target === del || e.target === rsz || rsz.contains(e.target) || e.target === bg || bg.contains(e.target)) return;
     e.stopPropagation();
     if (activeTool==='hand') { startCanvasPanTouch(e.touches[0].clientX, e.touches[0].clientY); return; }
-    if (activeTool==='select' && !selectedIds.has(img.id)) { selectedIds.clear(); selectedIds.add(img.id); applySelHighlight(); return; }
+    if (activeTool==='select' && !selectedIds.has(img.id)) { selectedIds.clear(); selectedIds.add(img.id); expandSelectionToGroups(); applySelHighlight(); return; }
     const t0 = e.touches[0];
     const ox = img.x, oy = img.y, sx0 = t0.clientX, sy0 = t0.clientY;
     let longPressFired = false;
@@ -1963,6 +1989,7 @@ function setupShapeEvents(shape) {
     e.stopPropagation();
     if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(shape.id)) { startSelMove(e.clientX,e.clientY); return; }
+    if (activeTool==='select' && selectGroupAndMove(shape, e.clientX, e.clientY)) return;
     const ox = shape.x, oy = shape.y, sx0 = e.clientX, sy0 = e.clientY;
     const mm = e => {
       shape.x = ox + (e.clientX - sx0) / scale;
@@ -2179,6 +2206,7 @@ function setupArrowEvents(shape) {
     e.stopPropagation();
     if (spaceHeld || activeTool==='hand') { startCanvasPan(e.clientX, e.clientY); return; }
     if (activeTool==='select' && selectedIds.has(shape.id)) { startSelMove(e.clientX,e.clientY); return; }
+    if (activeTool==='select' && selectGroupAndMove(shape, e.clientX, e.clientY)) return;
     startBodyMove(e.clientX, e.clientY, false);
   });
   hit.addEventListener('touchstart', e => {
@@ -2639,12 +2667,12 @@ function saveLocalNow() {
   try {
     const data = {
       strokes,
-      notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', fontSize:n.fontSize||13, userId:n.userId })),
-      images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId })),
+      notes:  notes.map(n => ({ id:n.id, x:n.x, y:n.y, w:n.w, h:n.h, color:n.color, text:n.text||'', fontSize:n.fontSize||13, userId:n.userId, groupId:n.groupId })),
+      images: images.map(i => ({ id:i.id, src:i.src, x:i.x, y:i.y, w:i.w, h:i.h, userId:i.userId, groupId:i.groupId })),
       shapes: shapes.map(s => s.type==='arrow'
         ? { id:s.id, type:'arrow', x1:s.x1, y1:s.y1, x2:s.x2, y2:s.y2, bend:s.bend, strokeWidth:s.strokeWidth, color:s.color, userId:s.userId,
-            fromId:s.fromId, fromSide:s.fromSide, toId:s.toId, toSide:s.toSide }
-        : { id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId }),
+            fromId:s.fromId, fromSide:s.fromSide, toId:s.toId, toSide:s.toSide, groupId:s.groupId }
+        : { id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId, groupId:s.groupId }),
     };
     localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
   } catch(e) {}
@@ -2744,6 +2772,7 @@ async function resyncFromServer() {
     (state.notes || []).forEach(sn => {
       const local = notes.find(n => n.id === sn.id);
       if (!local) { notes.push(sn); buildNoteEl(sn, false); return; }
+      local.groupId = sn.groupId;
       if (document.activeElement === local.el?.querySelector('.note-text')) return; // 지금 편집 중이면 건드리지 않음
       local.x = sn.x; local.y = sn.y; local.w = sn.w; local.h = sn.h; local.text = sn.text; local.fontSize = sn.fontSize;
       local.el.style.left = sn.x+'px'; local.el.style.top = sn.y+'px'; local.el.style.width = sn.w+'px'; local.el.style.height = sn.h+'px';
@@ -2763,6 +2792,7 @@ async function resyncFromServer() {
       // 노트와 동일하게 서버 값으로 갱신한다. (드래그/리사이즈 중이면 다음 요소 재구축이
       // 진행 중인 조작을 끊을 수 있지만, resync 자체가 흔치 않은 복구 경로라 감수한다.)
       const local = images[idx];
+      local.groupId = si.groupId;
       if (local.x===si.x && local.y===si.y && local.w===si.w && local.h===si.h && local.src===si.src && (local.z||0)===(si.z||0)) return;
       local.el?.remove();
       images[idx] = si;
@@ -2776,6 +2806,7 @@ async function resyncFromServer() {
       const idx = shapes.findIndex(s => s.id === ss.id);
       if (idx === -1) { shapes.push(ss); buildShapeEl(ss); return; }
       const local = shapes[idx];
+      local.groupId = ss.groupId;
       const same = ss.type === 'arrow'
         ? (local.x1===ss.x1 && local.y1===ss.y1 && local.x2===ss.x2 && local.y2===ss.y2 && local.bend===ss.bend && local.color===ss.color)
         : (local.x===ss.x && local.y===ss.y && local.w===ss.w && local.h===ss.h && local.color===ss.color);
@@ -2917,6 +2948,7 @@ function initPusher(pusherKey, pusherCluster) {
   channel.bind('note_resize', data => {
     const n = notes.find(n=>n.id===data.noteId);
     if (n) { n.x=data.x; n.w=data.w; n.h=data.h;
+      if (typeof data.y === 'number') { n.y = data.y; n.el.style.top = data.y+'px'; }
       n.el.style.left=data.x+'px'; n.el.style.width=data.w+'px'; n.el.style.height=data.h+'px';
       positionNoteConnectors(n);
       updateBoundArrows(n.id, false);
@@ -3013,9 +3045,20 @@ function initPusher(pusherKey, pusherCluster) {
     if (img) {
       img.w = data.w; img.h = data.h;
       if (typeof data.x === 'number') { img.x = data.x; img.el.style.left = data.x + 'px'; }
+      if (typeof data.y === 'number') { img.y = data.y; img.el.style.top = data.y + 'px'; }
       img.el.style.width = data.w + 'px'; img.el.style.height = data.h + 'px';
       scheduleLocalSave();
     }
+  });
+
+  channel.bind('group_set', data => {
+    (data.ids || []).forEach(id => {
+      const o = findItemObj(id);
+      if (!o) return;
+      if (data.groupId) o.groupId = data.groupId; else delete o.groupId;
+    });
+    scheduleLocalSave();
+    updateGroupBox();
   });
 
   channel.bind('image_delete', data => {
@@ -3041,6 +3084,8 @@ function initPusher(pusherKey, pusherCluster) {
     if (s) {
       s.w = data.w; s.h = data.h;
       s.el.style.width = data.w+'px'; s.el.style.height = data.h+'px';
+      if (typeof data.x === 'number') { s.x = data.x; s.el.style.left = data.x+'px'; }
+      if (typeof data.y === 'number') { s.y = data.y; s.el.style.top = data.y+'px'; }
       updateShapeSvg(s);
       scheduleLocalSave();
     }
@@ -3121,7 +3166,9 @@ function getSelectableItems() {
   return [
     ...notes.map(n  => ({ id:n.id,  el:n.el,  x:n.x,  y:n.y,  w:n.w,  h:n.h  })),
     ...images.map(i => ({ id:i.id,  el:i.el,  x:i.x,  y:i.y,  w:i.w,  h:i.h  })),
-    ...shapes.map(s => ({ id:s.id,  el:s.el,  x:s.x,  y:s.y,  w:s.w,  h:s.h  })),
+    ...shapes.map(s => s.type==='arrow'
+      ? { id:s.id, el:s.el, x:Math.min(s.x1,s.x2), y:Math.min(s.y1,s.y2), w:Math.abs(s.x2-s.x1), h:Math.abs(s.y2-s.y1) }
+      : { id:s.id, el:s.el, x:s.x, y:s.y, w:s.w, h:s.h }),
     ...strokes.filter(s => s.tool==='pen' && s.points.length).map(s => {
       const b = strokeBBox(s);
       return { id:s.id, el:null, x:b.x, y:b.y, w:b.w, h:b.h };
@@ -3134,6 +3181,7 @@ function applySelHighlight() {
     it.el?.classList.toggle('sel-active', selectedIds.has(it.id));
   });
   requestDraw(); // 획 선택 하이라이트는 캔버스에 그리므로 매번 다시 그려야 반영된다
+  updateGroupBox();
 }
 
 function clearSelection() { selectedIds.clear(); applySelHighlight(); }
@@ -3172,6 +3220,7 @@ function selectInRect(sx0,sy0,sx1,sy1) {
     const ix1=it.x+it.w, iy1=it.y+it.h;
     if (it.x<wx1 && ix1>wx0 && it.y<wy1 && iy1>wy0) selectedIds.add(it.id);
   });
+  expandSelectionToGroups();
   applySelHighlight();
 }
 
@@ -3205,6 +3254,7 @@ function startSelMove(sx0, sy0) {
       }
     });
     if (movedStrokes) { invalidateStrokesCache(); requestDraw(); }
+    updateGroupBox();
   };
   const mu = () => {
     document.removeEventListener('mousemove', mm);
@@ -3234,6 +3284,175 @@ function startSelMove(sx0, sy0) {
   document.addEventListener('mousemove', mm);
   document.addEventListener('mouseup',   mu);
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  GROUP — 여러 항목을 묶어서 함께 선택하고, 선택 박스 모서리로 한꺼번에 크기 조절
+// ═══════════════════════════════════════════════════════════════
+const selGroupBox  = document.getElementById('sel-group-box');
+const selGroupBtn  = document.getElementById('sel-group-btn');
+const selUngroupBtn= document.getElementById('sel-ungroup-btn');
+
+function findItemObj(id) {
+  return notes.find(n=>n.id===id) || images.find(i=>i.id===id) || shapes.find(s=>s.id===id) || strokes.find(s=>s.id===id);
+}
+
+// 선택된 항목 중 그룹에 속한 게 있으면 같은 그룹의 나머지도 전부 선택에 넣는다
+function expandSelectionToGroups() {
+  const gids = new Set();
+  selectedIds.forEach(id => { const g = findItemObj(id)?.groupId; if (g) gids.add(g); });
+  if (!gids.size) return;
+  [notes, images, shapes, strokes].forEach(list => list.forEach(it => { if (it.groupId && gids.has(it.groupId)) selectedIds.add(it.id); }));
+}
+
+// 선택 도구에서 그룹에 속한 항목을 클릭하면 그룹 전체를 선택하고 바로 함께 이동한다.
+// 그룹이 아닌 항목이면 false를 돌려 기존 개별 동작을 그대로 쓰게 한다.
+function selectGroupAndMove(obj, clientX, clientY) {
+  if (!obj?.groupId) return false;
+  selectedIds.clear(); selectedIds.add(obj.id);
+  expandSelectionToGroups();
+  applySelHighlight();
+  startSelMove(clientX, clientY);
+  return true;
+}
+
+function selectionBBox() {
+  let x0=Infinity, y0=Infinity, x1=-Infinity, y1=-Infinity;
+  getSelectableItems().forEach(it => {
+    if (!selectedIds.has(it.id)) return;
+    x0=Math.min(x0,it.x); y0=Math.min(y0,it.y); x1=Math.max(x1,it.x+it.w); y1=Math.max(y1,it.y+it.h);
+  });
+  return x0===Infinity ? null : { x:x0, y:y0, w:x1-x0, h:y1-y0 };
+}
+
+function selectedGroupState() {
+  let anyGrouped = false, firstGid, allSameGroup = true;
+  selectedIds.forEach(id => {
+    const g = findItemObj(id)?.groupId || null;
+    if (g) anyGrouped = true;
+    if (firstGid === undefined) firstGid = g;
+    else if (g !== firstGid) allSameGroup = false;
+  });
+  return { anyGrouped, isOneGroup: anyGrouped && allSameGroup && !!firstGid };
+}
+
+function updateGroupBox() {
+  if (!selGroupBox) return;
+  const b = activeTool==='select' && selectedIds.size >= 2 ? selectionBBox() : null;
+  if (!b) { selGroupBox.style.display = 'none'; return; }
+  const pad = 6;
+  selGroupBox.style.display = 'block';
+  selGroupBox.style.left   = (b.x*scale + offsetX - pad) + 'px';
+  selGroupBox.style.top    = (b.y*scale + offsetY - pad) + 'px';
+  selGroupBox.style.width  = (b.w*scale + pad*2) + 'px';
+  selGroupBox.style.height = (b.h*scale + pad*2) + 'px';
+  const { anyGrouped, isOneGroup } = selectedGroupState();
+  selGroupBox.classList.toggle('grouped', isOneGroup);
+  selGroupBtn.hidden   = isOneGroup;
+  selUngroupBtn.hidden = !anyGrouped;
+}
+
+function setGroupForSelection(groupId) {
+  const ids = [...selectedIds].filter(id => findItemObj(id)).slice(0, 200);
+  if (ids.length < (groupId ? 2 : 1)) return;
+  ids.forEach(id => { const o = findItemObj(id); if (groupId) o.groupId = groupId; else delete o.groupId; });
+  sendAction({ type:'group_set', ids, groupId });
+  updateGroupBox();
+  showToast(groupId
+    ? (window._faLang==='en' ? `Grouped ${ids.length} items` : `${ids.length}개 항목을 그룹으로 묶었습니다`)
+    : (window._faLang==='en' ? 'Ungrouped' : '그룹을 해제했습니다'));
+}
+function groupSelected()   { setGroupForSelection(genId()); }
+function ungroupSelected() { setGroupForSelection(null); }
+
+selGroupBtn.addEventListener('mousedown',   e => e.stopPropagation());
+selUngroupBtn.addEventListener('mousedown', e => e.stopPropagation());
+selGroupBtn.addEventListener('click',   e => { e.stopPropagation(); groupSelected(); });
+selUngroupBtn.addEventListener('click', e => { e.stopPropagation(); ungroupSelected(); });
+
+// 선택 박스 모서리를 끌면, 반대쪽 모서리를 기준점으로 선택된 모든 항목의 위치·크기를
+// 같은 비율로 늘리거나 줄인다 (가로세로 비율 유지 — 이미지가 찌그러지지 않게).
+function startGroupResize(corner, sx0, sy0, isTouch) {
+  const b = selectionBBox();
+  if (!b || b.w < 1 || b.h < 1) return;
+  const ax = corner.includes('w') ? b.x + b.w : b.x;   // 기준점(반대쪽 모서리)
+  const ay = corner.includes('n') ? b.y + b.h : b.y;
+  const hx = corner.includes('w') ? b.x : b.x + b.w;   // 끌기 시작한 모서리
+  const hy = corner.includes('n') ? b.y : b.y + b.h;
+  const snap = [...selectedIds].map(id => {
+    const o = findItemObj(id);
+    if (!o) return null;
+    if (o.points) return { o, pts: o.points.map(p => ({ x:p.x, y:p.y })) };
+    if (o.type==='arrow') return { o, a: { x1:o.x1, y1:o.y1, x2:o.x2, y2:o.y2, bend:o.bend||0 } };
+    return { o, x:o.x, y:o.y, w:o.w, h:o.h };
+  }).filter(Boolean);
+  const sc = (v, a, f) => a + (v - a) * f;
+  let f = 1, movedStrokes = false;
+
+  function onMove(cx, cy) {
+    const wx = (cx - offsetX) / scale, wy = (cy - offsetY) / scale;
+    const fx = (wx - ax) / (hx - ax), fy = (wy - ay) / (hy - ay);
+    f = Math.min(10, Math.max(0.1, Math.max(fx, fy)));
+    snap.forEach(sn => {
+      const o = sn.o;
+      if (sn.pts) {
+        o.points = sn.pts.map(p => ({ x:sc(p.x,ax,f), y:sc(p.y,ay,f) }));
+        movedStrokes = true;
+      } else if (sn.a) {
+        o.x1 = sc(sn.a.x1,ax,f); o.y1 = sc(sn.a.y1,ay,f); o.x2 = sc(sn.a.x2,ax,f); o.y2 = sc(sn.a.y2,ay,f);
+        o.bend = sn.a.bend * f;
+        renderArrowEl(o); setupArrowEvents(o);
+      } else {
+        o.x = sc(sn.x,ax,f); o.y = sc(sn.y,ay,f);
+        if (notes.includes(o)) {
+          o.w = Math.min(3000, Math.max(MIN_NOTE_W, sn.w*f)); o.h = Math.min(3000, Math.max(MIN_NOTE_H, sn.h*f));
+        } else if (images.includes(o)) {
+          o.w = Math.min(3000, Math.max(20, sn.w*f)); o.h = Math.min(3000, Math.max(20, sn.h*f));
+        } else {
+          o.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, sn.w*f)); o.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, sn.h*f));
+        }
+        o.el.style.left = o.x+'px'; o.el.style.top = o.y+'px';
+        o.el.style.width = o.w+'px'; o.el.style.height = o.h+'px';
+        if (notes.includes(o)) { positionNoteConnectors(o); updateBoundArrows(o.id, false); }
+        else if (shapes.includes(o)) updateShapeSvg(o);
+      }
+    });
+    if (movedStrokes) invalidateStrokesCache();
+    requestDraw();
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', tm); document.removeEventListener('touchend', onUp);
+    if (f === 1) return;
+    scheduleLocalSave();
+    snap.forEach(({ o }) => {
+      if (notes.includes(o)) {
+        sendAction({ type:'note_resize', noteId:o.id, x:o.x, y:o.y, w:o.w, h:o.h });
+        updateBoundArrows(o.id, true);
+      } else if (images.includes(o)) {
+        sendAction({ type:'image_resize', imageId:o.id, x:o.x, y:o.y, w:o.w, h:o.h });
+      } else if (o.type==='arrow') {
+        sendAction({ type:'shape_arrow_update', shapeId:o.id, x1:o.x1, y1:o.y1, x2:o.x2, y2:o.y2, bend:o.bend });
+      } else if (shapes.includes(o)) {
+        sendAction({ type:'shape_resize', shapeId:o.id, x:o.x, y:o.y, w:o.w, h:o.h });
+      } else if (o.points) {
+        sendAction({ type:'stroke_move', strokeId:o.id, points:o.points });
+      }
+    });
+  }
+  const mm = e => onMove(e.clientX, e.clientY);
+  const tm = e => { if (e.touches.length===1) { e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); } };
+  if (isTouch) { document.addEventListener('touchmove', tm, { passive:false }); document.addEventListener('touchend', onUp); }
+  else         { document.addEventListener('mousemove', mm); document.addEventListener('mouseup', onUp); }
+}
+
+selGroupBox.querySelectorAll('.sgb-h').forEach(h => {
+  h.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); startGroupResize(h.dataset.c, e.clientX, e.clientY, false); });
+  h.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    e.stopPropagation(); e.preventDefault();
+    startGroupResize(h.dataset.c, e.touches[0].clientX, e.touches[0].clientY, true);
+  }, { passive:false });
+});
 
 // ═══════════════════════════════════════════════════════════════
 //  MOUSE / TOUCH / KEYBOARD
@@ -3413,6 +3632,10 @@ document.addEventListener('keydown', e => {
   // Cmd/Ctrl 조합은 실행 취소만 처리하고, 나머지(Cmd+S, Cmd+0 등)는 브라우저에 맡긴다
   if (e.ctrlKey||e.metaKey||e.altKey) {
     if ((e.ctrlKey||e.metaKey) && !e.shiftKey && k.toLowerCase()==='z') { e.preventDefault(); undo(); }
+    if ((e.ctrlKey||e.metaKey) && k.toLowerCase()==='g' && activeTool==='select' && selectedIds.size) {
+      e.preventDefault();
+      if (e.shiftKey) ungroupSelected(); else groupSelected();
+    }
     return;
   }
   if ((k==='Backspace'||k==='Delete') && activeTool==='select' && selectedIds.size) {

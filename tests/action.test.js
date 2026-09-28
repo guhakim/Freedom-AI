@@ -454,3 +454,60 @@ test('todo_add signals rejection via response body when the per-date cap is hit'
   } }), res2);
   assert.equal(res2.body.rejected, undefined);
 });
+
+test('group_set tags notes/images/shapes/strokes with a groupId and clears it with null', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), {
+    strokes: [{ id: 's1', tool: 'pen', color: '#000', width: 2, points: [{ x: 1, y: 1 }] }],
+    notes:   [{ id: 'n1', x: 0, y: 0, w: 160, h: 130 }],
+    images:  [{ id: 'i1', x: 0, y: 0, w: 100, h: 100 }, { id: 'i2', x: 0, y: 0, w: 100, h: 100 }],
+    shapes:  [{ id: 'sh1', type: 'rect', x: 0, y: 0, w: 50, h: 50 }],
+  });
+  const handler = freshHandler(ACTION);
+
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'group_set', ids: ['s1', 'n1', 'i1', 'sh1', 'missing'], groupId: 'g1' } } }), mockRes());
+  let state = await kv.get(kvKey('r1'));
+  assert.equal(state.strokes[0].groupId, 'g1');
+  assert.equal(state.notes[0].groupId, 'g1');
+  assert.equal(state.images[0].groupId, 'g1');
+  assert.equal(state.images[1].groupId, undefined);
+  assert.equal(state.shapes[0].groupId, 'g1');
+
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'group_set', ids: ['n1', 'i1'], groupId: null } } }), mockRes());
+  state = await kv.get(kvKey('r1'));
+  assert.equal('groupId' in state.notes[0], false);
+  assert.equal('groupId' in state.images[0], false);
+  assert.equal(state.shapes[0].groupId, 'g1');
+
+  // 잘못된 입력은 무시
+  for (const action of [
+    { type: 'group_set', ids: 'n1', groupId: 'g2' },
+    { type: 'group_set', ids: ['n1'], groupId: 123 },
+    { type: 'group_set', ids: Array.from({ length: 201 }, (_, i) => `x${i}`), groupId: 'g2' },
+  ]) {
+    const res = mockRes();
+    await handler(mockReq({ body: { roomId: 'r1', userId: 'u1', action } }), res);
+    assert.equal(res.statusCode, 200);
+  }
+  state = await kv.get(kvKey('r1'));
+  assert.equal('groupId' in state.notes[0], false);
+});
+
+// 그룹 크기 조절은 기준 모서리에 따라 항목의 위치(x·y)도 함께 바뀌므로 resize 액션이 y까지 반영해야 한다
+test('image/note/shape resize also accept a new x/y position (group resize)', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), {
+    strokes: [], notes: [{ id: 'n1', x: 0, y: 0, w: 160, h: 130 }],
+    images: [{ id: 'i1', x: 0, y: 0, w: 100, h: 100 }], shapes: [{ id: 'sh1', type: 'rect', x: 0, y: 0, w: 50, h: 50 }],
+  });
+  const handler = freshHandler(ACTION);
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'u1', action: { type: 'image_resize', imageId: 'i1', x: 10, y: 20, w: 200, h: 200 } } }), mockRes());
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'u1', action: { type: 'note_resize', noteId: 'n1', x: 30, y: 40, w: 200, h: 150 } } }), mockRes());
+  await handler(mockReq({ body: { roomId: 'r1', userId: 'u1', action: { type: 'shape_resize', shapeId: 'sh1', x: 50, y: 60, w: 80, h: 80 } } }), mockRes());
+  const state = await kv.get(kvKey('r1'));
+  assert.deepEqual([state.images[0].x, state.images[0].y, state.images[0].w], [10, 20, 200]);
+  assert.deepEqual([state.notes[0].x, state.notes[0].y, state.notes[0].w], [30, 40, 200]);
+  assert.deepEqual([state.shapes[0].x, state.shapes[0].y, state.shapes[0].w], [50, 60, 80]);
+});

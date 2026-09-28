@@ -79,6 +79,8 @@ const VALID_SHAPE_TYPE = new Set(['rect', 'ellipse', 'triangle', 'arrow']);
 const VALID_SIDE = new Set(['top', 'right', 'bottom', 'left']);
 const MAX_TODO_TEXT = 200;
 const MAX_TODOS_PER_DATE = 50;
+// 한 번에 묶을 수 있는 최대 항목 수 — Pusher 이벤트 10KB 한도 안에 id 목록이 들어가게 한다
+const MAX_GROUP_IDS = 200;
 const VALID_DATE_KEY = /^\d{4}-\d{1,2}-\d{1,2}$/;
 
 // 화살표를 노트 가장자리에 연결(binding)할 때, 대상 노트 id/방향이 유효한 경우에만 통과시킨다.
@@ -315,10 +317,11 @@ module.exports = async (req, res) => {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       if (typeof action.x === 'number') n.x = action.x;
+      if (typeof action.y === 'number') n.y = action.y;
       n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w ?? n.w));
       n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, action.h ?? n.h));
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_resize', { noteId: action.noteId, x: n.x, w: n.w, h: n.h }, excl);
+      await pusher.trigger(channel, 'note_resize', { noteId: action.noteId, x: n.x, y: n.y, w: n.w, h: n.h }, excl);
       break;
     }
 
@@ -396,8 +399,9 @@ module.exports = async (req, res) => {
       img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, action.w ?? img.w));
       img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, action.h ?? img.h));
       if (typeof action.x === 'number') img.x = action.x;
+      if (typeof action.y === 'number') img.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'image_resize', { imageId: action.imageId, x: img.x, w: img.w, h: img.h }, excl);
+      await pusher.trigger(channel, 'image_resize', { imageId: action.imageId, x: img.x, y: img.y, w: img.w, h: img.h }, excl);
       break;
     }
 
@@ -497,8 +501,11 @@ module.exports = async (req, res) => {
       if (!s || s.type === 'arrow') break;
       s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w ?? s.w));
       s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h ?? s.h));
+      // 그룹 크기 조절은 위치도 함께 바뀐다 (개별 리사이즈 핸들은 x/y를 안 보낸다)
+      if (typeof action.x === 'number') s.x = action.x;
+      if (typeof action.y === 'number') s.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'shape_resize', { shapeId: action.shapeId, w: s.w, h: s.h }, excl);
+      await pusher.trigger(channel, 'shape_resize', { shapeId: action.shapeId, x: s.x, y: s.y, w: s.w, h: s.h }, excl);
       break;
     }
 
@@ -523,6 +530,27 @@ module.exports = async (req, res) => {
       state.shapes.splice(idx, 1);
       await kvSet(kvKey, state, kvSetOpts);
       await pusher.trigger(channel, 'shape_delete', { shapeId: action.shapeId }, excl);
+      break;
+    }
+
+    // 선택 도구로 고른 항목들을 그룹으로 묶거나(groupId 문자열) 풀기(null).
+    // 그룹에 속한 항목은 하나만 클릭해도 그룹 전체가 함께 선택된다.
+    case 'group_set': {
+      const { ids, groupId } = action;
+      if (!Array.isArray(ids) || !ids.length || ids.length > MAX_GROUP_IDS) break;
+      if (groupId !== null && (typeof groupId !== 'string' || !groupId || groupId.length > 40)) break;
+      const idSet = new Set(ids.filter(id => typeof id === 'string'));
+      const applied = [];
+      for (const list of [state.notes, state.images, state.shapes, state.strokes]) {
+        for (const item of list) {
+          if (!idSet.has(item.id)) continue;
+          if (groupId) item.groupId = groupId; else delete item.groupId;
+          applied.push(item.id);
+        }
+      }
+      if (!applied.length) break;
+      await kvSet(kvKey, state, kvSetOpts);
+      await pusher.trigger(channel, 'group_set', { ids: applied, groupId }, excl);
       break;
     }
 
