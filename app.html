@@ -2533,7 +2533,7 @@ async function autoRemoveBackground(img) {
       const finalSrc = await simpleLumaKeyCutout(img.src);
       applyImageSrcUpdate(img, finalSrc, { bgRemoved: true });
       lastImageEdit = { imageId: img.id, prevSrc, prevBgRemoved };
-      showToast(window._faLang==='en' ? '✂️ Removed light background (logo/text detected)' : '✂️ 로고·텍스트로 보여 밝은 배경만 제거했습니다');
+      showToast(window._faLang==='en' ? '✂️ Removed solid background (logo/text detected)' : '✂️ 로고·텍스트로 보여 단색 배경만 제거했습니다');
       return;
     }
 
@@ -2550,7 +2550,7 @@ async function autoRemoveBackground(img) {
         const finalSrc = await simpleLumaKeyCutout(img.src);
         applyImageSrcUpdate(img, finalSrc, { bgRemoved: true });
         lastImageEdit = { imageId: img.id, prevSrc, prevBgRemoved };
-        showToast(window._faLang==='en' ? '✂️ No person found — removed light background instead' : '✂️ 인물을 찾지 못해 밝은 배경만 제거했습니다');
+        showToast(window._faLang==='en' ? '✂️ No person found — removed solid background instead' : '✂️ 인물을 찾지 못해 단색 배경만 제거했습니다');
         return;
       }
       showToast(data.error === 'model_loading'
@@ -2587,7 +2587,7 @@ async function autoRemoveBackground(img) {
     // 잘려나갈 수 있다 — Ctrl+Z로 바로 원본을 되돌릴 수 있게 기억해둔다.
     lastImageEdit = { imageId: img.id, prevSrc, prevBgRemoved };
     showToast(usedFallback
-      ? (window._faLang==='en' ? '✂️ No person found — removed light background instead' : '✂️ 인물을 찾지 못해 밝은 배경만 제거했습니다')
+      ? (window._faLang==='en' ? '✂️ No person found — removed solid background instead' : '✂️ 인물을 찾지 못해 단색 배경만 제거했습니다')
       : (window._faLang==='en' ? '✂️ Background removed (Ctrl+Z to undo)' : '✂️ 배경을 제거했습니다 (Ctrl+Z로 되돌리기)'));
   } catch (e) {
     showToast((window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message);
@@ -3403,13 +3403,18 @@ canvas.addEventListener('touchend', e => {
 function touchDist(t) { return Math.hypot(t[1].clientX-t[0].clientX,t[1].clientY-t[0].clientY); }
 
 document.addEventListener('keydown', e => {
-  if (e.isComposing || e.target.closest('.note-text,.modal-input')) return;
+  if (e.isComposing || e.target.closest('.note-text,input,textarea,[contenteditable]')) return;
   if (e.code === 'Space') {
     e.preventDefault();
     if (!spaceHeld) { spaceHeld = true; updateCursor(false); }
     return;
   }
   const k=e.key;
+  // Cmd/Ctrl 조합은 실행 취소만 처리하고, 나머지(Cmd+S, Cmd+0 등)는 브라우저에 맡긴다
+  if (e.ctrlKey||e.metaKey||e.altKey) {
+    if ((e.ctrlKey||e.metaKey) && !e.shiftKey && k.toLowerCase()==='z') { e.preventDefault(); undo(); }
+    return;
+  }
   if ((k==='Backspace'||k==='Delete') && activeTool==='select' && selectedIds.size) {
     e.preventDefault();
     deleteSelected();
@@ -3424,7 +3429,6 @@ document.addEventListener('keydown', e => {
   if (k==='s'||k==='S') { setTool('sticky'); return; }
   if (k==='r'||k==='R') { setTool('shape');  return; }
   if (k==='v'||k==='V') { setTool('select'); return; }
-  if ((e.ctrlKey||e.metaKey)&&k==='z') { e.preventDefault(); undo(); }
 });
 
 document.addEventListener('keyup', e => {
