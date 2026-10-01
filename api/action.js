@@ -1,23 +1,22 @@
 'use strict';
 const Pusher = require('pusher');
+const { isValidRoomId, checkAccess } = require('../lib/auth');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
   try { return require('@vercel/kv').kv; } catch { return null; }
 }
+// KV 읽기/쓰기 에러는 삼키지 않는다 — 예전엔 일시적인 읽기 실패를 "빈 방"으로 착각해
+// 빈 상태 + 새 항목 하나로 방 전체를 덮어써 버릴 수 있었다. 에러는 핸들러에서 500으로 돌려준다.
 async function kvGet(key) {
-  try {
-    const kv = await getKv();
-    if (!kv || !process.env.KV_REST_API_URL) return null;
-    return await kv.get(key);
-  } catch { return null; }
+  const kv = await getKv();
+  if (!kv || !process.env.KV_REST_API_URL) return null;
+  return await kv.get(key);
 }
 async function kvSet(key, val, opts) {
-  try {
-    const kv = await getKv();
-    if (!kv || !process.env.KV_REST_API_URL) return;
-    await kv.set(key, val, opts);
-  } catch { /* ignore */ }
+  const kv = await getKv();
+  if (!kv || !process.env.KV_REST_API_URL) return;
+  await kv.set(key, val, opts);
 }
 
 // 게스트가 만든 방은 계정에 귀속되지 않아 아무도 다시 찾아올 수 없으므로, 방치되면 KV에
@@ -25,41 +24,6 @@ async function kvSet(key, val, opts) {
 // 삭제) 실제 사용 중에는 안 지워지되 방치된 방은 정리되게 한다. (kv.set은 ex 옵션 없이 쓰면
 // Redis 기본 동작상 기존 TTL을 지우므로, 로그인 사용자가 같은 방을 쓰면 TTL이 자연히 해제된다.)
 const GUEST_ROOM_TTL_SECONDS = 60 * 60 * 24;
-
-// 토큰→이메일 검증 결과를 짧게 캐싱한다. 비공개 방에서는 그리기 액션마다 checkAccess가 호출되는데,
-// 매번 Google userinfo API를 왕복하면 획 하나 그릴 때마다 지연이 생긴다.
-// (서버리스 인스턴스가 재사용될 때만 유효 — 완벽한 보장은 아니고, 어디까지나 흔한 "연속 액션" 구간을 빠르게 만드는 용도)
-const verifyCache = new Map(); // token -> { email, exp }
-const VERIFY_CACHE_TTL = 5 * 60 * 1000;
-
-async function verifyToken(token) {
-  const cached = verifyCache.get(token);
-  if (cached && cached.exp > Date.now()) return cached.email;
-  try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${token}` } });
-    if (!r.ok) return null;
-    const info = await r.json();
-    if (typeof info.email !== 'string') return null;
-    const email = info.email.toLowerCase();
-    verifyCache.set(token, { email, exp: Date.now() + VERIFY_CACHE_TTL });
-    return email;
-  } catch { return null; }
-}
-
-// 방이 비공개로 전환된 경우(팀 초대를 한 번이라도 발급한 방) 멤버인지 검증.
-// 아직 비공개 전환 안 된(레거시 오픈) 방은 지금까지처럼 누구나 액션 가능.
-async function checkAccess(kv, req, roomId, email) {
-  if (!kv) return true;
-  const members = await kv.get(`fa:room:${roomId}:members`);
-  if (!members) return true;
-  if (!email) return false;
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) return false;
-  const verifiedEmail = await verifyToken(token);
-  if (!verifiedEmail || verifiedEmail !== email.toLowerCase()) return false;
-  return members.map(m => String(m).toLowerCase()).includes(email.toLowerCase());
-}
 
 const MAX_STROKES  = 1000;
 const MAX_NOTE_TXT = 10_000;
@@ -81,6 +45,7 @@ const MAX_TODO_TEXT = 200;
 const MAX_TODOS_PER_DATE = 50;
 // 한 번에 묶을 수 있는 최대 항목 수 — Pusher 이벤트 10KB 한도 안에 id 목록이 들어가게 한다
 const MAX_GROUP_IDS = 200;
+const MAX_NOTES = 1000;
 const VALID_DATE_KEY = /^\d{4}-\d{1,2}-\d{1,2}$/;
 
 // 화살표를 노트 가장자리에 연결(binding)할 때, 대상 노트 id/방향이 유효한 경우에만 통과시킨다.
@@ -113,21 +78,51 @@ function toChannelSafe(str) {
 
 // 룸 단위 락: 동시 요청이 같은 룸 상태를 읽고-수정하고-쓰는 과정에서
 // 서로를 덮어써 스트로크/포스트잇 등이 유실되는 것을 방지한다.
+// 확보하지 못하면 null — 예전엔 락 없이 그대로 진행해서, 동시에 들어온 요청끼리 서로의
+// 변경을 덮어써 조용히 유실됐다. 이제는 503을 돌려 클라이언트가 서버 상태로 다시 맞추게 한다.
 async function acquireRoomLock(kv, kvKey) {
-  if (!kv) return false;
-  const lockKey = `${kvKey}:lock`;
-  for (let i = 0; i < 20; i++) {
-    try {
-      const ok = await kv.set(lockKey, '1', { nx: true, ex: 5 });
-      if (ok) return lockKey;
-    } catch { return false; } // 락 자체가 실패하면 락 없이 진행 (가용성 우선)
+  const key = `${kvKey}:lock`;
+  const token = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  for (let i = 0; i < 30; i++) {
+    const ok = await kv.set(key, token, { nx: true, ex: 5 });
+    if (ok) return { key, token };
     await new Promise(r => setTimeout(r, 40 + Math.random() * 60));
   }
-  return false; // 경합이 심해 확보 실패 — 락 없이 진행 (최선 노력)
+  return null;
 }
-async function releaseRoomLock(kv, lockKey) {
-  if (!lockKey) return;
-  try { await kv.del(lockKey); } catch { /* ignore */ }
+// 내가 건 락일 때만 푼다 — 처리 시간이 TTL(5초)을 넘긴 사이 다른 요청이 새로 건 락을
+// 지워버리지 않게 한다.
+async function releaseRoomLock(kv, lock) {
+  if (!lock) return;
+  try { if ((await kv.get(lock.key)) === lock.token) await kv.del(lock.key); } catch { /* ignore */ }
+}
+
+// Pusher 이벤트는 10KB가 한도라, 넘으면 trigger가 예외를 던져 요청 전체가 500이 되고
+// 다른 사용자에겐 변경이 전달되지 않았다(긴 획·긴 노트 텍스트). 크기를 넘으면 내용 대신
+// room_resync 신호만 보내 받는 쪽이 /api/room에서 다시 읽게 한다. 이미 KV에는 저장된
+// 뒤이므로 전송 실패가 요청 실패로 이어지지 않게 로그만 남긴다.
+const PUSHER_MAX_BYTES = 9000;
+async function safeTrigger(pusher, channel, event, data, excl) {
+  try {
+    const big = Buffer.byteLength(JSON.stringify(data)) > PUSHER_MAX_BYTES;
+    await pusher.trigger(channel, big ? 'room_resync' : event, big ? { reason: event } : data, excl);
+  } catch (e) { console.error('pusher trigger failed', event, e?.message); }
+}
+
+const isNum = v => typeof v === 'number' && Number.isFinite(v);
+const validGroupId = g => (typeof g === 'string' && g.length > 0 && g.length <= 40) ? g : undefined;
+const validId = id => typeof id === 'string' && id.length > 0 && id.length <= 64;
+
+// 펜 획 하나를 저장 가능한 형태로 정리 (stroke_end·erase_result 공통). 유효하지 않으면 null.
+function sanitizeStroke(s, userId) {
+  if (!s || !validId(s.id) || s.tool !== 'pen' || !VALID_COLOR.test(s.color)
+      || !isNum(s.width) || s.width <= 0 || s.width > 100 || !Array.isArray(s.points)) return null;
+  const points = s.points.slice(0, 5000).filter(p => isNum(p?.x) && isNum(p?.y)).map(p => ({ x: p.x, y: p.y }));
+  if (!points.length) return null;
+  const out = { id: s.id, tool: 'pen', color: s.color, width: s.width, userId, points };
+  const g = validGroupId(s.groupId);
+  if (g) out.groupId = g;
+  return out;
 }
 
 function applyErasure(state, eraserStroke) {
@@ -164,16 +159,27 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST')   return res.status(405).end();
 
   const { roomId, userId, socketId, action, email, isGuest } = req.body || {};
-  if (!roomId || !userId || !action?.type) return res.status(400).json({ error: 'invalid' });
+  if (!isValidRoomId(roomId) || typeof userId !== 'string' || !userId || typeof action?.type !== 'string') return res.status(400).json({ error: 'invalid' });
 
   const pusher  = getPusher();
   const channel = `presence-room-${toChannelSafe(roomId)}`;
   const kvKey   = `fa:room:${roomId}`;
   const excl    = socketId ? { socket_id: socketId } : undefined;
 
+  const trigger = (event, data) => safeTrigger(pusher, channel, event, data, excl);
+
   const kv = await getKv();
-  if (!(await checkAccess(kv, req, roomId, email))) return res.status(403).json({ error: 'access_denied' });
-  const lockKey = await acquireRoomLock(kv, kvKey);
+  let lock = null;
+  try {
+    if (!(await checkAccess(kv, req, roomId, email))) return res.status(403).json({ error: 'access_denied' });
+    if (kv && process.env.KV_REST_API_URL) {
+      lock = await acquireRoomLock(kv, kvKey);
+      if (!lock) return res.status(503).json({ error: 'busy' });
+    }
+  } catch (e) {
+    console.error('action pre', e);
+    return res.status(500).json({ error: 'server_error' });
+  }
   try {
 
   const existingState = await kvGet(kvKey);
@@ -199,44 +205,40 @@ module.exports = async (req, res) => {
       const { deletedIds, newStrokes } = action;
       if (!Array.isArray(deletedIds) || !Array.isArray(newStrokes)) break;
 
-      const ids = deletedIds.filter(id => typeof id === 'string');
+      const ids = deletedIds.filter(id => typeof id === 'string').slice(0, MAX_STROKES);
       // 지우개로 잘린 조각들도 stroke_end와 동일한 기준(펜 도구, 유효한 색상/좌표)으로
       // 검증한다 — 이 검증이 없으면 조작된 요청으로 MAX_STROKES 제한을 우회하거나
       // 저장 상태에 임의 필드를 주입할 수 있었다.
-      const valid = newStrokes
-        .filter(s => s && typeof s.id === 'string' && s.tool === 'pen'
-          && VALID_COLOR.test(s.color) && typeof s.width === 'number' && s.width > 0 && s.width <= 100
-          && Array.isArray(s.points))
-        .map(s => ({
-          id: s.id, tool: 'pen', color: s.color, width: s.width, userId,
-          points: s.points.slice(0, 5000).filter(p => typeof p?.x === 'number' && typeof p?.y === 'number'),
-        }))
-        .filter(s => s.points.length);
+      // (그룹에 속한 획이 잘려도 조각들이 그룹을 유지하도록 groupId도 보존)
+      const valid = newStrokes.slice(0, MAX_STROKES).map(s => sanitizeStroke(s, userId)).filter(Boolean);
 
       state.strokes = state.strokes.filter(s => !ids.includes(s.id));
       const room = Math.max(0, MAX_STROKES - state.strokes.length);
       const toAdd = valid.slice(0, room);
       state.strokes.push(...toAdd);
       await kvSet(kvKey, state, kvSetOpts);
-      for (const id of ids)
-        await pusher.trigger(channel, 'stroke_delete', { strokeId: id }, excl);
-      for (const ns of toAdd)
-        await pusher.trigger(channel, 'stroke_end', { strokeId: ns.id, stroke: ns }, excl);
+      // 조각이 많으면 이벤트를 수십~수천 개 보내는 대신 다시 읽으라는 신호 하나만 보낸다
+      if (ids.length + toAdd.length > 20) {
+        await trigger('room_resync', { reason: 'erase_result' });
+      } else {
+        for (const id of ids)
+          await trigger('stroke_delete', { strokeId: id });
+        for (const ns of toAdd)
+          await trigger('stroke_end', { strokeId: ns.id, stroke: ns });
+      }
       break;
     }
 
     case 'stroke_end': {
-      const { strokeId, stroke } = action;
-      if (!stroke) break;
-
-      if (!state.strokes.find(s => s.id === strokeId)
-          && state.strokes.length < MAX_STROKES
-          && stroke.tool === 'pen'
-          && VALID_COLOR.test(stroke.color)) {
-        state.strokes.push({ ...stroke, userId });
-      }
+      // 저장한 것과 똑같은 정리된 획만 저장·전송한다 — 예전엔 클라이언트가 보낸 객체를 임의
+      // 필드·무제한 점 개수 그대로 저장했고, 한도 초과 등으로 저장을 거부한 획도 그대로 전파했다.
+      const { strokeId } = action;
+      const stroke = sanitizeStroke(action.stroke, userId);
+      if (!stroke || stroke.id !== strokeId || state.strokes.find(s => s.id === strokeId)) break;
+      if (state.strokes.length >= MAX_STROKES) { rejected = 'stroke_limit'; break; }
+      state.strokes.push(stroke);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'stroke_end', { strokeId, stroke }, excl);
+      await trigger('stroke_end', { strokeId, stroke });
       break;
     }
 
@@ -246,7 +248,7 @@ module.exports = async (req, res) => {
       if (idx !== -1) {
         state.strokes.splice(idx, 1);
         await kvSet(kvKey, state, kvSetOpts);
-        await pusher.trigger(channel, 'stroke_undo', { strokeId }, excl);
+        await trigger('stroke_undo', { strokeId });
       }
       break;
     }
@@ -260,7 +262,7 @@ module.exports = async (req, res) => {
       if (idx === -1) break;
       state.strokes.splice(idx, 1);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'stroke_delete', { strokeId }, excl);
+      await trigger('stroke_delete', { strokeId });
       break;
     }
 
@@ -271,17 +273,18 @@ module.exports = async (req, res) => {
       if (!Array.isArray(points)) break;
       const s = state.strokes.find(s => s.id === strokeId);
       if (!s) break;
-      const pts = points.slice(0, 5000).filter(p => typeof p?.x === 'number' && typeof p?.y === 'number');
+      const pts = points.slice(0, 5000).filter(p => isNum(p?.x) && isNum(p?.y)).map(p => ({ x: p.x, y: p.y }));
       if (!pts.length) break;
       s.points = pts;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'stroke_move', { strokeId, points: pts }, excl);
+      await trigger('stroke_move', { strokeId, points: pts });
       break;
     }
 
     case 'note_add': {
       const { note } = action;
-      if (!note?.id || state.notes.find(n => n.id === note.id)) break;
+      if (!validId(note?.id) || state.notes.find(n => n.id === note.id)) break;
+      if (state.notes.length >= MAX_NOTES) { rejected = 'note_limit'; break; }
       const n = {
         id:     note.id,
         x:      typeof note.x === 'number' ? note.x : 0,
@@ -293,9 +296,10 @@ module.exports = async (req, res) => {
         fontSize: typeof note.fontSize === 'number' ? Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, note.fontSize)) : 13,
         userId,
       };
+      if (validGroupId(note.groupId)) n.groupId = note.groupId; // 실행 취소로 복원할 때 그룹 유지
       state.notes.push(n);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_add', { note: n }, excl);
+      await trigger('note_add', { note: n });
       break;
     }
 
@@ -309,19 +313,19 @@ module.exports = async (req, res) => {
       if (!n) break;
       n.x = action.x; n.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_move', { noteId: action.noteId, x: n.x, y: n.y }, excl);
+      await trigger('note_move', { noteId: action.noteId, x: n.x, y: n.y });
       break;
     }
 
     case 'note_resize': {
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
-      if (typeof action.x === 'number') n.x = action.x;
-      if (typeof action.y === 'number') n.y = action.y;
-      n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w ?? n.w));
-      n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, action.h ?? n.h));
+      if (isNum(action.x)) n.x = action.x;
+      if (isNum(action.y)) n.y = action.y;
+      if (isNum(action.w)) n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, action.w));
+      if (isNum(action.h)) n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, action.h));
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_resize', { noteId: action.noteId, x: n.x, y: n.y, w: n.w, h: n.h }, excl);
+      await trigger('note_resize', { noteId: action.noteId, x: n.x, y: n.y, w: n.w, h: n.h });
       break;
     }
 
@@ -330,7 +334,7 @@ module.exports = async (req, res) => {
       if (!n || typeof action.fontSize !== 'number') break;
       n.fontSize = Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, action.fontSize));
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_font_size', { noteId: action.noteId, fontSize: n.fontSize }, excl);
+      await trigger('note_font_size', { noteId: action.noteId, fontSize: n.fontSize });
       break;
     }
 
@@ -342,7 +346,7 @@ module.exports = async (req, res) => {
       if (!n) break;
       n.text = String(action.text ?? '').slice(0, MAX_NOTE_TXT);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_text', { noteId: action.noteId, text: n.text }, excl);
+      await trigger('note_text', { noteId: action.noteId, text: n.text });
       break;
     }
 
@@ -351,13 +355,13 @@ module.exports = async (req, res) => {
       if (idx === -1) break;
       state.notes.splice(idx, 1);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'note_delete', { noteId: action.noteId }, excl);
+      await trigger('note_delete', { noteId: action.noteId });
       break;
     }
 
     case 'image_add': {
       const { image } = action;
-      if (!image?.id) break;
+      if (!validId(image?.id)) break;
       if (!state.images) state.images = [];
       if (state.images.find(i => i.id === image.id)) break;
       if (state.images.length >= MAX_IMAGES) break;
@@ -373,10 +377,11 @@ module.exports = async (req, res) => {
         z:      typeof image.z === 'number' ? image.z : 0,
         userId,
       };
+      if (validGroupId(image.groupId)) img.groupId = image.groupId;
       state.images.push(img);
       await kvSet(kvKey, state, kvSetOpts);
       // src는 Pusher 10KB 한도를 초과하므로 메타데이터만 전송, 수신 측은 /api/room에서 fetch
-      await pusher.trigger(channel, 'image_add', { id: img.id, x: img.x, y: img.y, w: img.w, h: img.h, userId }, excl);
+      await trigger('image_add', { id: img.id, x: img.x, y: img.y, w: img.w, h: img.h, userId });
       break;
     }
 
@@ -388,7 +393,7 @@ module.exports = async (req, res) => {
       if (!img) break;
       img.x = action.x; img.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'image_move', { imageId: action.imageId, x: img.x, y: img.y }, excl);
+      await trigger('image_move', { imageId: action.imageId, x: img.x, y: img.y });
       break;
     }
 
@@ -396,12 +401,12 @@ module.exports = async (req, res) => {
       if (!state.images) break;
       const img = state.images.find(i => i.id === action.imageId);
       if (!img) break;
-      img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, action.w ?? img.w));
-      img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, action.h ?? img.h));
-      if (typeof action.x === 'number') img.x = action.x;
-      if (typeof action.y === 'number') img.y = action.y;
+      if (isNum(action.w)) img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, action.w));
+      if (isNum(action.h)) img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, action.h));
+      if (isNum(action.x)) img.x = action.x;
+      if (isNum(action.y)) img.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'image_resize', { imageId: action.imageId, x: img.x, y: img.y, w: img.w, h: img.h }, excl);
+      await trigger('image_resize', { imageId: action.imageId, x: img.x, y: img.y, w: img.w, h: img.h });
       break;
     }
 
@@ -411,7 +416,7 @@ module.exports = async (req, res) => {
       if (idx === -1) break;
       state.images.splice(idx, 1);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'image_delete', { imageId: action.imageId }, excl);
+      await trigger('image_delete', { imageId: action.imageId });
       break;
     }
 
@@ -429,7 +434,7 @@ module.exports = async (req, res) => {
       await kvSet(kvKey, state, kvSetOpts);
       // src는 image_add와 같은 이유로 Pusher 10KB 한도를 넘으므로 id만 알리고,
       // 수신 측은 /api/room에서 새 src를 가져온다.
-      await pusher.trigger(channel, 'image_update', { imageId }, excl);
+      await trigger('image_update', { imageId });
       break;
     }
 
@@ -440,7 +445,7 @@ module.exports = async (req, res) => {
       if (!img || typeof z !== 'number' || !Number.isFinite(z)) break;
       img.z = Math.min(1_000_000, Math.max(-1_000_000, z));
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'image_reorder', { imageId, z: img.z }, excl);
+      await trigger('image_reorder', { imageId, z: img.z });
       break;
     }
 
@@ -478,9 +483,10 @@ module.exports = async (req, res) => {
           color, userId,
         };
       }
+      if (validGroupId(shape.groupId)) s.groupId = shape.groupId;
       state.shapes.push(s);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'shape_add', { shape: s }, excl);
+      await trigger('shape_add', { shape: s });
       break;
     }
 
@@ -491,7 +497,7 @@ module.exports = async (req, res) => {
       if (!s || s.type === 'arrow') break;
       s.x = action.x; s.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'shape_move', { shapeId: action.shapeId, x: s.x, y: s.y }, excl);
+      await trigger('shape_move', { shapeId: action.shapeId, x: s.x, y: s.y });
       break;
     }
 
@@ -499,13 +505,13 @@ module.exports = async (req, res) => {
       if (!state.shapes) break;
       const s = state.shapes.find(s => s.id === action.shapeId);
       if (!s || s.type === 'arrow') break;
-      s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w ?? s.w));
-      s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h ?? s.h));
+      if (isNum(action.w)) s.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, action.w));
+      if (isNum(action.h)) s.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, action.h));
       // 그룹 크기 조절은 위치도 함께 바뀐다 (개별 리사이즈 핸들은 x/y를 안 보낸다)
-      if (typeof action.x === 'number') s.x = action.x;
-      if (typeof action.y === 'number') s.y = action.y;
+      if (isNum(action.x)) s.x = action.x;
+      if (isNum(action.y)) s.y = action.y;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'shape_resize', { shapeId: action.shapeId, x: s.x, y: s.y, w: s.w, h: s.h }, excl);
+      await trigger('shape_resize', { shapeId: action.shapeId, x: s.x, y: s.y, w: s.w, h: s.h });
       break;
     }
 
@@ -519,7 +525,7 @@ module.exports = async (req, res) => {
       if (typeof action.y2 === 'number') s.y2 = action.y2;
       if (typeof action.bend === 'number') s.bend = Math.min(2000, Math.max(-2000, action.bend));
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'shape_arrow_update', { shapeId: action.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend }, excl);
+      await trigger('shape_arrow_update', { shapeId: action.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend });
       break;
     }
 
@@ -529,7 +535,58 @@ module.exports = async (req, res) => {
       if (idx === -1) break;
       state.shapes.splice(idx, 1);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'shape_delete', { shapeId: action.shapeId }, excl);
+      await trigger('shape_delete', { shapeId: action.shapeId });
+      break;
+    }
+
+    // 선택한 여러 항목의 위치·크기를 한 번에 저장 (선택 이동·그룹 크기 조절). 예전엔 항목마다
+    // 요청을 따로 보내 서로 락을 다투다 일부가 조용히 유실됐다 — 한 번 읽고 한 번 쓴다.
+    case 'items_update': {
+      const { items } = action;
+      if (!Array.isArray(items) || !items.length || items.length > MAX_GROUP_IDS) break;
+      const applied = [];
+      for (const u of items) {
+        if (!u || !validId(u.id)) continue;
+        const n = state.notes.find(x => x.id === u.id);
+        if (n) {
+          if (isNum(u.x)) n.x = u.x; if (isNum(u.y)) n.y = u.y;
+          if (isNum(u.w)) n.w = Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, u.w));
+          if (isNum(u.h)) n.h = Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, u.h));
+          applied.push({ id: n.id, x: n.x, y: n.y, w: n.w, h: n.h });
+          continue;
+        }
+        const img = state.images.find(x => x.id === u.id);
+        if (img) {
+          if (isNum(u.x)) img.x = u.x; if (isNum(u.y)) img.y = u.y;
+          if (isNum(u.w)) img.w = Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, u.w));
+          if (isNum(u.h)) img.h = Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, u.h));
+          applied.push({ id: img.id, x: img.x, y: img.y, w: img.w, h: img.h });
+          continue;
+        }
+        const sh = state.shapes.find(x => x.id === u.id);
+        if (sh) {
+          if (sh.type === 'arrow') {
+            if (isNum(u.x1)) sh.x1 = u.x1; if (isNum(u.y1)) sh.y1 = u.y1;
+            if (isNum(u.x2)) sh.x2 = u.x2; if (isNum(u.y2)) sh.y2 = u.y2;
+            if (isNum(u.bend)) sh.bend = Math.min(2000, Math.max(-2000, u.bend));
+            applied.push({ id: sh.id, x1: sh.x1, y1: sh.y1, x2: sh.x2, y2: sh.y2, bend: sh.bend });
+          } else {
+            if (isNum(u.x)) sh.x = u.x; if (isNum(u.y)) sh.y = u.y;
+            if (isNum(u.w)) sh.w = Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, u.w));
+            if (isNum(u.h)) sh.h = Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, u.h));
+            applied.push({ id: sh.id, x: sh.x, y: sh.y, w: sh.w, h: sh.h });
+          }
+          continue;
+        }
+        const st = state.strokes.find(x => x.id === u.id);
+        if (st && Array.isArray(u.points)) {
+          const pts = u.points.slice(0, 5000).filter(p => isNum(p?.x) && isNum(p?.y)).map(p => ({ x: p.x, y: p.y }));
+          if (pts.length) { st.points = pts; applied.push({ id: st.id, points: pts }); }
+        }
+      }
+      if (!applied.length) break;
+      await kvSet(kvKey, state, kvSetOpts);
+      await trigger('items_update', { items: applied }); // 10KB를 넘으면 room_resync로 대체된다
       break;
     }
 
@@ -550,7 +607,7 @@ module.exports = async (req, res) => {
       }
       if (!applied.length) break;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'group_set', { ids: applied, groupId }, excl);
+      await trigger('group_set', { ids: applied, groupId });
       break;
     }
 
@@ -568,7 +625,7 @@ module.exports = async (req, res) => {
       const t = { id: todo.id, text, done: false, userId };
       state.todos[date].push(t);
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'todo_add', { date, todo: t }, excl);
+      await trigger('todo_add', { date, todo: t });
       break;
     }
 
@@ -579,9 +636,11 @@ module.exports = async (req, res) => {
       if (!list) break;
       const t = list.find(t => t.id === todoId);
       if (!t) break;
-      t.done = !t.done;
+      // 원하는 값을 받아 그대로 설정 — 서버에서 뒤집기만 하면 두 사람이 동시에 체크했을 때
+      // 서버는 두 번 뒤집혀 '안 함'이 되고 각 클라이언트 화면은 서로 다른 값으로 남았다
+      t.done = typeof action.done === 'boolean' ? action.done : !t.done;
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'todo_toggle', { date, todoId, done: t.done }, excl);
+      await trigger('todo_toggle', { date, todoId, done: t.done });
       break;
     }
 
@@ -595,13 +654,16 @@ module.exports = async (req, res) => {
       list.splice(idx, 1);
       if (!list.length) delete state.todos[date];
       await kvSet(kvKey, state, kvSetOpts);
-      await pusher.trigger(channel, 'todo_delete', { date, todoId }, excl);
+      await trigger('todo_delete', { date, todoId });
       break;
     }
   }
 
   res.json(rejected ? { ok: true, rejected } : { ok: true });
+  } catch (e) {
+    console.error('action', action.type, e);
+    res.status(500).json({ error: 'server_error' });
   } finally {
-    await releaseRoomLock(kv, lockKey);
+    await releaseRoomLock(kv, lock);
   }
 };

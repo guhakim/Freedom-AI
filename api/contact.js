@@ -1,4 +1,5 @@
 'use strict';
+const { isAdmin } = require('../lib/auth');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -26,7 +27,7 @@ function checkLocalRateLimit(key) {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Key');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const kv = await getKv();
@@ -65,11 +66,14 @@ module.exports = async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    if (kvOk) {
-      try {
-        await kv.lpush('fa:contact:submissions', JSON.stringify(entry));
-        await kv.ltrim('fa:contact:submissions', 0, MAX_STORED - 1);
-      } catch { /* 저장 실패해도 사용자에게는 성공으로 응답 */ }
+    // 저장하지 못했으면 실패로 응답한다 — 예전엔 항상 성공으로 응답해서 문의가 조용히 사라졌다
+    if (!kvOk) return res.status(503).json({ error: 'storage_unavailable' });
+    try {
+      await kv.lpush('fa:contact:submissions', JSON.stringify(entry));
+      await kv.ltrim('fa:contact:submissions', 0, MAX_STORED - 1);
+    } catch (e) {
+      console.error('contact: save failed', e);
+      return res.status(503).json({ error: 'storage_unavailable' });
     }
 
     return res.status(200).json({ ok: true });
@@ -78,7 +82,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const ADMIN_KEY = process.env.ADMIN_STATS_KEY;
     if (!ADMIN_KEY) return res.status(500).json({ error: 'ADMIN_STATS_KEY not configured' });
-    if (req.query?.key !== ADMIN_KEY) return res.status(401).json({ error: 'unauthorized' });
+    if (!isAdmin(req)) return res.status(401).json({ error: 'unauthorized' });
     if (!kvOk) return res.json({ submissions: [] });
 
     try {
@@ -88,7 +92,8 @@ module.exports = async (req, res) => {
       }).filter(Boolean);
       return res.json({ submissions });
     } catch (e) {
-      return res.status(500).json({ error: e.message });
+      console.error('contact: list failed', e);
+      return res.status(500).json({ error: 'server_error' });
     }
   }
 

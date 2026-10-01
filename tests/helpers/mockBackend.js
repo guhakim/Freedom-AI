@@ -89,17 +89,16 @@ function mockRes() {
   };
 }
 
-// verifyToken()은 실제 Google userinfo API를 호출한다. 비공개 방 테스트에서
+// verifyToken()은 실제 Google tokeninfo API를 호출한다. 비공개 방 테스트에서
 // 네트워크 없이 특정 토큰 -> 이메일 매핑만 검증하도록 global.fetch를 바꿔치기한다.
 function stubGoogleAuth(tokenToEmail) {
   const original = global.fetch;
   global.fetch = async (url, opts) => {
-    if (typeof url === 'string' && url.startsWith('https://www.googleapis.com/oauth2/v3/userinfo')) {
-      const auth = opts?.headers?.Authorization || '';
-      const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (typeof url === 'string' && url.startsWith('https://oauth2.googleapis.com/tokeninfo')) {
+      const token = new URL(url).searchParams.get('access_token');
       const email = token && tokenToEmail[token];
       if (!email) return { ok: false };
-      return { ok: true, json: async () => ({ email }) };
+      return { ok: true, json: async () => ({ email, aud: '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.googleusercontent.com' }) };
     }
     return original(url, opts);
   };

@@ -9,3 +9,5 @@ services:
     envVars:
       - key: HF_TOKEN
         sync: false
+      - key: NODE_ENV
+        value: production

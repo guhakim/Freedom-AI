@@ -2,23 +2,21 @@
   "version": 2,
   "framework": null,
   "outputDirectory": ".",
-  "functions": {
-    "api/ai-transform.js": {
-      "maxDuration": 60
-    },
-    "api/remove-bg.js": {
-      "maxDuration": 60
-    }
-  },
   "headers": [
     {
       "source": "/app.html",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
       ]
     }
   ],
   "rewrites": [
-    { "source": "/", "destination": "/index.html" }
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
   ]
 }

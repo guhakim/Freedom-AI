@@ -5,22 +5,7 @@ async function getKv() {
   try { return require('@vercel/kv').kv; } catch { return null; }
 }
 
-// Authorization: Bearer <google access token> 이 실제로 email의 소유자인지 검증
-async function verifyOwner(req, email) {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) return false;
-  try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!r.ok) return false;
-    const info = await r.json();
-    return typeof info.email === 'string' && info.email.toLowerCase() === email.toLowerCase();
-  } catch {
-    return false;
-  }
-}
+const { verifyEmail: verifyOwner } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

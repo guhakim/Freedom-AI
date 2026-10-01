@@ -16,7 +16,7 @@ test('GET without a key is rejected, and with the wrong key is unauthorized', as
   assert.equal(res.statusCode, 401);
 
   res = mockRes();
-  await handler(mockReq({ method: 'GET', query: { key: 'wrong-key' } }), res);
+  await handler(mockReq({ method: 'GET', headers: { 'x-admin-key': 'wrong-key' } }), res);
   assert.equal(res.statusCode, 401);
 
   delete process.env.ADMIN_STATS_KEY;
@@ -33,7 +33,7 @@ test('GET with the correct key returns the signup count and the actual email lis
   const handler = freshHandler(STATS);
 
   const res = mockRes();
-  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+  await handler(mockReq({ method: 'GET', headers: { 'x-admin-key': 'right-key' } }), res);
 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.users, 2);
@@ -69,7 +69,7 @@ test('POST increments a per-day counter, and GET returns dailyStats newest-first
   await kv.set('fa:stats:daily:2020-01-01', 5);
 
   const res = mockRes();
-  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+  await handler(mockReq({ method: 'GET', headers: { 'x-admin-key': 'right-key' } }), res);
 
   assert.equal(res.statusCode, 200);
   assert.equal(await kv.get(`fa:stats:daily:${kstToday}`), 2);
@@ -93,7 +93,7 @@ test('monthlyStats is derived by summing dailyStats within the same month, so it
   }
 
   const res = mockRes();
-  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+  await handler(mockReq({ method: 'GET', headers: { 'x-admin-key': 'right-key' } }), res);
 
   assert.equal(res.statusCode, 200);
   const sep = res.body.monthlyStats.find(m => m.month === '2026-09');
@@ -118,7 +118,7 @@ test('GET always includes today in dailyStats even with zero visits so far, inst
   await kv.set('fa:stats:daily:2020-01-01', 5);
 
   const res = mockRes();
-  await handler(mockReq({ method: 'GET', query: { key: 'right-key' } }), res);
+  await handler(mockReq({ method: 'GET', headers: { 'x-admin-key': 'right-key' } }), res);
 
   assert.equal(res.statusCode, 200);
   assert.deepEqual(res.body.dailyStats[0], { date: kstToday, count: 0 });

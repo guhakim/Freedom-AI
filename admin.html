@@ -221,7 +221,7 @@ async function load(key) {
   if (!key) { msg.textContent = '키를 입력해주세요.'; return; }
   msg.textContent = '조회 중...';
   try {
-    const r = await fetch(`/api/stats?key=${encodeURIComponent(key)}`);
+    const r = await fetch('/api/stats', { headers: { 'X-Admin-Key': key } });
     if (r.status === 401) { msg.textContent = '키가 올바르지 않습니다.'; hideAllSections(); return; }
     if (!r.ok) { msg.textContent = '조회 실패 (' + r.status + ')'; hideAllSections(); return; }
     const data = await r.json();
@@ -313,7 +313,7 @@ async function loadContacts(key) {
   const list = document.getElementById('contact-list');
   const countEl = document.getElementById('contact-count');
   try {
-    const r = await fetch(`/api/contact?key=${encodeURIComponent(key)}`);
+    const r = await fetch('/api/contact', { headers: { 'X-Admin-Key': key } });
     // 실패 시 이전 조회의 문의 목록이 화면에 그대로 남아 최신인 것처럼 보이지 않도록 숨긴다
     // (통계 그리드 자체는 이 실패와 무관하게 계속 보여준다 — 의도된 동작).
     if (!r.ok) { section.style.display = 'none'; return; }

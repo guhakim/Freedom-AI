@@ -1,4 +1,5 @@
 'use strict';
+const { isAdmin } = require('../lib/auth');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -8,7 +9,7 @@ async function getKv() {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Key');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const kv = await getKv();
@@ -45,7 +46,7 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const ADMIN_KEY = process.env.ADMIN_STATS_KEY;
     if (!ADMIN_KEY) return res.status(500).json({ error: 'ADMIN_STATS_KEY not configured' });
-    if (req.query?.key !== ADMIN_KEY) return res.status(401).json({ error: 'unauthorized' });
+    if (!isAdmin(req)) return res.status(401).json({ error: 'unauthorized' });
 
     if (!kvOk) {
       return res.json({ kvConnected: false, users: 0, pageviews: 0, pageviewsIndex: 0, pageviewsApp: 0, dailyStats: [], monthlyStats: [] });
