@@ -447,6 +447,14 @@
   .avatar:hover .avatar-tip { opacity:1; }
 
   /* ── OFFLINE BADGE ── */
+  /* 로그인(Google 토큰) 만료 안내 — 클릭 한 번으로 계정 선택 없이 연장 */
+  #session-banner { position:fixed; left:50%; top:calc(76px + env(safe-area-inset-top)); transform:translateX(-50%);
+    z-index:300; display:none; align-items:center; gap:10px; padding:8px 8px 8px 14px; max-width:calc(100vw - 32px);
+    background:#fff7d6; color:#111; border:2px solid #111; border-radius:12px; box-shadow:3px 3px 0 #111;
+    font-size:13px; font-weight:600; }
+  #session-banner.show { display:flex; }
+  #session-banner button { font:inherit; font-weight:700; padding:6px 12px; border-radius:8px; cursor:pointer;
+    background:#111; color:#fff; border:none; white-space:nowrap; }
   #offline-badge { font-size:11px; color:var(--ink3); display:none; align-items:center;
     gap:4px; padding:0 4px; flex-shrink:0; }
   #offline-badge .off-dot { width:6px; height:6px; border-radius:50%;
@@ -732,6 +740,10 @@
 <div class="hint" id="hint" data-i18n-en="P: Pen · E: Eraser · S: Sticky · R: Shape · H: Move · Ctrl+Z: Undo" data-i18n-ko="P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 <div id="select-box"></div>
+<div id="session-banner" role="status">
+  <span id="session-banner-text"></span>
+  <button id="session-banner-btn" type="button" data-i18n-en="Stay signed in" data-i18n-ko="로그인 연장">로그인 연장</button>
+</div>
 <div id="sel-group-box">
   <div id="sel-group-bar">
     <button id="sel-group-btn" type="button" title="그룹 (Ctrl/Cmd+G)" data-i18n-ko-title="그룹 (Ctrl/Cmd+G)" data-i18n-en-title="Group (Ctrl/Cmd+G)" data-i18n-en="Group" data-i18n-ko="그룹">그룹</button>
@@ -2751,6 +2763,7 @@ function sendAction(action) {
 
   return fetchPromise.then(res => {
     if (!res.ok) {
+      handleAuthFailure(res);
       showToast(window._faLang==='en'
         ? 'Change failed to save — syncing with server…'
         : '변경사항 저장 실패 — 서버와 다시 맞추는 중…');
@@ -2778,7 +2791,7 @@ async function resyncFromServer() {
     const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
     });
-    if (!res.ok) return;
+    if (!res.ok) { handleAuthFailure(res); return; }
     const state = await res.json();
 
     strokes = state.strokes || [];
@@ -2861,10 +2874,12 @@ function toChannelSafe(str) {
 function initPusher(pusherKey, pusherCluster) {
   pusher = new Pusher(pusherKey, {
     cluster:      pusherCluster,
-    authEndpoint: '/api/pusher-auth',
-    auth: {
-      params:  { user_id: myUserId, user_name: userName, user_color: myColor, email: myEmail },
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+    // 헤더를 매번 새로 읽는다 — 고정값으로 두면 로그인 연장 후 재연결할 때도 만료된 토큰을 보냈다
+    channelAuthorization: {
+      endpoint:  '/api/pusher-auth',
+      transport: 'ajax',
+      params:    { user_id: myUserId, user_name: userName, user_color: myColor, email: myEmail },
+      headersProvider: () => ({ 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` }),
     },
   });
 
@@ -4281,7 +4296,7 @@ function startGoogleLogin(resolveCallback) {
         const info = await res.json();
         const user = { name: info.name, email: info.email, picture: info.picture };
         localStorage.setItem('fa_user', JSON.stringify(user));
-        localStorage.setItem('fa_google_token', tokenResponse.access_token);
+        saveGoogleToken(tokenResponse);
         document.getElementById('name-modal').style.display = 'none';
         resolveCallback(user);
       } catch (e) {
@@ -4295,12 +4310,81 @@ function startGoogleLogin(resolveCallback) {
   client.requestAccessToken({ prompt: 'select_account' });
 }
 
+// ── 로그인 세션(Google 액세스 토큰, 약 1시간 유효) ──
+// 예전엔 토큰을 한 번 받으면 갱신하지 않아, 1시간이 지나면 비공개 방의 모든 저장이 403으로
+// 실패하고(화면과 서버가 어긋남) 사이드바로 이동하면 멤버인데도 "비공개 프로젝트" 안내가 떴다.
+// 토큰 방식 Google 로그인은 사용자 클릭 없이 팝업을 열 수 없으므로(브라우저가 차단),
+// 만료 몇 분 전에 배너를 띄우고 클릭 한 번으로 계정 선택 없이 새 토큰을 받는다.
+const TOKEN_EXP_KEY = 'fa_google_token_exp';
+const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+function saveGoogleToken(resp) {
+  localStorage.setItem('fa_google_token', resp.access_token);
+  localStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + (Number(resp.expires_in) || 3599) * 1000));
+}
+// 남은 유효시간(ms). 만료 시각을 모르면(이 기능 이전에 받은 토큰) 이미 만료된 것으로 본다.
+function tokenTimeLeft() {
+  const exp = Number(localStorage.getItem(TOKEN_EXP_KEY));
+  return exp ? exp - Date.now() : -1;
+}
+
+let sessionRefreshClient = null;
+function refreshGoogleToken() {
+  if (!window.google?.accounts?.oauth2 || !myEmail) return;
+  if (!sessionRefreshClient) {
+    sessionRefreshClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid profile email',
+      hint: myEmail,
+      callback: resp => {
+        if (resp.error || !resp.access_token) { showSessionBanner(true); return; }
+        saveGoogleToken(resp);
+        hideSessionBanner();
+        showToast(window._faLang==='en' ? 'Signed in again — your changes will save' : '로그인을 연장했습니다');
+        // 만료된 동안 실패했던 변경이 있었을 수 있으니 서버 상태로 다시 맞춘다
+        resyncFromServer();
+      },
+      error_callback: () => showSessionBanner(true),
+    });
+  }
+  sessionRefreshClient.requestAccessToken({ prompt: '', hint: myEmail });
+}
+
+function showSessionBanner(expired) {
+  if (!myEmail || isGuest) return;
+  const isEn = window._faLang === 'en';
+  document.getElementById('session-banner-text').textContent = expired
+    ? (isEn ? 'Your sign-in expired. Changes may not save.' : '로그인이 만료되어 변경사항이 저장되지 않을 수 있어요')
+    : (isEn ? 'Your sign-in expires soon.' : '로그인이 곧 만료돼요');
+  document.getElementById('session-banner').classList.add('show');
+}
+function hideSessionBanner() {
+  document.getElementById('session-banner').classList.remove('show');
+}
+document.getElementById('session-banner-btn').addEventListener('click', refreshGoogleToken);
+
+function startSessionWatch() {
+  if (!myEmail || isGuest) return;
+  const check = () => {
+    const left = tokenTimeLeft();
+    if (left < TOKEN_REFRESH_MARGIN_MS) showSessionBanner(left <= 0);
+  };
+  check();
+  setInterval(check, 30 * 1000);
+}
+
+// 서버가 인증 문제로 거절한 응답이면(비공개 방에서 토큰 만료 등) 연장 배너를 띄운다
+function handleAuthFailure(res) {
+  if ((res.status === 401 || res.status === 403) && myEmail && !isGuest) showSessionBanner(tokenTimeLeft() <= 0);
+}
+
 function getGoogleUser() {
   return new Promise(resolve => {
     // 사이드바 프로젝트 전환 시 로그인 건너뜀
     const skip = sessionStorage.getItem('fa_sidebar_nav');
     const stored = localStorage.getItem('fa_user');
-    if (skip && stored) {
+    // 토큰이 곧 만료되면 건너뛰지 않고 로그인 화면을 띄운다 — 만료된 토큰으로 비공개 방에
+    // 들어가면 멤버인데도 "비공개 프로젝트" 안내가 떴다
+    if (skip && stored && tokenTimeLeft() > TOKEN_REFRESH_MARGIN_MS) {
       sessionStorage.removeItem('fa_sidebar_nav');
       resolve(JSON.parse(stored));
       return;
@@ -4331,6 +4415,7 @@ async function main() {
   const gUser = await getGoogleUser();
   userName = gUser.name;
   myEmail  = gUser.email || '';
+  startSessionWatch();
   if (gUser.email) {
     try {
       const token = localStorage.getItem('fa_google_token');
@@ -4655,6 +4740,7 @@ async function main() {
       if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
       localStorage.removeItem('fa_user');
       localStorage.removeItem('fa_google_token');
+      localStorage.removeItem(TOKEN_EXP_KEY);
       location.href = location.pathname;
     });
   }
