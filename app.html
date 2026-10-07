@@ -11,6 +11,9 @@
 <link rel="apple-touch-icon" href="logo.png">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
 <style>
   @font-face {
     font-family: 'BM Dohyeon';
@@ -32,6 +35,14 @@
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* 본문 폰트를 한 곳에서 바꿀 수 있게 변수로 둔다.
+     BM Dohyeon(한국어 전용)은 한자와 장음(ー)을 빈 글리프로 가지고 있어서, 폰트 목록 뒤에
+     일본어 폰트를 붙여도 글자별 폴백이 동작하지 않고 그 글자들이 사라져 보인다. 그래서
+     일본어일 때는 폴백에 기대지 않고 폰트 자체를 바꾼다. */
+  :root { --font-body: 'BM Dohyeon', sans-serif; }
+  html[lang="ja"] { --font-body: 'Noto Sans JP', sans-serif; }
+
+
   :root {
     --ink: #0e0e0d; --ink2: #3a3a38; --ink3: #7a7a75;
     --paper: #f5f3ee; --paper2: #ede9e2; --paper3: #e3dfd6;
@@ -39,7 +50,7 @@
   }
 
   html, body { width:100%; height:100%; overflow:hidden; background:var(--paper2);
-    font-family:'BM Dohyeon',sans-serif; -webkit-font-smoothing:antialiased; user-select:none; }
+    font-family:var(--font-body); -webkit-font-smoothing:antialiased; user-select:none; }
 
   /* 스페이스바로 캔버스를 패닝하는 동안엔, 포스트잇·이미지·도형 등 각자 cursor:move를
      가진 요소 위에 마우스가 있어도 손 커서를 계속 보여준다 (updateCursor 참고) */
@@ -71,14 +82,14 @@
   .note-delete, .note-fontsize-btn { width:22px; height:22px; border:none; background:rgba(0,0,0,.12);
     border-radius:50%; cursor:pointer; font-size:13px; color:rgba(14,14,13,.55);
     display:flex; align-items:center; justify-content:center;
-    opacity:0; transition:opacity .15s,background .15s; padding:0; font-family:'BM Dohyeon',sans-serif; }
+    opacity:0; transition:opacity .15s,background .15s; padding:0; font-family:var(--font-body); }
   .note:hover .note-delete, .note:hover .note-fontsize-btn { opacity:1; }
   .note-delete:hover, .note-fontsize-btn:hover { background:rgba(0,0,0,.25); color:var(--ink); }
   .note-fontsize-btn { font-size:12px; }
 
   .note-text { flex:1; padding:9px 11px 4px; font-size:13px; line-height:1.55;
     color:var(--ink); outline:none; word-break:break-word; white-space:pre-wrap;
-    cursor:text; font-family:'BM Dohyeon',sans-serif; overflow-y:auto; }
+    cursor:text; font-family:var(--font-body); overflow-y:auto; }
   .note-text:empty::before { content:attr(data-placeholder);
     color:rgba(14,14,13,.3); pointer-events:none; }
 
@@ -99,7 +110,7 @@
     transform:translate(0,-2px); transition:left .06s linear, top .06s linear; }
   .remote-cursor svg { filter:drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
   .cursor-name { font-size:11px; font-weight:500; padding:2px 8px; border-radius:100px;
-    color:#fff; white-space:nowrap; font-family:'BM Dohyeon',sans-serif; }
+    color:#fff; white-space:nowrap; font-family:var(--font-body); }
 
   /* ── TOPBAR ── */
   .topbar { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:100;
@@ -134,13 +145,13 @@
   .size-dot { background:var(--ink); border-radius:50%; pointer-events:none; }
 
   /* share & status */
-  .share-btn { font-size:13px; font-weight:500; font-family:'BM Dohyeon',sans-serif;
+  .share-btn { font-size:13px; font-weight:500; font-family:var(--font-body);
     color:var(--ink2); background:var(--paper); border:.5px solid rgba(14,14,13,.12);
     border-radius:100px; padding:6px 14px; cursor:pointer; transition:background .15s;
     margin-left:4px; flex-shrink:0; }
   .share-btn:hover { background:var(--paper2); }
 
-  .lang-toggle { font-size:12px; font-weight:500; font-family:'BM Dohyeon',sans-serif;
+  .lang-toggle { font-size:12px; font-weight:500; font-family:var(--font-body);
     color:var(--ink2); background:var(--paper); border:.5px solid rgba(14,14,13,.12);
     border-radius:100px; padding:6px 12px; cursor:pointer; transition:background .15s;
     margin-left:4px; flex-shrink:0; }
@@ -186,7 +197,7 @@
   #sidebar-add-btn:hover { background:var(--paper2); color:var(--ink); }
   #sidebar-new-form { display:none; padding:0 6px 6px; }
   #sidebar-new-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:8px;
-    padding:7px 9px; font-size:14px; font-family:'BM Dohyeon',sans-serif;
+    padding:7px 9px; font-size:14px; font-family:var(--font-body);
     color:var(--ink); background:var(--white); outline:none; box-sizing:border-box; }
   #sidebar-new-input:focus { border-color:var(--ink); }
   #sidebar-list { display:flex; flex-direction:column; padding:0 6px 6px; gap:2px; }
@@ -195,7 +206,7 @@
   .sidebar-row.active { background:var(--paper2); }
   .sidebar-item { flex:1; font-size:14px; color:var(--ink); background:none; border:none;
     border-radius:8px; padding:8px 9px; text-align:left; cursor:pointer;
-    font-family:'BM Dohyeon',sans-serif;
+    font-family:var(--font-body);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
   .sidebar-row.active .sidebar-item { font-weight:500; }
   .sidebar-del { width:24px; height:24px; border:none; background:none; cursor:pointer;
@@ -219,11 +230,11 @@
     min-width:128px; }
   .ctx-menu button { display:block; width:100%; border:none; background:none;
     border-radius:6px; padding:8px 10px; text-align:left; font-size:13px; color:var(--ink);
-    font-family:'BM Dohyeon',sans-serif; cursor:pointer; }
+    font-family:var(--font-body); cursor:pointer; }
   .ctx-menu button:hover { background:var(--paper2); }
   .sidebar-rename-input { flex:1; font-size:14px; color:var(--ink); background:var(--white);
     border:1px solid var(--ink); border-radius:8px; padding:7px 8px; min-width:0;
-    font-family:'BM Dohyeon',sans-serif; outline:none; }
+    font-family:var(--font-body); outline:none; }
 
   /* ── AI TRANSFORM MODAL ── */
   #ai-modal { position:fixed; inset:0; background:rgba(14,14,13,.45);
@@ -235,17 +246,17 @@
   #ai-modal-title { font-size:16px; font-weight:500; color:var(--ink); }
   #ai-modal-sub { font-size:13px; color:var(--ink3); margin-top:-8px; }
   #ai-prompt-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
-    padding:10px 12px; font-size:14px; font-family:'BM Dohyeon',sans-serif;
+    padding:10px 12px; font-size:14px; font-family:var(--font-body);
     color:var(--ink); outline:none; resize:none; box-sizing:border-box; }
   #ai-prompt-input:focus { border-color:var(--ink); }
   #ai-modal-btns { display:flex; gap:8px; }
   #ai-cancel-btn { flex:1; padding:10px; border:.5px solid rgba(14,14,13,.2);
     border-radius:10px; background:none; cursor:pointer; font-size:14px;
-    font-family:'BM Dohyeon',sans-serif; color:var(--ink2); transition:background .15s; }
+    font-family:var(--font-body); color:var(--ink2); transition:background .15s; }
   #ai-cancel-btn:hover { background:var(--paper); }
   #ai-go-btn { flex:2; padding:10px; background:var(--ink); border:none;
     border-radius:10px; cursor:pointer; font-size:14px; font-weight:500;
-    font-family:'BM Dohyeon',sans-serif; color:#fff; transition:background .15s; }
+    font-family:var(--font-body); color:#fff; transition:background .15s; }
   #ai-go-btn:hover { background:var(--ink2); }
   #ai-go-btn:disabled { background:var(--ink3); cursor:default; }
   #ai-status { font-size:12px; color:var(--ink3); text-align:center; min-height:16px; }
@@ -272,7 +283,7 @@
   #calendar-grid { display:flex; flex-direction:column; gap:2px; }
   .calendar-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center;
     font-size:13px; color:var(--ink); border-radius:8px; cursor:pointer; border:none; background:none;
-    font-family:'BM Dohyeon',sans-serif; transition:background .15s; }
+    font-family:var(--font-body); transition:background .15s; }
   .calendar-day:hover { background:var(--paper); }
   .calendar-day.other-month { color:var(--ink3); opacity:.4; }
   .calendar-day.today { border:1.5px solid var(--ink); }
@@ -290,7 +301,7 @@
   .todo-checkbox { width:16px; height:16px; border-radius:5px; border:1.5px solid rgba(14,14,13,.3);
     flex-shrink:0; cursor:pointer; background:none; display:flex; align-items:center; justify-content:center; padding:0; }
   .todo-item.done .todo-checkbox { background:var(--ink); border-color:var(--ink); }
-  .todo-text { flex:1; font-size:13px; color:var(--ink); font-family:'BM Dohyeon',sans-serif;
+  .todo-text { flex:1; font-size:13px; color:var(--ink); font-family:var(--font-body);
     text-align:left; word-break:break-word; }
   .todo-item.done .todo-text { color:var(--ink3); text-decoration:line-through; }
   .todo-delete { width:20px; height:20px; border:none; background:none; cursor:pointer; color:var(--ink3);
@@ -298,7 +309,7 @@
   .todo-delete:hover { color:var(--ink); }
   .todo-empty { font-size:12px; color:var(--ink3); padding:4px; }
   #calendar-todo-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
-    padding:8px 10px; font-size:13px; font-family:'BM Dohyeon',sans-serif; color:var(--ink);
+    padding:8px 10px; font-size:13px; font-family:var(--font-body); color:var(--ink);
     outline:none; box-sizing:border-box; }
   #calendar-todo-input:focus { border-color:var(--ink); }
   /* 배경 제거는 모달 버튼이 아니라 이미지를 꾹 누르는 제스처로 트리거된다 (아래 .canvas-img.bg-processing).
@@ -422,12 +433,12 @@
     letter-spacing:-.02em; margin-bottom:8px; }
   .name-modal-sub { font-size:14px; color:var(--ink3); margin-bottom:24px; }
   .modal-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
-    padding:12px 14px; font-size:15px; font-family:'BM Dohyeon',sans-serif;
+    padding:12px 14px; font-size:15px; font-family:var(--font-body);
     color:var(--ink); outline:none; margin-bottom:12px; transition:border-color .2s; }
   .modal-input:focus { border-color:var(--ink); }
   .modal-submit { width:100%; background:var(--ink); color:var(--white);
     border:none; border-radius:100px; padding:12px; font-size:14px;
-    font-weight:500; font-family:'BM Dohyeon',sans-serif; cursor:pointer;
+    font-weight:500; font-family:var(--font-body); cursor:pointer;
     transition:background .2s; }
   .modal-submit:hover { background:var(--ink2); }
 
@@ -476,12 +487,12 @@
   .share-desc { font-size:13px; color:var(--ink3); margin-bottom:14px; line-height:1.5; }
   .share-url-row { display:flex; gap:8px; margin-bottom:20px; }
   .share-url-input { flex:1; border:.5px solid rgba(14,14,13,.15); border-radius:10px;
-    padding:10px 12px; font-size:12px; font-family:'BM Dohyeon',sans-serif;
+    padding:10px 12px; font-size:12px; font-family:var(--font-body);
     color:var(--ink2); outline:none; background:var(--paper);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
   .share-copy-btn { background:var(--ink); color:var(--white); border:none;
     border-radius:10px; padding:10px 18px; font-size:13px; font-weight:500;
-    font-family:'BM Dohyeon',sans-serif; cursor:pointer; white-space:nowrap;
+    font-family:var(--font-body); cursor:pointer; white-space:nowrap;
     transition:background .2s; flex-shrink:0; }
   .share-copy-btn:hover { background:var(--ink2); }
   .share-copy-btn.copied { background:#22c55e; }
@@ -501,7 +512,7 @@
   .share-privacy-label { font-size:12px; color:var(--ink3); line-height:1.4; }
   .share-privacy-btn { background:var(--ink); color:var(--white); border:none;
     border-radius:8px; padding:7px 12px; font-size:12px; font-weight:500;
-    font-family:'BM Dohyeon',sans-serif; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    font-family:var(--font-body); cursor:pointer; white-space:nowrap; flex-shrink:0; }
   .share-privacy-btn:hover { background:var(--ink2); }
   .share-privacy-btn:disabled { opacity:.5; cursor:default; }
 
@@ -589,21 +600,21 @@
 </head>
 <body>
 
-<a href="index.html" class="back-btn" data-i18n-en="← Home" data-i18n-ko="← 홈">← 홈</a>
-<button id="mob-sidebar-btn" title="프로젝트 목록" data-i18n-en-title="Project list" data-i18n-ko-title="프로젝트 목록">☰</button>
+<a href="index.html" class="back-btn" data-i18n-en="← Home" data-i18n-ja="← ホーム" data-i18n-ko="← 홈">← 홈</a>
+<button id="mob-sidebar-btn" title="프로젝트 목록" data-i18n-en-title="Project list" data-i18n-ja-title="プロジェクト一覧" data-i18n-ko-title="프로젝트 목록">☰</button>
 
 <!-- ── SIDEBAR ── -->
 <div id="sidebar" style="display:none;">
   <div id="sidebar-header">
-    <span data-i18n-en="Recent Projects" data-i18n-ko="최근 프로젝트">최근 프로젝트</span>
-    <button id="sidebar-add-btn" title="새 프로젝트" data-i18n-en-title="New project" data-i18n-ko-title="새 프로젝트">+</button>
+    <span data-i18n-en="Recent Projects" data-i18n-ja="最近のプロジェクト" data-i18n-ko="최근 프로젝트">최근 프로젝트</span>
+    <button id="sidebar-add-btn" title="새 프로젝트" data-i18n-en-title="New project" data-i18n-ja-title="新規プロジェクト" data-i18n-ko-title="새 프로젝트">+</button>
   </div>
   <div id="sidebar-new-form">
-    <input id="sidebar-new-input" type="text" placeholder="프로젝트 이름" data-i18n-en-placeholder="Project name" data-i18n-ko-placeholder="프로젝트 이름" maxlength="32"/>
+    <input id="sidebar-new-input" type="text" placeholder="프로젝트 이름" data-i18n-en-placeholder="Project name" data-i18n-ja-placeholder="プロジェクト名" data-i18n-ko-placeholder="프로젝트 이름" maxlength="32"/>
   </div>
   <div id="sidebar-list"></div>
   <div id="sidebar-trash" style="display:none;">
-    <div id="sidebar-trash-header" data-i18n-en="🗑 Trash" data-i18n-ko="🗑 휴지통">🗑 휴지통</div>
+    <div id="sidebar-trash-header" data-i18n-en="🗑 Trash" data-i18n-ja="🗑 ゴミ箱" data-i18n-ko="🗑 휴지통">🗑 휴지통</div>
     <div id="sidebar-trash-list"></div>
   </div>
 </div>
@@ -612,7 +623,7 @@
 <div class="topbar" id="topbar">
   <span class="topbar-logo"><img src="logo.png" alt="">Freedom Ai</span>
 
-  <button class="tool-btn" id="tool-hand" title="이동 (H)" data-i18n-en-title="Move (H)" data-i18n-ko-title="이동 (H)">
+  <button class="tool-btn" id="tool-hand" title="이동 (H)" data-i18n-en-title="Move (H)" data-i18n-ja-title="移動 (H)" data-i18n-ko-title="이동 (H)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M5 8.12v-4.69a0.94 0.94 0 0 1 1.88 0v4.06" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M6.88 3.44v-1.25a0.94 0.94 0 1 1 1.88 0v5.31" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round"/>
@@ -620,45 +631,45 @@
       <path d="M10.62 4.69a0.94 0.94 0 0 1 1.88 0v5.31a3.75 3.75 0 0 1 -3.75 3.75h-1.25h0.13a3.75 3.75 0 0 1 -3.13 -1.69a43.59 43.59 0 0 1 -0.12 -0.19c-0.2 -0.3 -0.88 -1.49 -2.05 -3.58a0.94 0.94 0 0 1 0.34 -1.26a1.17 1.17 0 0 1 1.42 0.18l0.92 0.92" stroke="currentColor" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
-  <button class="tool-btn active" id="tool-pen" title="펜 (P)" data-i18n-en-title="Pen (P)" data-i18n-ko-title="펜 (P)">
+  <button class="tool-btn active" id="tool-pen" title="펜 (P)" data-i18n-en-title="Pen (P)" data-i18n-ja-title="ペン (P)" data-i18n-ko-title="펜 (P)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M10.63 1.88a1.77 1.77 0 0 1 2.5 2.5L4.69 12.81 1.25 13.75l0.94-3.44 8.44-8.43z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
       <path d="M9.3 3.2l2.5 2.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-eraser" title="지우개 (E)" data-i18n-en-title="Eraser (E)" data-i18n-ko-title="지우개 (E)">
+  <button class="tool-btn" id="tool-eraser" title="지우개 (E)" data-i18n-en-title="Eraser (E)" data-i18n-ja-title="消しゴム (E)" data-i18n-ko-title="지우개 (E)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M11.88 12.5h-6.56l-2.63 -2.69a0.62 0.62 0 0 1 0 -0.88l6.25 -6.25a0.62 0.62 0 0 1 0.88 0l3.12 3.12a0.62 0.62 0 0 1 0 0.88l-5.75 5.81" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M11.25 8.31l-3.94 -3.94" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-sticky" title="포스트잇 (S)" data-i18n-en-title="Sticky note (S)" data-i18n-ko-title="포스트잇 (S)">
+  <button class="tool-btn" id="tool-sticky" title="포스트잇 (S)" data-i18n-en-title="Sticky note (S)" data-i18n-ja-title="付箋 (S)" data-i18n-ko-title="포스트잇 (S)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M3.75 2.5h7.5a1.25 1.25 0 0 1 1.25 1.25v4.38h-3.12a1.25 1.25 0 0 0 -1.25 1.25v3.12h-4.38a1.25 1.25 0 0 1 -1.25 -1.25v-7.5a1.25 1.25 0 0 1 1.25 -1.25" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
       <path d="M12.5 8.12v0.11a1.25 1.25 0 0 1 -0.37 0.88l-3.02 3.02a1.25 1.25 0 0 1 -0.88 0.37h-0.11" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-shape" title="도형 (R)" data-i18n-en-title="Shape (R)" data-i18n-ko-title="도형 (R)">
+  <button class="tool-btn" id="tool-shape" title="도형 (R)" data-i18n-en-title="Shape (R)" data-i18n-ja-title="図形 (R)" data-i18n-ko-title="도형 (R)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M7.5 1.6L11 7.4H4z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
       <rect x="1.8" y="9.2" width="4.8" height="4.8" rx="1" stroke="currentColor" stroke-width="1.1"/>
       <circle cx="10.8" cy="11.6" r="2.7" stroke="currentColor" stroke-width="1.1"/>
     </svg>
   </button>
-  <button class="tool-btn" id="tool-select" title="선택 (V)" data-i18n-en-title="Select (V)" data-i18n-ko-title="선택 (V)">
+  <button class="tool-btn" id="tool-select" title="선택 (V)" data-i18n-en-title="Select (V)" data-i18n-ja-title="選択 (V)" data-i18n-ko-title="선택 (V)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M2.5 3.75v-0.62a0.62 0.62 0 0 1 0.62 -0.62h0.62m3.12 0h1.25m3.12 0h0.62a0.62 0.62 0 0 1 0.62 0.62v0.62m0 3.12v1.25m0 3.12v0.62a0.62 0.62 0 0 1 -0.62 0.62h-0.62m-3.12 0h-1.25m-3.12 0h-0.62a0.62 0.62 0 0 1 -0.62 -0.62v-0.62m0 -3.12v-1.25" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
 
   <div class="divider"></div>
-  <button class="tool-btn" id="btn-undo" title="실행취소 (Ctrl+Z)" data-i18n-en-title="Undo (Ctrl+Z)" data-i18n-ko-title="실행취소 (Ctrl+Z)">
+  <button class="tool-btn" id="btn-undo" title="실행취소 (Ctrl+Z)" data-i18n-en-title="Undo (Ctrl+Z)" data-i18n-ja-title="元に戻す (Ctrl+Z)" data-i18n-ko-title="실행취소 (Ctrl+Z)">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <path d="M5.62 8.75l-2.5 -2.5l2.5 -2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M3.12 6.25h6.88a2.5 2.5 0 1 1 0 5h-0.62" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </button>
-  <button class="tool-btn" id="btn-calendar" title="캘린더" data-i18n-en-title="Calendar" data-i18n-ko-title="캘린더">
+  <button class="tool-btn" id="btn-calendar" title="캘린더" data-i18n-en-title="Calendar" data-i18n-ja-title="カレンダー" data-i18n-ko-title="캘린더">
     <svg width="19" height="19" viewBox="0 0 15 15" fill="none">
       <rect x="1.75" y="2.75" width="11.5" height="10.5" rx="1.5" stroke="currentColor" stroke-width="1.1"/>
       <path d="M1.75 5.75h11.5" stroke="currentColor" stroke-width="1.1"/>
@@ -693,22 +704,22 @@
   <!-- 포스트잇 글자 크기 (포스트잇을 편집 중일 때만 표시) -->
   <div id="note-font-toolbar" style="display:none;align-items:center;gap:3px;">
     <div class="divider"></div>
-    <button class="tool-btn" id="note-font-toolbar-btn" title="글자 크기" data-i18n-en-title="Text size" data-i18n-ko-title="글자 크기" style="font-family:'BM Dohyeon',sans-serif;font-size:16px;font-weight:500;">가</button>
+    <button class="tool-btn" id="note-font-toolbar-btn" title="글자 크기" data-i18n-en-title="Text size" data-i18n-ja-title="文字サイズ" data-i18n-ko-title="글자 크기" style="font-family:var(--font-body);font-size:16px;font-weight:500;">가</button>
   </div>
 
   <!-- 도형 종류 옵션 -->
   <div id="shape-options" style="display:none;align-items:center;gap:3px;">
     <div class="divider"></div>
-    <button class="size-btn shape-type-btn active" data-shapetype="rect" title="사각형" data-i18n-en-title="Rectangle" data-i18n-ko-title="사각형">
+    <button class="size-btn shape-type-btn active" data-shapetype="rect" title="사각형" data-i18n-en-title="Rectangle" data-i18n-ja-title="四角形" data-i18n-ko-title="사각형">
       <svg width="19" height="19" viewBox="0 0 15 15" fill="none"><rect x="2" y="3" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/></svg>
     </button>
-    <button class="size-btn shape-type-btn" data-shapetype="ellipse" title="원" data-i18n-en-title="Circle" data-i18n-ko-title="원">
+    <button class="size-btn shape-type-btn" data-shapetype="ellipse" title="원" data-i18n-en-title="Circle" data-i18n-ja-title="円" data-i18n-ko-title="원">
       <svg width="19" height="19" viewBox="0 0 15 15" fill="none"><ellipse cx="7.5" cy="7.5" rx="5.5" ry="4.5" stroke="currentColor" stroke-width="1.3"/></svg>
     </button>
-    <button class="size-btn shape-type-btn" data-shapetype="triangle" title="삼각형" data-i18n-en-title="Triangle" data-i18n-ko-title="삼각형">
+    <button class="size-btn shape-type-btn" data-shapetype="triangle" title="삼각형" data-i18n-en-title="Triangle" data-i18n-ja-title="三角形" data-i18n-ko-title="삼각형">
       <svg width="19" height="19" viewBox="0 0 15 15" fill="none"><polygon points="7.5,2 2,12.5 13,12.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
     </button>
-    <button class="size-btn shape-type-btn" data-shapetype="arrow" title="화살표" data-i18n-en-title="Arrow" data-i18n-ko-title="화살표">
+    <button class="size-btn shape-type-btn" data-shapetype="arrow" title="화살표" data-i18n-en-title="Arrow" data-i18n-ja-title="矢印" data-i18n-ko-title="화살표">
       <svg width="19" height="19" viewBox="0 0 15 15" fill="none"><path d="M2 7.5h8M7 4l3.5 3.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -716,17 +727,17 @@
   <!-- 화살표 굵기 옵션 -->
   <div id="arrow-thickness-options" style="display:none;align-items:center;gap:3px;">
     <div class="divider"></div>
-    <button class="size-btn arrow-thickness-btn" data-thickness="0" title="얇게" data-i18n-en-title="Thin" data-i18n-ko-title="얇게"><div class="size-dot" style="width:4px;height:4px;"></div></button>
-    <button class="size-btn arrow-thickness-btn active" data-thickness="1" title="보통" data-i18n-en-title="Medium" data-i18n-ko-title="보통"><div class="size-dot" style="width:8px;height:8px;"></div></button>
-    <button class="size-btn arrow-thickness-btn" data-thickness="2" title="굵게" data-i18n-en-title="Thick" data-i18n-ko-title="굵게"><div class="size-dot" style="width:13px;height:13px;"></div></button>
+    <button class="size-btn arrow-thickness-btn" data-thickness="0" title="얇게" data-i18n-en-title="Thin" data-i18n-ja-title="細い" data-i18n-ko-title="얇게"><div class="size-dot" style="width:4px;height:4px;"></div></button>
+    <button class="size-btn arrow-thickness-btn active" data-thickness="1" title="보통" data-i18n-en-title="Medium" data-i18n-ja-title="標準" data-i18n-ko-title="보통"><div class="size-dot" style="width:8px;height:8px;"></div></button>
+    <button class="size-btn arrow-thickness-btn" data-thickness="2" title="굵게" data-i18n-en-title="Thick" data-i18n-ja-title="太い" data-i18n-ko-title="굵게"><div class="size-dot" style="width:13px;height:13px;"></div></button>
   </div>
 
   <div class="divider" style="margin-left:6px;"></div>
-  <button class="share-btn" id="btn-share" data-i18n-en="🔗 Share" data-i18n-ko="🔗 공유">🔗 공유</button>
+  <button class="share-btn" id="btn-share" data-i18n-en="🔗 Share" data-i18n-ja="🔗 共有" data-i18n-ko="🔗 공유">🔗 공유</button>
   <button class="lang-toggle" id="lang-toggle" type="button">EN</button>
   <div id="avatar-stack"></div>
-  <div id="offline-badge"><div class="off-dot"></div><span data-i18n-en="Offline" data-i18n-ko="오프라인">오프라인</span></div>
-  <button id="btn-logout" style="display:none;font-size:12px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0 4px;font-family:'BM Dohyeon',sans-serif;flex-shrink:0;" title="로그아웃" data-i18n-en-title="Log out" data-i18n-ko-title="로그아웃" data-i18n-en="Log out" data-i18n-ko="로그아웃">로그아웃</button>
+  <div id="offline-badge"><div class="off-dot"></div><span data-i18n-en="Offline" data-i18n-ja="オフライン" data-i18n-ko="오프라인">오프라인</span></div>
+  <button id="btn-logout" style="display:none;font-size:12px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0 4px;font-family:var(--font-body);flex-shrink:0;" title="로그아웃" data-i18n-en-title="Log out" data-i18n-ja-title="ログアウト" data-i18n-ko-title="로그아웃" data-i18n-en="Log out" data-i18n-ja="ログアウト" data-i18n-ko="로그아웃">로그아웃</button>
 </div>
 
 <!-- ── ZOOM HUD ── -->
@@ -734,20 +745,20 @@
   <button class="zoom-btn" id="btn-zoom-out">−</button>
   <span id="zoom-label">100%</span>
   <button class="zoom-btn" id="btn-zoom-in">+</button>
-  <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;" data-i18n-en="Reset" data-i18n-ko="초기화">초기화</button>
+  <button class="zoom-btn" id="btn-zoom-reset" style="font-size:10px;width:auto;padding:0 5px;" data-i18n-en="Reset" data-i18n-ja="リセット" data-i18n-ko="초기화">초기화</button>
 </div>
 
-<div class="hint" id="hint" data-i18n-en="P: Pen · E: Eraser · S: Sticky · R: Shape · H: Move · Ctrl+Z: Undo" data-i18n-ko="P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
+<div class="hint" id="hint" data-i18n-en="P: Pen · E: Eraser · S: Sticky · R: Shape · H: Move · Ctrl+Z: Undo" data-i18n-ja="P: ペン · E: 消しゴム · S: 付箋 · R: 図形 · H: 移動 · Ctrl+Z: 元に戻す" data-i18n-ko="P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소">P: 펜 · E: 지우개 · S: 포스트잇 · R: 도형 · H: 이동 · Ctrl+Z: 실행취소</div>
 <div id="eraser-ring"></div>
 <div id="select-box"></div>
 <div id="session-banner" role="status">
   <span id="session-banner-text"></span>
-  <button id="session-banner-btn" type="button" data-i18n-en="Stay signed in" data-i18n-ko="로그인 연장">로그인 연장</button>
+  <button id="session-banner-btn" type="button" data-i18n-en="Stay signed in" data-i18n-ja="ログインを延長" data-i18n-ko="로그인 연장">로그인 연장</button>
 </div>
 <div id="sel-group-box">
   <div id="sel-group-bar">
-    <button id="sel-group-btn" type="button" title="그룹 (Ctrl/Cmd+G)" data-i18n-ko-title="그룹 (Ctrl/Cmd+G)" data-i18n-en-title="Group (Ctrl/Cmd+G)" data-i18n-en="Group" data-i18n-ko="그룹">그룹</button>
-    <button id="sel-ungroup-btn" type="button" title="그룹 해제 (Ctrl/Cmd+Shift+G)" data-i18n-ko-title="그룹 해제 (Ctrl/Cmd+Shift+G)" data-i18n-en-title="Ungroup (Ctrl/Cmd+Shift+G)" data-i18n-en="Ungroup" data-i18n-ko="그룹 해제">그룹 해제</button>
+    <button id="sel-group-btn" type="button" title="그룹 (Ctrl/Cmd+G)" data-i18n-ko-title="그룹 (Ctrl/Cmd+G)" data-i18n-en-title="Group (Ctrl/Cmd+G)" data-i18n-ja-title="グループ化 (Ctrl/Cmd+G)" data-i18n-en="Group" data-i18n-ja="グループ化" data-i18n-ko="그룹">그룹</button>
+    <button id="sel-ungroup-btn" type="button" title="그룹 해제 (Ctrl/Cmd+Shift+G)" data-i18n-ko-title="그룹 해제 (Ctrl/Cmd+Shift+G)" data-i18n-en-title="Ungroup (Ctrl/Cmd+Shift+G)" data-i18n-ja-title="グループ解除 (Ctrl/Cmd+Shift+G)" data-i18n-en="Ungroup" data-i18n-ja="グループ解除" data-i18n-ko="그룹 해제">그룹 해제</button>
   </div>
   <div class="sgb-h" data-c="nw"></div><div class="sgb-h" data-c="ne"></div>
   <div class="sgb-h" data-c="sw"></div><div class="sgb-h" data-c="se"></div>
@@ -756,13 +767,13 @@
 <!-- ── AI TRANSFORM MODAL ── -->
 <div id="ai-modal">
   <div id="ai-modal-inner">
-    <div id="ai-modal-title" data-i18n-en="AI Image Transform" data-i18n-ko="AI 이미지 변환">AI 이미지 변환</div>
-    <div id="ai-modal-sub" data-i18n-en-html="Works best in English<br>e.g. watercolor style, cartoon, oil painting, sketch" data-i18n-ko-html="영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
+    <div id="ai-modal-title" data-i18n-en="AI Image Transform" data-i18n-ja="AI画像変換" data-i18n-ko="AI 이미지 변환">AI 이미지 변환</div>
+    <div id="ai-modal-sub" data-i18n-en-html="Works best in English<br>e.g. watercolor style, cartoon, oil painting, sketch" data-i18n-ja-html="英語で入力すると精度が上がります<br>例: watercolor style, cartoon, oil painting, sketch" data-i18n-ko-html="영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch">영어로 입력하면 더 잘 됩니다<br>예) watercolor style, cartoon, oil painting, sketch</div>
     <textarea id="ai-prompt-input" rows="2" placeholder="e.g. watercolor painting style"></textarea>
     <div id="ai-status"></div>
     <div id="ai-modal-btns">
-      <button id="ai-cancel-btn" data-i18n-en="Cancel" data-i18n-ko="취소">취소</button>
-      <button id="ai-go-btn" data-i18n-en="✦ AI Transform" data-i18n-ko="✦ AI 변환">✦ AI 변환</button>
+      <button id="ai-cancel-btn" data-i18n-en="Cancel" data-i18n-ja="キャンセル" data-i18n-ko="취소">취소</button>
+      <button id="ai-go-btn" data-i18n-en="✦ AI Transform" data-i18n-ja="✦ AI変換" data-i18n-ko="✦ AI 변환">✦ AI 변환</button>
     </div>
   </div>
 </div>
@@ -770,7 +781,7 @@
 <!-- ── CALENDAR MODAL ── -->
 <div id="calendar-modal">
   <div id="calendar-modal-inner">
-    <button id="calendar-close" title="닫기" data-i18n-en-title="Close" data-i18n-ko-title="닫기">×</button>
+    <button id="calendar-close" title="닫기" data-i18n-en-title="Close" data-i18n-ja-title="閉じる" data-i18n-ko-title="닫기">×</button>
     <div id="calendar-header">
       <button class="calendar-nav-btn" id="calendar-prev">
         <svg width="16" height="16" viewBox="0 0 15 15" fill="none"><path d="M9.5 3.5l-4 4 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -781,7 +792,7 @@
       </button>
     </div>
     <div id="calendar-weekdays">
-      <span data-i18n-en="Su" data-i18n-ko="일">일</span><span data-i18n-en="Mo" data-i18n-ko="월">월</span><span data-i18n-en="Tu" data-i18n-ko="화">화</span><span data-i18n-en="We" data-i18n-ko="수">수</span><span data-i18n-en="Th" data-i18n-ko="목">목</span><span data-i18n-en="Fr" data-i18n-ko="금">금</span><span data-i18n-en="Sa" data-i18n-ko="토">토</span>
+      <span data-i18n-en="Su" data-i18n-ja="日" data-i18n-ko="일">일</span><span data-i18n-en="Mo" data-i18n-ja="月" data-i18n-ko="월">월</span><span data-i18n-en="Tu" data-i18n-ja="火" data-i18n-ko="화">화</span><span data-i18n-en="We" data-i18n-ja="水" data-i18n-ko="수">수</span><span data-i18n-en="Th" data-i18n-ja="木" data-i18n-ko="목">목</span><span data-i18n-en="Fr" data-i18n-ja="金" data-i18n-ko="금">금</span><span data-i18n-en="Sa" data-i18n-ja="土" data-i18n-ko="토">토</span>
     </div>
     <div id="calendar-grid"></div>
 
@@ -791,7 +802,7 @@
       <div id="calendar-todo-date"></div>
       <div id="calendar-todo-list"></div>
       <form id="calendar-todo-form">
-        <input id="calendar-todo-input" type="text" maxlength="200" placeholder="할 일 추가..." data-i18n-en-placeholder="Add a to-do..." data-i18n-ko-placeholder="할 일 추가..." autocomplete="off">
+        <input id="calendar-todo-input" type="text" maxlength="200" placeholder="할 일 추가..." data-i18n-en-placeholder="Add a to-do..." data-i18n-ja-placeholder="やることを追加..." data-i18n-ko-placeholder="할 일 추가..." autocomplete="off">
       </form>
     </div>
   </div>
@@ -801,22 +812,22 @@
 <div class="name-modal" id="name-modal" style="display:none;">
   <div class="name-modal-inner">
     <div class="name-modal-logo">Freedom AI</div>
-    <div class="name-modal-sub" data-i18n-en="Log in to get started" data-i18n-ko="시작하려면 로그인하세요">시작하려면 로그인하세요</div>
+    <div class="name-modal-sub" data-i18n-en="Log in to get started" data-i18n-ja="始めるにはログインしてください" data-i18n-ko="시작하려면 로그인하세요">시작하려면 로그인하세요</div>
     <div id="login-status" style="font-size:12px;color:#ef4444;text-align:center;min-height:16px;margin-bottom:4px;"></div>
     <button id="google-btn" type="button" style="
       width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
       border:1.5px solid rgba(14,14,13,.15);border-radius:100px;padding:11px 16px;
       background:#fff;cursor:pointer;font-size:14px;font-weight:500;
-      font-family:'BM Dohyeon',sans-serif;color:#3c4043;margin-top:8px;
+      font-family:var(--font-body);color:#3c4043;margin-top:8px;
       transition:background .15s,box-shadow .15s;">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-      <span data-i18n-en="Sign in with Google" data-i18n-ko="Google로 로그인">Google로 로그인</span>
+      <span data-i18n-en="Sign in with Google" data-i18n-ja="Googleでログイン" data-i18n-ko="Google로 로그인">Google로 로그인</span>
     </button>
     <button id="guest-btn" type="button" style="
       width:100%;border:none;background:none;cursor:pointer;
-      font-size:13px;font-family:'BM Dohyeon',sans-serif;color:var(--ink3);
+      font-size:13px;font-family:var(--font-body);color:var(--ink3);
       margin-top:14px;text-decoration:underline;">
-      <span data-i18n-en="Continue as guest" data-i18n-ko="게스트로 입장">게스트로 입장</span>
+      <span data-i18n-en="Continue as guest" data-i18n-ja="ゲストとして入る" data-i18n-ko="게스트로 입장">게스트로 입장</span>
     </button>
   </div>
 </div>
@@ -825,14 +836,14 @@
 <div class="name-modal" id="project-modal" style="display:none;">
   <div class="name-modal-inner">
     <div class="name-modal-logo">Freedom AI</div>
-    <div class="name-modal-sub" data-i18n-en="Enter a project name" data-i18n-ko="프로젝트 이름을 입력하세요">프로젝트 이름을 입력하세요</div>
+    <div class="name-modal-sub" data-i18n-en="Enter a project name" data-i18n-ja="プロジェクト名を入力してください" data-i18n-ko="프로젝트 이름을 입력하세요">프로젝트 이름을 입력하세요</div>
     <form id="project-form">
       <input class="modal-input" id="project-input" type="text"
-             placeholder="예: 팀 아이디어 회의" data-i18n-en-placeholder="e.g. Team brainstorm" data-i18n-ko-placeholder="예: 팀 아이디어 회의" maxlength="32" autocomplete="off">
-      <button class="modal-submit" type="submit" data-i18n-en="Enter →" data-i18n-ko="입장하기 →">입장하기 →</button>
+             placeholder="예: 팀 아이디어 회의" data-i18n-en-placeholder="e.g. Team brainstorm" data-i18n-ja-placeholder="例: チームのブレスト" data-i18n-ko-placeholder="예: 팀 아이디어 회의" maxlength="32" autocomplete="off">
+      <button class="modal-submit" type="submit" data-i18n-en="Enter →" data-i18n-ja="入室する →" data-i18n-ko="입장하기 →">입장하기 →</button>
     </form>
     <div id="recent-projects" style="display:none;margin-top:20px;text-align:left;">
-      <div style="font-size:13px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;" data-i18n-en="Recent Projects" data-i18n-ko="최근 프로젝트">최근 프로젝트</div>
+      <div style="font-size:13px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;" data-i18n-en="Recent Projects" data-i18n-ja="最近のプロジェクト" data-i18n-ko="최근 프로젝트">최근 프로젝트</div>
       <div id="recent-list" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   </div>
@@ -842,27 +853,27 @@
 <div id="share-modal">
   <div class="share-inner">
     <div class="share-header">
-      <div class="share-title" data-i18n-en="Invite teammates" data-i18n-ko="팀원 초대">팀원 초대</div>
+      <div class="share-title" data-i18n-en="Invite teammates" data-i18n-ja="メンバーを招待" data-i18n-ko="팀원 초대">팀원 초대</div>
       <button class="share-close" id="share-modal-close">×</button>
     </div>
-    <div class="share-desc" id="share-desc" data-i18n-en="Send this link to teammates so you can work together" data-i18n-ko="이 링크를 팀원에게 보내면 함께 작업할 수 있어요">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
+    <div class="share-desc" id="share-desc" data-i18n-en="Send this link to teammates so you can work together" data-i18n-ja="このリンクをメンバーに送ると一緒に作業できます" data-i18n-ko="이 링크를 팀원에게 보내면 함께 작업할 수 있어요">이 링크를 팀원에게 보내면 함께 작업할 수 있어요</div>
     <div class="share-url-row">
       <input class="share-url-input" id="share-url-input" readonly>
-      <button class="share-copy-btn" id="share-copy-btn" data-i18n-en="Copy" data-i18n-ko="복사">복사</button>
+      <button class="share-copy-btn" id="share-copy-btn" data-i18n-en="Copy" data-i18n-ja="コピー" data-i18n-ko="복사">복사</button>
     </div>
 
     <div class="share-privacy-row">
-      <div class="share-privacy-label" id="share-privacy-label" data-i18n-en="🔓 Public project — anyone with the link can join" data-i18n-ko="🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능">🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능</div>
-      <button class="share-privacy-btn" id="share-privacy-btn" data-i18n-en="Make private" data-i18n-ko="비공개로 전환">비공개로 전환</button>
+      <div class="share-privacy-label" id="share-privacy-label" data-i18n-en="🔓 Public project — anyone with the link can join" data-i18n-ja="🔓 公開プロジェクト — リンクがあれば誰でも入室できます" data-i18n-ko="🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능">🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능</div>
+      <button class="share-privacy-btn" id="share-privacy-btn" data-i18n-en="Make private" data-i18n-ja="非公開にする" data-i18n-ko="비공개로 전환">비공개로 전환</button>
     </div>
 
     <div id="share-invited-section" style="display:none;">
-      <div class="share-members-title" data-i18n-en="Invited teammates" data-i18n-ko="초대된 팀원">초대된 팀원</div>
+      <div class="share-members-title" data-i18n-en="Invited teammates" data-i18n-ja="招待済みのメンバー" data-i18n-ko="초대된 팀원">초대된 팀원</div>
       <div id="share-invited-list"></div>
     </div>
 
     <div id="share-members-section" style="display:none;">
-      <div class="share-members-title" data-i18n-en="Currently working together" data-i18n-ko="지금 함께하는 팀원">지금 함께하는 팀원</div>
+      <div class="share-members-title" data-i18n-en="Currently working together" data-i18n-ja="現在作業中のメンバー" data-i18n-ko="지금 함께하는 팀원">지금 함께하는 팀원</div>
       <div id="share-members-list"></div>
     </div>
   </div>
@@ -886,7 +897,6 @@ const HF_SERVER_BASE = 'https://freedom-ai-vxhn.onrender.com';
 // 1분 가까이 응답이 없을 수 있다 — 예전엔 JSON 파싱 에러("Unexpected token '<'")가 그대로
 // 보이거나 처리 중 표시가 끝나지 않았다. 시간 제한을 두고 이해할 수 있는 메시지로 바꾼다.
 async function hfPost(path, body) {
-  const isEn = window._faLang === 'en';
   let res;
   try {
     res = await fetch(HF_SERVER_BASE + path, {
@@ -897,14 +907,14 @@ async function hfPost(path, body) {
     });
   } catch (e) {
     throw new Error(e.name === 'TimeoutError'
-      ? (isEn ? 'The AI server took too long. Please try again.' : 'AI 서버 응답이 너무 늦습니다. 잠시 후 다시 시도해주세요')
-      : (isEn ? 'Could not reach the AI server' : 'AI 서버에 연결할 수 없습니다'));
+      ? (t('AI 서버 응답이 너무 늦습니다. 잠시 후 다시 시도해주세요', 'The AI server took too long. Please try again.', 'AIサーバーの応答が遅すぎます。しばらくしてからもう一度お試しください'))
+      : (t('AI 서버에 연결할 수 없습니다', 'Could not reach the AI server', 'AIサーバーに接続できません')));
   }
   let data = {};
   try { data = await res.json(); } catch {
     throw new Error(res.status === 502 || res.status === 503
-      ? (isEn ? 'The AI server is waking up. Try again in a minute.' : 'AI 서버가 깨어나는 중입니다. 1분 뒤 다시 시도해주세요')
-      : (isEn ? `AI server error (${res.status})` : `AI 서버 오류 (${res.status})`));
+      ? (t('AI 서버가 깨어나는 중입니다. 1분 뒤 다시 시도해주세요', 'The AI server is waking up. Try again in a minute.', 'AIサーバーが起動中です。1分後にもう一度お試しください'))
+      : (t(`AI 서버 오류 (${res.status})`, `AI server error (${res.status})`, `AIサーバーエラー (${res.status})`)));
   }
   return { res, data };
 }
@@ -912,32 +922,53 @@ async function hfPost(path, body) {
 // ═══════════════════════════════════════════════════════════════
 //  LANGUAGE (EN/KO)
 // ═══════════════════════════════════════════════════════════════
+// 한국어 → 영어 → 일본어 순으로 돌아가며, 버튼에는 "다음에 바뀔 언어"를 표시한다.
+// 랜딩 페이지(index.html)와 같은 규칙·같은 localStorage 키를 써서, 거기서 고른 언어가
+// 앱에 들어와도 그대로 이어진다.
+const LANGS = ['ko', 'en', 'ja'];
+const LANG_LABEL = { ko: 'KO', en: 'EN', ja: 'JP' };
+
+// data-i18n-ko / -en / -ja 를 dataset 키로 바꿔 읽는다. 해당 언어 값이 없으면
+// 영어 → 한국어 순으로 내려가서, 번역이 빠져도 빈칸이 되지 않게 한다.
+function pickI18n(el, lang, suffix) {
+  const key = l => 'i18n' + l[0].toUpperCase() + l.slice(1) + suffix;
+  return el.dataset[key(lang)] ?? el.dataset[key('en')] ?? el.dataset[key('ko')];
+}
+
 function applyLang(lang) {
+  if (!LANGS.includes(lang)) lang = 'ko';
   document.querySelectorAll('[data-i18n-en],[data-i18n-en-html]').forEach(el => {
     const isHtml = el.hasAttribute('data-i18n-en-html');
-    const val = lang === 'en'
-      ? (isHtml ? el.dataset.i18nEnHtml : el.dataset.i18nEn)
-      : (isHtml ? el.dataset.i18nKoHtml : el.dataset.i18nKo);
+    const val = pickI18n(el, lang, isHtml ? 'Html' : '');
     if (val == null) return;
     if (isHtml) el.innerHTML = val; else el.textContent = val;
   });
   document.querySelectorAll('[data-i18n-en-title]').forEach(el => {
-    el.title = lang === 'en' ? el.dataset.i18nEnTitle : el.dataset.i18nKoTitle;
+    const val = pickI18n(el, lang, 'Title');
+    if (val != null) el.title = val;
   });
   document.querySelectorAll('[data-i18n-en-placeholder]').forEach(el => {
-    el.placeholder = lang === 'en' ? el.dataset.i18nEnPlaceholder : el.dataset.i18nKoPlaceholder;
+    const val = pickI18n(el, lang, 'Placeholder');
+    if (val != null) el.placeholder = val;
   });
   document.documentElement.lang = lang;
   const toggle = document.getElementById('lang-toggle');
-  if (toggle) toggle.textContent = lang === 'en' ? 'KO' : 'EN';
+  if (toggle) toggle.textContent = LANG_LABEL[LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]];
   try { localStorage.setItem('fa_lang', lang); } catch (e) {}
   window._faLang = lang;
+  renderCalendar?.();        // 요일·월 표기가 언어를 따라가도록 다시 그린다
+  renderCalendarTodos?.();
 }
+
+// 스크립트 안에서 쓰는 안내 문구용 헬퍼 (토스트·확인창 등)
+const t = (ko, en, ja) => window._faLang === 'en' ? en : window._faLang === 'ja' ? ja : ko;
+window._faT = t;
+
 try { window._faLang = localStorage.getItem('fa_lang') || 'ko'; } catch (e) { window._faLang = 'ko'; }
 document.addEventListener('DOMContentLoaded', () => {
   applyLang(window._faLang);
   document.getElementById('lang-toggle')?.addEventListener('click', () => {
-    applyLang(window._faLang === 'en' ? 'ko' : 'en');
+    applyLang(LANGS[(LANGS.indexOf(window._faLang) + 1) % LANGS.length]);
   });
 });
 
@@ -1461,11 +1492,11 @@ function buildNoteEl(note, autoFocus=false) {
   el.style.cssText = `left:${note.x}px;top:${note.y}px;width:${note.w}px;height:${note.h}px;background:${note.color};`;
   el.innerHTML = `
     <div class="note-handle">
-      <button class="note-fontsize-btn" title="${window._faLang==='en'?'Text size':'글자 크기'}">가</button>
-      <button class="note-delete" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
+      <button class="note-fontsize-btn" title="${t('글자 크기', 'Text size', '文字サイズ')}">가</button>
+      <button class="note-delete" title="${t('삭제', 'Delete', '削除')}">×</button>
     </div>
     <div class="note-text" contenteditable="true" spellcheck="false" style="font-size:${note.fontSize||13}px"
-         data-placeholder="${window._faLang==='en'?'Type something':'내용을 입력하세요'}">${esc(note.text||'')}</div>
+         data-placeholder="${t('내용을 입력하세요', 'Type something', '内容を入力してください')}">${esc(note.text||'')}</div>
     <div class="note-resize-bar">
       <div class="note-resize-handle left"  data-dir="left">${RESIZE_L}</div>
       <div class="note-resize-handle right" data-dir="right">${RESIZE_R}</div>
@@ -1876,8 +1907,9 @@ function addImageToCanvas(src, natW, natH, screenX, screenY) {
     images = images.filter(i => i.id !== img.id);
     img.el?.remove();
   }, {
-    image_limit:      ['⚠️ This board already has the maximum of 20 images', '⚠️ 이 보드엔 이미지를 더 넣을 수 없어요 (최대 20장)'],
-    image_too_large:  ['⚠️ That image is too large to save',                  '⚠️ 이미지가 너무 커서 저장할 수 없어요'],
+    // [한국어, 영어, 일본어] 순 — 아래 t(msg[0], msg[1], msg[2])와 순서를 맞춘다
+    image_limit:      ['⚠️ 이 보드엔 이미지를 더 넣을 수 없어요 (최대 20장)', '⚠️ This board already has the maximum of 20 images', '⚠️ このボードにこれ以上画像を追加できません（最大20枚）'],
+    image_too_large:  ['⚠️ 이미지가 너무 커서 저장할 수 없어요', '⚠️ That image is too large to save', '⚠️ 画像が大きすぎて保存できません'],
   });
 }
 
@@ -1892,7 +1924,7 @@ function addWithCapCheck(action, rollback, messages) {
     rollback();
     scheduleLocalSave();
     requestDraw();
-    showToast(window._faLang === 'en' ? msg[0] : msg[1]);
+    showToast(t(msg[0], msg[1], msg[2]));
   });
 }
 
@@ -1903,14 +1935,14 @@ function buildImageEl(img, appendMode = false) {
   el.style.cssText = `left:${img.x}px;top:${img.y}px;width:${img.w}px;height:${img.h}px;`;
   el.innerHTML = `
     <img draggable="false">
-    <button class="canvas-img-bg" title="${window._faLang==='en'?'Remove background':'배경 제거'}">
+    <button class="canvas-img-bg" title="${t('배경 제거', 'Remove background', '背景を削除')}">
       <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
         <circle cx="3.4" cy="3.4" r="1.7" stroke="#fff" stroke-width="1.1"/>
         <circle cx="3.4" cy="11.6" r="1.7" stroke="#fff" stroke-width="1.1"/>
         <path d="M12.8 2.2L4.7 8.3M8.4 8.4l4.4 4.4M4.7 6.7l1.8 1.7" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
-    <button class="canvas-img-del" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
+    <button class="canvas-img-del" title="${t('삭제', 'Delete', '削除')}">×</button>
     <div class="canvas-img-resize">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
         <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
@@ -2106,8 +2138,8 @@ function setupImageEvents(img) {
     e.preventDefault();
     e.stopPropagation();
     showProjectMenu(e.clientX, e.clientY, [
-      { label: window._faLang==='en' ? 'Bring to front' : '맨 앞으로 가져오기', onClick: () => bringImageToFront(img) },
-      { label: window._faLang==='en' ? 'Send to back' : '맨 뒤로 보내기', onClick: () => sendImageToBack(img) },
+      { label: t('맨 앞으로 가져오기', 'Bring to front', '最前面へ移動'), onClick: () => bringImageToFront(img) },
+      { label: t('맨 뒤로 보내기', 'Send to back', '最背面へ移動'), onClick: () => sendImageToBack(img) },
     ]);
   });
 }
@@ -2144,7 +2176,7 @@ function buildShapeEl(shape) {
   el.style.cssText = `left:${shape.x}px;top:${shape.y}px;width:${shape.w}px;height:${shape.h}px;`;
   el.innerHTML = `
     <svg width="${Math.max(1,shape.w)}" height="${Math.max(1,shape.h)}" viewBox="0 0 ${Math.max(1,shape.w)} ${Math.max(1,shape.h)}">${shapeSvgMarkup(shape.type, shape.w, shape.h, shape.color)}</svg>
-    <button class="shape-delete" title="${window._faLang==='en'?'Delete':'삭제'}">×</button>
+    <button class="shape-delete" title="${t('삭제', 'Delete', '削除')}">×</button>
     <div class="shape-resize-handle">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
         <path d="M1 9L9 1M5 9L9 5M9 9V6" stroke="rgba(14,14,13,0.5)" stroke-width="1.4" stroke-linecap="round"/>
@@ -2281,7 +2313,7 @@ function startShapeCreate(sx0, sy0, isTouch=false) {
     addWithCapCheck({ type:'shape_add', shape: { id:shape.id, type:shape.type, x:shape.x, y:shape.y, w:shape.w, h:shape.h, color:shape.color } }, () => {
       shapes = shapes.filter(sh => sh.id !== shape.id);
       shape.el?.remove();
-    }, { shape_limit: ['⚠️ This board already has the maximum of 300 shapes', '⚠️ 이 보드엔 도형을 더 넣을 수 없어요 (최대 300개)'] });
+    }, { shape_limit: ['⚠️ 이 보드엔 도형을 더 넣을 수 없어요 (최대 300개)', '⚠️ This board already has the maximum of 300 shapes', '⚠️ このボードにこれ以上図形を追加できません（最大300個）'] });
   }
 
   const mm = e => onMove(e.clientX, e.clientY);
@@ -2334,7 +2366,7 @@ function renderArrowEl(shape) {
       <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="transparent" stroke-width="${hitW}" class="arrow-hit"/>
       <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="${shape.color}" stroke-width="${sw}" stroke-linecap="round" marker-end="url(#arrowhead-${shape.id})"/>
     </svg>
-    <button class="shape-delete" title="${window._faLang==='en'?'Delete':'삭제'}" style="left:${lx2}px;top:${ly2-22}px;">×</button>
+    <button class="shape-delete" title="${t('삭제', 'Delete', '削除')}" style="left:${lx2}px;top:${ly2-22}px;">×</button>
     <div class="arrow-handle" data-role="p1" style="left:${lx1}px;top:${ly1}px;"></div>
     <div class="arrow-handle" data-role="p2" style="left:${lx2}px;top:${ly2}px;"></div>
     <div class="arrow-handle bend" data-role="bend" style="left:${lcx}px;top:${lcy}px;"></div>
@@ -2567,12 +2599,12 @@ function closeAiModal() {
 async function runAiTransform() {
   if (!_aiTargetImg) return;
   const prompt = document.getElementById('ai-prompt-input').value.trim();
-  if (!prompt) { document.getElementById('ai-status').textContent = window._faLang==='en' ? 'Please enter a prompt.' : '프롬프트를 입력해주세요.'; return; }
+  if (!prompt) { document.getElementById('ai-status').textContent = t('프롬프트를 입력해주세요.', 'Please enter a prompt.', 'プロンプトを入力してください。'); return; }
 
   const goBtn   = document.getElementById('ai-go-btn');
   const statusEl = document.getElementById('ai-status');
   goBtn.disabled = true;
-  statusEl.textContent = window._faLang==='en' ? '⏳ AI is transforming your image... (30–60s)' : '⏳ AI가 이미지를 변환 중입니다... (30~60초 소요)';
+  statusEl.textContent = t('⏳ AI가 이미지를 변환 중입니다... (30~60초 소요)', '⏳ AI is transforming your image... (30–60s)', '⏳ AIが画像を変換中です...（30〜60秒）');
 
   try {
     const { res, data } = await hfPost('/ai-transform', { imageBase64: _aiTargetImg.src, prompt });
@@ -2591,7 +2623,7 @@ async function runAiTransform() {
     applyImageSrcUpdate(_aiTargetImg, data.imageBase64);
     closeAiModal();
   } catch (e) {
-    statusEl.textContent = (window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message;
+    statusEl.textContent = (t('❌ 오류: ', '❌ Error: ', '❌ エラー: ')) + e.message;
     goBtn.disabled = false;
   }
 }
@@ -2645,7 +2677,7 @@ async function applyImageSrcUpdate(img, newSrc, extra = {}) {
     img.bgRemoved = prev.bgRemoved; img.el.classList.toggle('bg-removed', !!prev.bgRemoved);
     dropImageEditUndo(img.id);
     scheduleLocalSave();
-    showToast(window._faLang==='en' ? 'The result image is too large to save' : '결과 이미지가 너무 커서 저장할 수 없습니다');
+    showToast(t('결과 이미지가 너무 커서 저장할 수 없습니다', 'The result image is too large to save', '結果画像が大きすぎて保存できません'));
   }
 }
 
@@ -2793,7 +2825,7 @@ async function isLikelyGraphicImage(imageSrc) {
 // setupImageEvents()의 long-press 감지에서 호출된다.
 async function autoRemoveBackground(img) {
   img.el.classList.add('bg-processing');
-  showToast(window._faLang==='en' ? 'Analyzing image...' : '이미지를 분석하는 중입니다...', { icon: 'scan' });
+  showToast(t('이미지를 분석하는 중입니다...', 'Analyzing image...', '画像を解析中です...'), { icon: 'scan' });
   const prevSrc = img.src, prevBgRemoved = img.bgRemoved;
 
   try {
@@ -2801,7 +2833,7 @@ async function autoRemoveBackground(img) {
       const finalSrc = await simpleLumaKeyCutout(img.src);
       applyImageSrcUpdate(img, finalSrc, { bgRemoved: true });
       pushUndo({ type:'imageEdit', imageId: img.id, prevSrc, prevBgRemoved });
-      showToast(window._faLang==='en' ? '✂️ Removed solid background (logo/text detected)' : '✂️ 로고·텍스트로 보여 단색 배경만 제거했습니다');
+      showToast(t('✂️ 로고·텍스트로 보여 단색 배경만 제거했습니다', '✂️ Removed solid background (logo/text detected)', '✂️ ロゴ・テキストと判断し、単色の背景のみ削除しました'));
       return;
     }
 
@@ -2813,12 +2845,12 @@ async function autoRemoveBackground(img) {
         const finalSrc = await simpleLumaKeyCutout(img.src);
         applyImageSrcUpdate(img, finalSrc, { bgRemoved: true });
         pushUndo({ type:'imageEdit', imageId: img.id, prevSrc, prevBgRemoved });
-        showToast(window._faLang==='en' ? '✂️ No person found — removed solid background instead' : '✂️ 인물을 찾지 못해 단색 배경만 제거했습니다');
+        showToast(t('✂️ 인물을 찾지 못해 단색 배경만 제거했습니다', '✂️ No person found — removed solid background instead', '✂️ 人物が見つからず、単色の背景のみ削除しました'));
         return;
       }
       showToast(data.error === 'model_loading'
-        ? (window._faLang==='en' ? '🔄 Model is loading, please try again shortly' : '🔄 모델 로딩 중입니다. 잠시 후 다시 시도해주세요')
-        : (window._faLang==='en' ? '❌ Failed to remove background' : '❌ 배경 제거에 실패했습니다'));
+        ? (t('🔄 모델 로딩 중입니다. 잠시 후 다시 시도해주세요', '🔄 Model is loading, please try again shortly', '🔄 モデルを読み込み中です。しばらくしてからもう一度お試しください'))
+        : (t('❌ 배경 제거에 실패했습니다', '❌ Failed to remove background', '❌ 背景の削除に失敗しました')));
       return;
     }
 
@@ -2850,10 +2882,10 @@ async function autoRemoveBackground(img) {
     // 잘려나갈 수 있다 — Ctrl+Z로 바로 원본을 되돌릴 수 있게 기억해둔다.
     pushUndo({ type:'imageEdit', imageId: img.id, prevSrc, prevBgRemoved });
     showToast(usedFallback
-      ? (window._faLang==='en' ? '✂️ No person found — removed solid background instead' : '✂️ 인물을 찾지 못해 단색 배경만 제거했습니다')
-      : (window._faLang==='en' ? '✂️ Background removed (Ctrl+Z to undo)' : '✂️ 배경을 제거했습니다 (Ctrl+Z로 되돌리기)'));
+      ? (t('✂️ 인물을 찾지 못해 단색 배경만 제거했습니다', '✂️ No person found — removed solid background instead', '✂️ 人物が見つからず、単色の背景のみ削除しました'))
+      : (t('✂️ 배경을 제거했습니다 (Ctrl+Z로 되돌리기)', '✂️ Background removed (Ctrl+Z to undo)', '✂️ 背景を削除しました（Ctrl+Zで元に戻せます）')));
   } catch (e) {
-    showToast((window._faLang==='en' ? '❌ Error: ' : '❌ 오류: ') + e.message);
+    showToast((t('❌ 오류: ', '❌ Error: ', '❌ エラー: ')) + e.message);
   } finally {
     img.el.classList.remove('bg-processing');
   }
@@ -2959,7 +2991,7 @@ function saveCurrentWork() {
   flushPendingNoteText(false);
   clearTimeout(_saveTimer);
   saveLocalNow();
-  showToast(window._faLang==='en' ? 'Saved' : '저장했습니다');
+  showToast(t('저장했습니다', 'Saved', '保存しました'));
 }
 
 // 떠나기 직전 확정. pagehide는 모바일 사파리에서 beforeunload가 안 불리는 경우까지 덮고,
@@ -3010,16 +3042,12 @@ function sendAction(action, opts) {
   return fetchPromise.then(res => {
     if (!res.ok) {
       handleAuthFailure(res);
-      showToast(window._faLang==='en'
-        ? 'Change failed to save — syncing with server…'
-        : '변경사항 저장 실패 — 서버와 다시 맞추는 중…');
+      showToast(t('변경사항 저장 실패 — 서버와 다시 맞추는 중…', 'Change failed to save — syncing with server…', '変更の保存に失敗しました — サーバーと同期しています…'));
       resyncFromServer();
     }
     return res;
   }).catch(err => {
-    showToast(window._faLang==='en'
-      ? 'Network error — change may not be saved'
-      : '네트워크 오류 — 변경사항이 저장되지 않았을 수 있어요');
+    showToast(t('네트워크 오류 — 변경사항이 저장되지 않았을 수 있어요', 'Network error — change may not be saved', 'ネットワークエラー — 変更が保存されていない可能性があります'));
     resyncFromServer();
   });
 }
@@ -3144,7 +3172,7 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('pusher:member_added', m => {
     addRemoteCursor(m.id, m.info.name, m.info.color);
-    showToast(window._faLang==='en' ? `${esc(m.info.name)} joined` : `${esc(m.info.name)}님이 입장했어요`);
+    showToast(t(`${esc(m.info.name)}님이 입장했어요`, `${esc(m.info.name)} joined`, `${esc(m.info.name)}さんが入室しました`));
   });
 
   channel.bind('pusher:member_removed', m => removeRemoteCursor(m.id));
@@ -3712,15 +3740,15 @@ function setGroupForSelection(groupId) {
   const ids = [...selectedIds].filter(id => findItemObj(id));
   if (ids.length < (groupId ? 2 : 1)) return;
   if (ids.length > 200) {
-    showToast(window._faLang==='en' ? 'You can group up to 200 items at once' : '한 번에 최대 200개까지 묶을 수 있습니다');
+    showToast(t('한 번에 최대 200개까지 묶을 수 있습니다', 'You can group up to 200 items at once', '一度にグループ化できるのは200個までです'));
     return;
   }
   ids.forEach(id => { const o = findItemObj(id); if (groupId) o.groupId = groupId; else delete o.groupId; });
   sendAction({ type:'group_set', ids, groupId });
   updateGroupBox();
   showToast(groupId
-    ? (window._faLang==='en' ? `Grouped ${ids.length} items` : `${ids.length}개 항목을 그룹으로 묶었습니다`)
-    : (window._faLang==='en' ? 'Ungrouped' : '그룹을 해제했습니다'));
+    ? (t(`${ids.length}개 항목을 그룹으로 묶었습니다`, `Grouped ${ids.length} items`, `${ids.length}個の項目をグループ化しました`))
+    : (t('그룹을 해제했습니다', 'Ungrouped', 'グループを解除しました')));
 }
 function groupSelected()   { setGroupForSelection(genId()); }
 function ungroupSelected() { setGroupForSelection(null); }
@@ -4123,12 +4151,9 @@ function calendarModalOpen() {
 }
 
 function renderCalendar() {
-  const isEn = window._faLang === 'en';
   const year = calendarViewDate.getFullYear();
   const month = calendarViewDate.getMonth(); // 0-11
-  document.getElementById('calendar-title').textContent = isEn
-    ? calendarViewDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-    : `${year}년 ${month + 1}월`;
+  document.getElementById('calendar-title').textContent = t(`${year}년 ${month + 1}월`, calendarViewDate.toLocaleString('en-US', { month: 'long', year: 'numeric' }), `${year}年 ${month + 1}月`);
 
   const today = new Date();
   const firstOfMonth = new Date(year, month, 1);
@@ -4177,28 +4202,24 @@ function renderCalendarTodos() {
   const panel = document.getElementById('calendar-todo-panel');
   if (!calendarSelectedDate) { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
-
-  const isEn = window._faLang === 'en';
   const [y, m, d] = calendarSelectedDate.split('-').map(Number);
-  document.getElementById('calendar-todo-date').textContent = isEn
-    ? new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })
-    : `${m}월 ${d}일 할 일`;
+  document.getElementById('calendar-todo-date').textContent = t(`${m}월 ${d}일 할 일`, new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' }), `${m}月 ${d}日のやること`);
 
   const list = document.getElementById('calendar-todo-list');
   list.innerHTML = '';
   const items = todos[calendarSelectedDate] || [];
   if (!items.length) {
-    list.innerHTML = `<div class="todo-empty" data-i18n-en="No to-dos yet" data-i18n-ko="아직 할 일이 없어요">${isEn ? 'No to-dos yet' : '아직 할 일이 없어요'}</div>`;
+    list.innerHTML = `<div class="todo-empty" data-i18n-en="No to-dos yet" data-i18n-ja="やることはまだありません" data-i18n-ko="아직 할 일이 없어요">${t('아직 할 일이 없어요', 'No to-dos yet', 'やることはまだありません')}</div>`;
   }
   items.forEach(todo => {
     const row = document.createElement('div');
     row.className = 'todo-item' + (todo.done ? ' done' : '');
     row.innerHTML = `
-      <button class="todo-checkbox" title="${isEn ? 'Toggle done' : '완료 체크'}">
+      <button class="todo-checkbox" title="${t('완료 체크', 'Toggle done', '完了チェック')}">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="${todo.done ? '' : 'display:none;'}"><path d="M1.5 5l2.5 2.5L8.5 2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <span class="todo-text"></span>
-      <button class="todo-delete" title="${isEn ? 'Delete' : '삭제'}">×</button>
+      <button class="todo-delete" title="${t('삭제', 'Delete', '削除')}">×</button>
     `;
     row.querySelector('.todo-text').textContent = todo.text;
     row.querySelector('.todo-checkbox').addEventListener('click', () => toggleCalendarTodo(todo.id));
@@ -4229,7 +4250,7 @@ async function addCalendarTodo(text) {
     if (list && !list.length) delete todos[date];
     if (calendarSelectedDate === date) renderCalendarTodos();
     renderCalendar();
-    showToast(window._faLang==='en' ? '⚠️ Too many to-dos for this date (max 50)' : '⚠️ 이 날짜엔 할 일을 더 추가할 수 없어요 (최대 50개)');
+    showToast(t('⚠️ 이 날짜엔 할 일을 더 추가할 수 없어요 (최대 50개)', '⚠️ Too many to-dos for this date (max 50)', '⚠️ この日にはこれ以上やることを追加できません（最大50個）'));
   }
 }
 function toggleCalendarTodo(todoId) {
@@ -4297,19 +4318,16 @@ document.getElementById('share-modal').addEventListener('click', e => {
 document.getElementById('share-copy-btn').addEventListener('click', () => {
   const btn = document.getElementById('share-copy-btn');
   navigator.clipboard.writeText(document.getElementById('share-url-input').value).then(() => {
-    btn.textContent = window._faLang==='en' ? 'Copied!' : '복사됨!'; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = window._faLang==='en' ? 'Copy' : '복사'; btn.classList.remove('copied'); }, 2000);
+    btn.textContent = t('복사됨!', 'Copied!', 'コピーしました!'); btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = t('복사', 'Copy', 'コピー'); btn.classList.remove('copied'); }, 2000);
   });
 });
 
 let shareIsPrivate = false;
 
 document.getElementById('share-privacy-btn').addEventListener('click', async () => {
-  const isEn = window._faLang === 'en';
   if (!shareIsPrivate) {
-    const msg = isEn
-      ? 'From now on, only invited teammates will be able to open this project. The current public link will stop working. Continue?'
-      : '지금부터는 초대받은 팀원만 이 프로젝트를 열 수 있어요. 지금까지의 공개 링크는 더 이상 작동하지 않습니다. 계속할까요?';
+    const msg = t('지금부터는 초대받은 팀원만 이 프로젝트를 열 수 있어요. 지금까지의 공개 링크는 더 이상 작동하지 않습니다. 계속할까요?', 'From now on, only invited teammates will be able to open this project. The current public link will stop working. Continue?', 'これ以降は招待されたメンバーだけがこのプロジェクトを開けます。これまでの公開リンクは使えなくなります。続けますか?');
     if (!confirm(msg)) return;
   }
   const btn = document.getElementById('share-privacy-btn');
@@ -4336,8 +4354,8 @@ async function generateInviteLink() {
   const { ok, data } = await teamApi({ action:'invite', roomId });
   if (!ok || !data?.token) {
     alert(data?.error === 'owner_only'
-      ? (window._faLang==='en' ? 'Only the person who created this project can make it private.' : '이 프로젝트를 만든 사람만 비공개로 전환할 수 있습니다.')
-      : (window._faLang==='en' ? 'Failed to create the invite link. Please try logging in again.' : '초대 링크 생성에 실패했습니다. 다시 로그인 후 시도해주세요.'));
+      ? (t('이 프로젝트를 만든 사람만 비공개로 전환할 수 있습니다.', 'Only the person who created this project can make it private.', 'このプロジェクトを作成した人のみ非公開にできます。'))
+      : (t('초대 링크 생성에 실패했습니다. 다시 로그인 후 시도해주세요.', 'Failed to create the invite link. Please try logging in again.', '招待リンクの作成に失敗しました。ログインし直してお試しください。')));
     return null;
   }
   const url = `${location.origin}${location.pathname}?invite=${encodeURIComponent(data.token)}`;
@@ -4352,7 +4370,6 @@ async function refreshShareInvite() {
   const privacyBtn = document.getElementById('share-privacy-btn');
   const invSection = document.getElementById('share-invited-section');
   const invList    = document.getElementById('share-invited-list');
-  const isEn = window._faLang === 'en';
 
   let data = null;
   try {
@@ -4368,16 +4385,16 @@ async function refreshShareInvite() {
   if (!data || !data.isPrivate) {
     // 아직 공개(레거시) 상태 — 지금까지처럼 방 링크 그대로 공유
     urlInput.value = location.href; // 디코딩하면 "R&D" 같은 이름이 ?room=R&D로 깨져 다른 방이 열렸다
-    desc.textContent = isEn ? 'Send this link to teammates so you can work together' : '이 링크를 팀원에게 보내면 함께 작업할 수 있어요';
-    label.textContent = isEn ? '🔓 Public project — anyone with the link can join' : '🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능';
-    privacyBtn.textContent = isEn ? 'Make private' : '비공개로 전환';
+    desc.textContent = t('이 링크를 팀원에게 보내면 함께 작업할 수 있어요', 'Send this link to teammates so you can work together', 'このリンクをメンバーに送ると一緒に作業できます');
+    label.textContent = t('🔓 공개 프로젝트 — 링크만 있으면 누구나 입장 가능', '🔓 Public project — anyone with the link can join', '🔓 公開プロジェクト — リンクがあれば誰でも入室できます');
+    privacyBtn.textContent = t('비공개로 전환', 'Make private', '非公開にする');
     invSection.style.display = 'none';
     return;
   }
 
-  desc.textContent = isEn ? 'Only invited teammates can open this link' : '초대받은 팀원만 이 링크로 들어올 수 있어요';
-  label.textContent = isEn ? '🔒 Private project — only invited teammates can join' : '🔒 비공개 프로젝트 — 초대된 팀원만 입장 가능';
-  privacyBtn.textContent = isEn ? 'Create new invite link' : '새 초대 링크 만들기';
+  desc.textContent = t('초대받은 팀원만 이 링크로 들어올 수 있어요', 'Only invited teammates can open this link', '招待されたメンバーだけがこのリンクで入室できます');
+  label.textContent = t('🔒 비공개 프로젝트 — 초대된 팀원만 입장 가능', '🔒 Private project — only invited teammates can join', '🔒 非公開プロジェクト — 招待されたメンバーのみ入室可能');
+  privacyBtn.textContent = t('새 초대 링크 만들기', 'Create new invite link', '新しい招待リンクを作成');
   if (!urlInput.value.includes('?invite=')) await generateInviteLink();
 
   invSection.style.display = 'block';
@@ -4387,15 +4404,15 @@ async function refreshShareInvite() {
     row.className = 'share-member';
     row.innerHTML = `<div class="share-member-dot" style="background:#8b5cf6"></div>
       <span class="share-member-name"></span>
-      <button class="share-member-remove" title="${isEn?'Remove':'제거'}">×</button>`;
+      <button class="share-member-remove" title="${t('제거', 'Remove', '削除')}">×</button>`;
     row.querySelector('.share-member-name').textContent = email;
     row.querySelector('.share-member-remove').addEventListener('click', async () => {
-      if (!confirm(isEn ? `Remove ${email}?` : `${email} 님을 팀에서 제거할까요?`)) return;
+      if (!confirm(t(`${email} 님을 팀에서 제거할까요?`, `Remove ${email}?`, `${email} さんをチームから削除しますか?`))) return;
       const { ok, data: res } = await teamApi({ action:'remove', roomId, removeEmail: email });
       if (!ok) {
         alert(res?.error === 'cannot_remove_last_member'
-          ? (isEn ? 'You cannot remove the last teammate — no one would be able to open this project anymore.' : '마지막 팀원은 제거할 수 없어요 — 아무도 이 프로젝트에 못 들어오게 됩니다.')
-          : (isEn ? 'Failed to remove teammate.' : '팀원 제거에 실패했습니다.'));
+          ? (t('마지막 팀원은 제거할 수 없어요 — 아무도 이 프로젝트에 못 들어오게 됩니다.', 'You cannot remove the last teammate — no one would be able to open this project anymore.', '最後のメンバーは削除できません — 誰もこのプロジェクトを開けなくなります。'))
+          : (t('팀원 제거에 실패했습니다.', 'Failed to remove teammate.', 'メンバーの削除に失敗しました。')));
         return;
       }
       refreshShareInvite();
@@ -4432,7 +4449,7 @@ function openShareModal() {
 function closeShareModal() {
   document.getElementById('share-modal').classList.remove('open');
   const btn = document.getElementById('share-copy-btn');
-  btn.textContent = window._faLang==='en' ? 'Copy' : '복사'; btn.classList.remove('copied');
+  btn.textContent = t('복사', 'Copy', 'コピー'); btn.classList.remove('copied');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -4538,7 +4555,7 @@ function getProjectName() {
       const val = input.value.trim();
       if (!val) return;
       if (/:(members|lock)$/i.test(val)) {
-        showToast(window._faLang==='en' ? 'This name cannot be used' : '사용할 수 없는 이름입니다');
+        showToast(t('사용할 수 없는 이름입니다', 'This name cannot be used', '使用できない名前です'));
         return;
       }
       form.removeEventListener('submit', onSubmit);
@@ -4557,10 +4574,8 @@ const GOOGLE_CLIENT_ID = '752878488042-6mc8ggqljhfclng11gsm2ffku8l4uc9k.apps.goo
 function startGoogleLogin(resolveCallback) {
   const statusEl = document.getElementById('login-status');
   statusEl.textContent = '';
-
-  const isEn = window._faLang === 'en';
   if (!window.google?.accounts?.oauth2) {
-    statusEl.textContent = isEn ? 'Google library is still loading. Please try again in a moment.' : 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.';
+    statusEl.textContent = t('Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.', 'Google library is still loading. Please try again in a moment.', 'Googleライブラリを読み込み中です。しばらくしてからもう一度お試しください。');
     return;
   }
 
@@ -4572,24 +4587,26 @@ function startGoogleLogin(resolveCallback) {
       if (err.type === 'popup_closed') {
         // 팝업이 2초 이내에 닫히면 origin_mismatch 등 오류로 판단
         if (Date.now() - popupOpenTime < 2000) {
-          statusEl.innerHTML = isEn
-            ? `The current address (<b>${location.origin}</b>) is not registered with Google.<br>` +
-              `Add it under Google Cloud Console → Authorized JavaScript origins.`
-            : `현재 주소(<b>${location.origin}</b>)가 Google에 미등록 상태입니다.<br>` +
-              `Google Cloud Console → Authorized JavaScript origins 에 추가해주세요.`;
+          statusEl.innerHTML = t(
+            `현재 주소(<b>${location.origin}</b>)가 Google에 미등록 상태입니다.<br>` +
+              `Google Cloud Console → Authorized JavaScript origins 에 추가해주세요.`,
+            `The current address (<b>${location.origin}</b>) is not registered with Google.<br>` +
+              `Add it under Google Cloud Console → Authorized JavaScript origins.`,
+            `現在のアドレス(<b>${location.origin}</b>)が Google に登録されていません。<br>` +
+              `Google Cloud Console → Authorized JavaScript origins に追加してください。`);
         }
         return;
       }
       if (err.type === 'popup_failed_to_open') {
-        statusEl.textContent = isEn ? 'The popup was blocked. Please allow popups in your browser.' : '팝업이 차단되었습니다. 브라우저 팝업 차단을 해제해주세요.';
+        statusEl.textContent = t('팝업이 차단되었습니다. 브라우저 팝업 차단을 해제해주세요.', 'The popup was blocked. Please allow popups in your browser.', 'ポップアップがブロックされました。ブラウザのポップアップブロックを解除してください。');
         return;
       }
-      statusEl.textContent = (isEn ? 'Google sign-in error: ' : 'Google 로그인 오류: ') + (err.type || err);
+      statusEl.textContent = (t('Google 로그인 오류: ', 'Google sign-in error: ', 'Googleログインエラー: ')) + (err.type || err);
       console.error('Google OAuth error:', err);
     },
     callback: async (tokenResponse) => {
       if (tokenResponse.error) {
-        statusEl.textContent = (isEn ? 'Google sign-in failed: ' : 'Google 로그인 실패: ') + tokenResponse.error;
+        statusEl.textContent = (t('Google 로그인 실패: ', 'Google sign-in failed: ', 'Googleログインに失敗しました: ')) + tokenResponse.error;
         return;
       }
       try {
@@ -4604,7 +4621,7 @@ function startGoogleLogin(resolveCallback) {
         document.getElementById('name-modal').style.display = 'none';
         resolveCallback(user);
       } catch (e) {
-        statusEl.textContent = isEn ? 'An error occurred while signing in.' : '로그인 처리 중 오류가 발생했습니다.';
+        statusEl.textContent = t('로그인 처리 중 오류가 발생했습니다.', 'An error occurred while signing in.', 'ログイン処理中にエラーが発生しました。');
         console.error(e);
       }
     },
@@ -4638,13 +4655,11 @@ let sessionRefreshClient = null;
 // 한 번 실패하면 계정 선택 창을 띄우는 대화형 요청으로 올라간다.
 let sessionRefreshInteractive = false;
 function refreshGoogleToken() {
-  const isEn = window._faLang === 'en';
   if (!myEmail) return;
   // GSI 스크립트가 차단되거나 아직 로딩 중이면 예전엔 조용히 아무것도 안 했다 — 버튼이
   // 고장 난 것처럼 보였으므로, 로그인 창과 같은 기준으로 이유를 알려준다.
   if (!window.google?.accounts?.oauth2) {
-    showToast(isEn ? 'Google library is still loading — please try again in a moment.'
-                   : 'Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+    showToast(t('Google 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.', 'Google library is still loading — please try again in a moment.', 'Googleライブラリを読み込み中です。しばらくしてからもう一度お試しください。'));
     return;
   }
   if (!sessionRefreshClient) {
@@ -4657,7 +4672,7 @@ function refreshGoogleToken() {
         sessionRefreshInteractive = false;
         saveGoogleToken(resp);
         hideSessionBanner();
-        showToast(isEn ? 'Signed in again — your changes will save' : '로그인을 연장했습니다');
+        showToast(t('로그인을 연장했습니다', 'Signed in again — your changes will save', 'ログインを延長しました'));
         // 만료된 동안 실패했던 변경이 있었을 수 있으니 서버 상태로 다시 맞춘다
         resyncFromServer();
       },
@@ -4671,24 +4686,21 @@ function refreshGoogleToken() {
 }
 
 function onSessionRefreshFailed() {
-  const isEn = window._faLang === 'en';
   if (!sessionRefreshInteractive) {
     // 다음 클릭은 대화형으로 — 무음 갱신이 안 되는 계정 상태라는 뜻이다
     sessionRefreshInteractive = true;
-    showToast(isEn ? 'Could not renew silently — tap again to pick your account.'
-                   : '자동 연장에 실패했어요 — 한 번 더 누르면 계정을 선택할 수 있어요');
+    showToast(t('자동 연장에 실패했어요 — 한 번 더 누르면 계정을 선택할 수 있어요', 'Could not renew silently — tap again to pick your account.', '自動延長に失敗しました — もう一度押すとアカウントを選択できます'));
   } else {
-    showToast(isEn ? 'Sign-in failed. Please reload the page.' : '로그인에 실패했어요. 페이지를 새로고침해주세요.');
+    showToast(t('로그인에 실패했어요. 페이지를 새로고침해주세요.', 'Sign-in failed. Please reload the page.', 'ログインに失敗しました。ページを再読み込みしてください。'));
   }
   showSessionBanner(true);
 }
 
 function showSessionBanner(expired) {
   if (!myEmail || isGuest) return;
-  const isEn = window._faLang === 'en';
   document.getElementById('session-banner-text').textContent = expired
-    ? (isEn ? 'Your sign-in expired. Changes may not save.' : '로그인이 만료되어 변경사항이 저장되지 않을 수 있어요')
-    : (isEn ? 'Your sign-in expires soon.' : '로그인이 곧 만료돼요');
+    ? (t('로그인이 만료되어 변경사항이 저장되지 않을 수 있어요', 'Your sign-in expired. Changes may not save.', 'ログインの有効期限が切れました。変更が保存されない可能性があります'))
+    : (t('로그인이 곧 만료돼요', 'Your sign-in expires soon.', 'まもなくログインの有効期限が切れます'));
   document.getElementById('session-banner').classList.add('show');
 }
 function hideSessionBanner() {
@@ -4727,14 +4739,11 @@ function getGoogleUser() {
     modal.style.display = 'flex';
     document.getElementById('google-btn').addEventListener('click', () => startGoogleLogin(resolve));
     document.getElementById('guest-btn').addEventListener('click', () => {
-      const isEn = window._faLang === 'en';
-      const warned = confirm(isEn
-        ? 'As a guest, none of your work will be saved. Continue?'
-        : '게스트로 입장 시 작업한 내용이 저장되지 않습니다. 계속하시겠습니까?');
+      const warned = confirm(t('게스트로 입장 시 작업한 내용이 저장되지 않습니다. 계속하시겠습니까?', 'As a guest, none of your work will be saved. Continue?', 'ゲストとして入室すると、作業した内容は保存されません。続けますか?'));
       if (!warned) return;
       isGuest = true;
       modal.style.display = 'none';
-      resolve({ name: isEn ? 'Guest' : '게스트', email: '' });
+      resolve({ name: t('게스트', 'Guest', 'ゲスト'), email: '' });
     });
   });
 }
@@ -4789,7 +4798,7 @@ async function main() {
         await saveRecentProject(invitedRoomId);
         history.replaceState(null, '', `?room=${encodeURIComponent(invitedRoomId)}`);
       } else {
-        alert(window._faLang==='en' ? 'This invite link is invalid or has expired.' : '유효하지 않거나 만료된 초대 링크입니다.');
+        alert(t('유효하지 않거나 만료된 초대 링크입니다.', 'This invite link is invalid or has expired.', 'この招待リンクは無効か、有効期限が切れています。'));
         history.replaceState(null, '', location.pathname);
       }
     } catch(e) {
@@ -4806,17 +4815,13 @@ async function main() {
     body: JSON.stringify({ roomId, name: userName, email: myEmail, clientId: getClientId() }),
   });
   if (joinRes.status === 403) {
-    alert(window._faLang==='en'
-      ? 'This is a private project. Ask the owner to invite you.'
-      : '비공개 프로젝트입니다. 소유자에게 초대를 요청해주세요.');
+    alert(t('비공개 프로젝트입니다. 소유자에게 초대를 요청해주세요.', 'This is a private project. Ask the owner to invite you.', '非公開プロジェクトです。オーナーに招待を依頼してください。'));
     history.replaceState(null, '', location.pathname);
     location.reload();
     return;
   }
   if (!joinRes.ok) {
-    alert(window._faLang==='en'
-      ? 'Could not open the project. Please try again in a moment.'
-      : '프로젝트를 열지 못했습니다. 잠시 후 다시 시도해주세요.');
+    alert(t('프로젝트를 열지 못했습니다. 잠시 후 다시 시도해주세요.', 'Could not open the project. Please try again in a moment.', 'プロジェクトを開けませんでした。しばらくしてからもう一度お試しください。'));
     return;
   }
   const { userId, color, state, pusherKey, pusherCluster } = await joinRes.json();
@@ -4889,7 +4894,7 @@ async function main() {
 
         const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
         if (projects.some(p => p !== oldName && p === newName)) {
-          alert(window._faLang==='en' ? 'A project with that name already exists.' : '이미 같은 이름의 프로젝트가 있습니다.');
+          alert(t('이미 같은 이름의 프로젝트가 있습니다.', 'A project with that name already exists.', '同じ名前のプロジェクトがすでにあります。'));
           restore(); return;
         }
 
@@ -4902,14 +4907,14 @@ async function main() {
           const data = await res.json().catch(() => ({}));
           if (!res.ok) {
             alert(data.error==='name_taken'
-              ? (window._faLang==='en' ? 'A project with that name already exists.' : '이미 같은 이름의 프로젝트가 있습니다.')
+              ? (t('이미 같은 이름의 프로젝트가 있습니다.', 'A project with that name already exists.', '同じ名前のプロジェクトがすでにあります。'))
               : data.error==='owner_only'
-              ? (window._faLang==='en' ? 'Only the person who created this project can rename it.' : '이 프로젝트를 만든 사람만 이름을 바꿀 수 있습니다.')
-              : (window._faLang==='en' ? 'Failed to rename.' : '이름을 바꾸지 못했습니다.'));
+              ? (t('이 프로젝트를 만든 사람만 이름을 바꿀 수 있습니다.', 'Only the person who created this project can rename it.', 'このプロジェクトを作成した人のみ名前を変更できます。'))
+              : (t('이름을 바꾸지 못했습니다.', 'Failed to rename.', '名前を変更できませんでした。')));
             restore(); return;
           }
         } catch (err) {
-          alert(window._faLang==='en' ? 'Failed to rename.' : '이름을 바꾸지 못했습니다.');
+          alert(t('이름을 바꾸지 못했습니다.', 'Failed to rename.', '名前を変更できませんでした。'));
           restore(); return;
         }
 
@@ -4960,23 +4965,23 @@ async function main() {
         btn.addEventListener('contextmenu', e => {
           e.preventDefault();
           const items = [
-            { label: window._faLang==='en' ? 'Rename' : '제목 바꾸기', onClick: () => startRenameProject(row, btn, name) },
+            { label: t('제목 바꾸기', 'Rename', '名前を変更'), onClick: () => startRenameProject(row, btn, name) },
           ];
           // 지금 열려있는 프로젝트일 때만 "저장"을 보여준다 — 다른 프로젝트는 캔버스가
           // 메모리에 로드돼 있지 않아 저장할 "지금 작업물"이 없다.
           if (name.slice(0,32) === roomId) {
-            items.push({ label: window._faLang==='en' ? 'Save' : '저장', onClick: saveCurrentWork });
+            items.push({ label: t('저장', 'Save', '保存'), onClick: saveCurrentWork });
           }
           showProjectMenu(e.clientX, e.clientY, items);
         });
 
         const del = document.createElement('button');
         del.className = 'sidebar-del';
-        del.title = window._faLang==='en' ? 'Delete' : '삭제';
+        del.title = t('삭제', 'Delete', '削除');
         del.innerHTML = '×';
         del.addEventListener('click', e => {
           e.stopPropagation();
-          if (!confirm(window._faLang==='en' ? `Delete project "${name}"?` : `"${name}" 프로젝트를 삭제하시겠습니까?`)) return;
+          if (!confirm(t(`"${name}" 프로젝트를 삭제하시겠습니까?`, `Delete project "${name}"?`, `プロジェクト「${name}」を削除しますか?`))) return;
           const wasActive = name.slice(0, 32) === roomId;
           const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_projects', JSON.stringify(updated));
@@ -5015,7 +5020,7 @@ async function main() {
         const label = document.createElement('button');
         label.className = 'sidebar-item';
         label.textContent = name;
-        label.title = window._faLang==='en' ? 'Click to view' : '클릭하여 내용 보기';
+        label.title = t('클릭하여 내용 보기', 'Click to view', 'クリックして内容を表示');
         label.addEventListener('click', () => {
           sessionStorage.setItem('fa_sidebar_nav', '1');
           history.replaceState(null, '', `?room=${encodeURIComponent(name.slice(0,32))}`);
@@ -5023,11 +5028,11 @@ async function main() {
         });
         const del = document.createElement('button');
         del.className = 'sidebar-del';
-        del.title = window._faLang==='en' ? 'Delete permanently' : '영구 삭제';
+        del.title = t('영구 삭제', 'Delete permanently', '完全に削除');
         del.innerHTML = '×';
         del.addEventListener('click', e => {
           e.stopPropagation();
-          if (!confirm(window._faLang==='en' ? 'This will permanently delete it. This cannot be undone.' : '정말 삭제가 됩니다. 다시 되돌릴 수 없습니다.')) return;
+          if (!confirm(t('정말 삭제가 됩니다. 다시 되돌릴 수 없습니다.', 'This will permanently delete it. This cannot be undone.', '完全に削除されます。元に戻すことはできません。'))) return;
           localStorage.removeItem('fa:room:' + name.slice(0, 32));
           const t = JSON.parse(localStorage.getItem('fa_trash') || '[]').filter(p => p !== name);
           localStorage.setItem('fa_trash', JSON.stringify(t));
