@@ -3,9 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
+<title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ja="Freedom AI — 無限キャンバス・コラボレーションツール" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
+<!-- 본문 폰트(BM Dohyeon)에는 한자와 장음(ー)이 없어 일본어가 빈칸으로 보였다. 없는 글자만
+     이 폰트로 넘어가도록 폰트 목록 뒤에 붙인다. 한국어·영어 모양은 그대로 유지된다. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
   @font-face {
@@ -48,7 +53,7 @@
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'BM Dohyeon', sans-serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', sans-serif;
     background: var(--paper);
     color: var(--ink);
     font-size: 16px;
@@ -250,7 +255,7 @@
   }
 
   h1 {
-    font-family: 'BM Dohyeon', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
     font-size: clamp(48px, 8vw, 80px);
     line-height: 1.32;
     letter-spacing: -0.03em;
@@ -478,7 +483,7 @@
   }
 
   .section-heading {
-    font-family: 'BM Dohyeon', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
     font-size: clamp(32px, 5vw, 50px);
     line-height: 1.1;
     letter-spacing: -0.025em;
@@ -615,7 +620,7 @@
   }
 
   .phase-num {
-    font-family: 'BM Dohyeon', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
     font-size: 48px;
     line-height: 1;
     color: var(--paper);
@@ -801,7 +806,7 @@
   .contact-close:hover { background: var(--ink); color: var(--white); }
 
   .contact-modal h3 {
-    font-family: 'BM Dohyeon', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
     font-size: 22px;
     font-weight: 400;
     margin-bottom: 6px;
@@ -902,6 +907,21 @@
     z-index: 9999;
   }
   .soon-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* 일본어 표시용 — 본문 폰트(BM Dohyeon)에 한자와 장음(ー)이 빈 글리프로 들어 있어,
+     글자별 폰트 폴백이 동작하지 않고 그 글자들이 통째로 사라져 보였다. 그래서 일본어일
+     때는 폴백에 기대지 않고 폰트를 교체한다. 로고는 라틴 문자라 원래 폰트를 유지한다. */
+  html[lang="ja"] body,
+  html[lang="ja"] h1,
+  html[lang="ja"] .section-heading,
+  html[lang="ja"] .phase-num,
+  html[lang="ja"] .contact-modal h3,
+  html[lang="ja"] button,
+  html[lang="ja"] input,
+  html[lang="ja"] textarea {
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  html[lang="ja"] .logo-text { font-family: 'KOTRA Bold', serif; }
 </style>
 </head>
 <body>
@@ -918,14 +938,14 @@
   </a>
 
   <nav>
-    <a href="#features" data-i18n-en="Features" data-i18n-ko="기능">기능</a>
-    <a href="#phases" data-i18n-en="Roadmap" data-i18n-ko="로드맵">로드맵</a>
-    <a href="#about" data-i18n-en="About" data-i18n-ko="소개">소개</a>
+    <a href="#features" data-i18n-en="Features" data-i18n-ja="機能" data-i18n-ko="기능">기능</a>
+    <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
+    <a href="#about" data-i18n-en="About" data-i18n-ja="紹介" data-i18n-ko="소개">소개</a>
   </nav>
 
   <div class="header-cta">
     <button class="lang-toggle" id="lang-toggle" type="button">EN</button>
-    <button class="btn-ghost" data-i18n-en="Log in" data-i18n-ko="로그인">로그인</button>
+    <button class="btn-ghost" data-i18n-en="Log in" data-i18n-ja="ログイン" data-i18n-ko="로그인">로그인</button>
   </div>
 </header>
 
@@ -938,17 +958,17 @@
 
     <div class="hero-badge">
       <div class="hero-badge-dot"></div>
-      <span data-i18n-en="Anywhere, anytime — on web &amp; mobile" data-i18n-ko="언제 어디서나 쉽게 — 웹 & 모바일에서 바로">언제 어디서나 쉽게 — 웹 & 모바일에서 바로</span>
+      <span data-i18n-en="Anywhere, anytime — on web &amp; mobile" data-i18n-ja="いつでもどこでも — ウェブ &amp; モバイルですぐに" data-i18n-ko="언제 어디서나 쉽게 — 웹 & 모바일에서 바로">언제 어디서나 쉽게 — 웹 & 모바일에서 바로</span>
     </div>
 
-    <h1 data-i18n-en-html="Think <em>together</em><br>in one space" data-i18n-ko-html="생각을 <em>함께</em><br>그리는 공간">생각을 <em>함께</em><br>그리는 공간</h1>
+    <h1 data-i18n-en-html="Think <em>together</em><br>in one space" data-i18n-ja-html="アイデアを<em>一緒に</em><br>描く空間" data-i18n-ko-html="생각을 <em>함께</em><br>그리는 공간">생각을 <em>함께</em><br>그리는 공간</h1>
 
-    <p class="hero-desc" data-i18n-en="Freedom AI is a collaboration tool where teams share ideas in real time on an infinite canvas. All you need is a browser — start from anywhere." data-i18n-ko="Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.">
+    <p class="hero-desc" data-i18n-en="Freedom AI is a collaboration tool where teams share ideas in real time on an infinite canvas. All you need is a browser — start from anywhere." data-i18n-ja="Freedom AI は、無限のキャンバス上でチームがリアルタイムにアイデアを共有できるコラボレーションツールです。ブラウザさえあれば、どこからでも始められます。" data-i18n-ko="Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.">
       Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.
     </p>
 
     <div class="hero-actions">
-      <a href="app.html" class="btn-hero" style="text-decoration:none; display:inline-flex; align-items:center;" data-i18n-en="Get started →" data-i18n-ko="지금 시작하기 →">지금 시작하기 →</a>
+      <a href="app.html" class="btn-hero" style="text-decoration:none; display:inline-flex; align-items:center;" data-i18n-en="Get started →" data-i18n-ja="今すぐ始める →" data-i18n-ko="지금 시작하기 →">지금 시작하기 →</a>
     </div>
 
     <!-- Canvas mockup -->
@@ -957,24 +977,24 @@
         <div class="canvas-dot"></div>
         <div class="canvas-dot"></div>
         <div class="canvas-dot"></div>
-        <div class="canvas-title" data-i18n-en="Untitled board — 3 people working" data-i18n-ko="무제 보드 — 3명 작업 중">무제 보드 — 3명 작업 중</div>
+        <div class="canvas-title" data-i18n-en="Untitled board — 3 people working" data-i18n-ja="無題のボード — 3人が作業中" data-i18n-ko="무제 보드 — 3명 작업 중">무제 보드 — 3명 작업 중</div>
       </div>
       <div class="canvas-body">
 
-        <div class="sticky sticky-yellow" data-i18n-en-html="🎯 Core features<br>sort first" data-i18n-ko-html="🎯 핵심 기능<br>우선 정리하기">🎯 핵심 기능<br>우선 정리하기</div>
-        <div class="sticky sticky-pink" data-i18n-en-html="Design references<br>Miro, FigJam" data-i18n-ko-html="디자인 레퍼런스<br>Miro, FigJam">디자인 레퍼런스<br>Miro, FigJam</div>
-        <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
-        <div class="sticky sticky-blue" data-i18n-en-html="Phase 1<br>build the skeleton" data-i18n-ko-html="Phase 1<br>뼈대부터 시작">Phase 1<br>뼈대부터 시작</div>
-        <div class="sticky sticky-peach" data-i18n-en-html="AI image<br>editing 🤖" data-i18n-ko-html="AI 이미지<br>편집 기능 🤖">AI 이미지<br>편집 기능 🤖</div>
+        <div class="sticky sticky-yellow" data-i18n-en-html="🎯 Core features<br>sort first" data-i18n-ja-html="🎯 コア機能を<br>先に整理する" data-i18n-ko-html="🎯 핵심 기능<br>우선 정리하기">🎯 핵심 기능<br>우선 정리하기</div>
+        <div class="sticky sticky-pink" data-i18n-en-html="Design references<br>Miro, FigJam" data-i18n-ja-html="デザイン参考<br>Miro, FigJam" data-i18n-ko-html="디자인 레퍼런스<br>Miro, FigJam">디자인 레퍼런스<br>Miro, FigJam</div>
+        <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ja-html="WebSocketで<br>リアルタイム協業!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
+        <div class="sticky sticky-blue" data-i18n-en-html="Phase 1<br>build the skeleton" data-i18n-ja-html="Phase 1<br>骨組みから着手" data-i18n-ko-html="Phase 1<br>뼈대부터 시작">Phase 1<br>뼈대부터 시작</div>
+        <div class="sticky sticky-peach" data-i18n-en-html="AI image<br>editing 🤖" data-i18n-ja-html="AI画像<br>編集機能 🤖" data-i18n-ko-html="AI 이미지<br>편집 기능 🤖">AI 이미지<br>편집 기능 🤖</div>
 
         <!-- live cursors -->
         <div class="cursor-dot cursor-a">
           <div class="cursor-dot-circle"></div>
-          <span class="cursor-label" data-i18n-en="Jiyoung" data-i18n-ko="지영">지영</span>
+          <span class="cursor-label" data-i18n-en="Jiyoung" data-i18n-ja="ジヨン" data-i18n-ko="지영">지영</span>
         </div>
         <div class="cursor-dot cursor-b">
           <div class="cursor-dot-circle"></div>
-          <span class="cursor-label" data-i18n-en="Minjun" data-i18n-ko="민준">민준</span>
+          <span class="cursor-label" data-i18n-en="Minjun" data-i18n-ja="ミンジュン" data-i18n-ko="민준">민준</span>
         </div>
 
       </div>
@@ -992,8 +1012,8 @@
 
     <div class="cards-header">
       <div class="section-kicker">Features</div>
-      <h2 class="section-heading" data-i18n-en-html="Everything you need,<br>all in one place" data-i18n-ko-html="필요한 것,<br>전부 담았어요">필요한 것,<br>전부 담았어요</h2>
-      <p class="section-sub" data-i18n-en="No complicated setup — open the canvas and start drawing with your team right away." data-i18n-ko="복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.">복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.</p>
+      <h2 class="section-heading" data-i18n-en-html="Everything you need,<br>all in one place" data-i18n-ja-html="必要なものは<br>すべてここに" data-i18n-ko-html="필요한 것,<br>전부 담았어요">필요한 것,<br>전부 담았어요</h2>
+      <p class="section-sub" data-i18n-en="No complicated setup — open the canvas and start drawing with your team right away." data-i18n-ja="複雑な設定なしで、キャンバスを開いてすぐにチームと一緒に描けます。" data-i18n-ko="복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.">복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.</p>
     </div>
 
     <div class="cards-grid">
@@ -1005,9 +1025,9 @@
             <circle cx="11" cy="11" r="3" stroke="rgba(245,243,238,0.6)" stroke-width="1.2"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Infinite canvas" data-i18n-ko="무한 캔버스">무한 캔버스</h3>
-        <p data-i18n-en="A workspace that expands endlessly with pinch-zoom and panning. No limit to the size of your ideas." data-i18n-ko="핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.">핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.</p>
-        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Infinite canvas" data-i18n-ja="無限キャンバス" data-i18n-ko="무한 캔버스">무한 캔버스</h3>
+        <p data-i18n-en="A workspace that expands endlessly with pinch-zoom and panning. No limit to the size of your ideas." data-i18n-ja="ピンチズームとパンで、どこまでも広がる作業スペース。アイデアの大きさに制限はありません。" data-i18n-ko="핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.">핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -1016,9 +1036,9 @@
             <path d="M15.58 2.75a2.59 2.59 0 0 1 3.67 3.67L6.88 18.79 1.83 20.17l1.38-5.04L15.58 2.75z" stroke="#f5f3ee" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Pen &amp; eraser" data-i18n-ko="펜 & 지우개">펜 & 지우개</h3>
-        <p data-i18n-en="Draw freely with your finger or stylus, and clean up with the eraser." data-i18n-ko="손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.">손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.</p>
-        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Pen &amp; eraser" data-i18n-ja="ペン &amp; 消しゴム" data-i18n-ko="펜 & 지우개">펜 & 지우개</h3>
+        <p data-i18n-en="Draw freely with your finger or stylus, and clean up with the eraser." data-i18n-ja="指やスタイラスで自由に描き、消しゴムできれいに修正できます。" data-i18n-ko="손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.">손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -1029,9 +1049,9 @@
             <circle cx="15" cy="15" r="2.5" fill="#f5f3ee" opacity="0.35"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</h3>
-        <p data-i18n-en="Pick from preset colors for pens and sticky notes. Paint the canvas your way." data-i18n-ko="펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.">펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.</p>
-        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Color palette" data-i18n-ja="カラーパレット" data-i18n-ko="색상 팔레트">색상 팔레트</h3>
+        <p data-i18n-en="Pick from preset colors for pens and sticky notes. Paint the canvas your way." data-i18n-ja="ペンや付箋に使う色を選んで、自分らしくキャンバスを彩りましょう。" data-i18n-ko="펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.">펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -1042,9 +1062,9 @@
             <rect x="3" y="14" width="16" height="4" rx="2" fill="#f5f3ee" opacity="0.3"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Sticky notes" data-i18n-ko="포스트잇">포스트잇</h3>
-        <p data-i18n-en="5 colors, resizable, and connect them with arrows. Bring two notes close and they snap together like magnets." data-i18n-ko="5가지 색상 포스트잇을 놓고 크기 조절, 화살표 연결까지. 가까이 가져가면 자석처럼 붙어요.">5가지 색상 포스트잇을 놓고 크기 조절, 화살표 연결까지. 가까이 가져가면 자석처럼 붙어요.</p>
-        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Sticky notes" data-i18n-ja="付箋" data-i18n-ko="포스트잇">포스트잇</h3>
+        <p data-i18n-en="5 colors, resizable, and connect them with arrows. Bring two notes close and they snap together like magnets." data-i18n-ja="5色の付箋を置いてサイズ変更、矢印での接続まで。近づけると磁石のようにくっつきます。" data-i18n-ko="5가지 색상 포스트잇을 놓고 크기 조절, 화살표 연결까지. 가까이 가져가면 자석처럼 붙어요.">5가지 색상 포스트잇을 놓고 크기 조절, 화살표 연결까지. 가까이 가져가면 자석처럼 붙어요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -1056,9 +1076,9 @@
             <path d="M7 11h8M11 7v8" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Real-time collaboration" data-i18n-ko="실시간 협업">실시간 협업</h3>
-        <p data-i18n-en="See your teammates' cursors live. Collaborate like you're in the same room." data-i18n-ko="팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.">팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
-        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Real-time collaboration" data-i18n-ja="リアルタイム協業" data-i18n-ko="실시간 협업">실시간 협업</h3>
+        <p data-i18n-en="See your teammates' cursors live. Collaborate like you're in the same room." data-i18n-ja="チームメンバーのカーソルがリアルタイムで見えます。同じ空間にいるような感覚で協業できます。" data-i18n-ko="팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.">팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -1069,9 +1089,9 @@
             <path d="M16 16h2M17 15v2" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Collaborative to-dos" data-i18n-ko="협업 To-Do">협업 To-Do</h3>
-        <p data-i18n-en="Pick a date on the calendar, write your to-dos, and check them off together in real time." data-i18n-ko="캘린더에서 날짜를 골라 할 일을 적고, 팀원과 실시간으로 체크해 나가세요.">캘린더에서 날짜를 골라 할 일을 적고, 팀원과 실시간으로 체크해 나가세요.</p>
-        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+        <h3 data-i18n-en="Collaborative to-dos" data-i18n-ja="共同To-Do" data-i18n-ko="협업 To-Do">협업 To-Do</h3>
+        <p data-i18n-en="Pick a date on the calendar, write your to-dos, and check them off together in real time." data-i18n-ja="カレンダーで日付を選んでやることを書き、チームとリアルタイムにチェックしていきましょう。" data-i18n-ko="캘린더에서 날짜를 골라 할 일을 적고, 팀원과 실시간으로 체크해 나가세요.">캘린더에서 날짜를 골라 할 일을 적고, 팀원과 실시간으로 체크해 나가세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
       <div class="card">
@@ -1081,9 +1101,9 @@
             <path d="M3 13l4-3 3 2 4-4 5 4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Drag & drop images" data-i18n-ko="이미지 드래그">이미지 드래그</h3>
-        <p data-i18n-en="Drag reference images straight from your browser onto the canvas." data-i18n-ko="레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.">레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.</p>
-        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
+        <h3 data-i18n-en="Drag & drop images" data-i18n-ja="画像のドラッグ &amp; ドロップ" data-i18n-ko="이미지 드래그">이미지 드래그</h3>
+        <p data-i18n-en="Drag reference images straight from your browser onto the canvas." data-i18n-ja="参考画像をブラウザから直接ドラッグして、キャンバスに挿入できます。" data-i18n-ko="레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.">레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ja="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
       </div>
 
       <div class="card">
@@ -1094,9 +1114,9 @@
             <path d="M17 5l2-2" stroke="#ddff4f" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
         </div>
-        <h3 data-i18n-en="AI background removal" data-i18n-ko="AI 배경 제거">AI 배경 제거</h3>
-        <p data-i18n-en="Long-press an image on the canvas and AI removes the background automatically. Works on photos of people as well as logos and text." data-i18n-ko="캔버스 위 이미지를 꾹 누르면 AI가 배경을 자동으로 지워드려요. 인물 사진은 물론, 로고·텍스트 이미지도 인식해서 처리합니다.">캔버스 위 이미지를 꾹 누르면 AI가 배경을 자동으로 지워드려요. 인물 사진은 물론, 로고·텍스트 이미지도 인식해서 처리합니다.</p>
-        <span class="card-phase phase-3" data-i18n-en="Phase 3 · AI" data-i18n-ko="Phase 3 · AI">Phase 3 · AI</span>
+        <h3 data-i18n-en="AI background removal" data-i18n-ja="AI背景除去" data-i18n-ko="AI 배경 제거">AI 배경 제거</h3>
+        <p data-i18n-en="Long-press an image on the canvas and AI removes the background automatically. Works on photos of people as well as logos and text." data-i18n-ja="キャンバス上の画像を長押しすると、AIが背景を自動で消します。人物写真はもちろん、ロゴやテキスト画像も認識して処理します。" data-i18n-ko="캔버스 위 이미지를 꾹 누르면 AI가 배경을 자동으로 지워드려요. 인물 사진은 물론, 로고·텍스트 이미지도 인식해서 처리합니다.">캔버스 위 이미지를 꾹 누르면 AI가 배경을 자동으로 지워드려요. 인물 사진은 물론, 로고·텍스트 이미지도 인식해서 처리합니다.</p>
+        <span class="card-phase phase-3" data-i18n-en="Phase 3 · AI" data-i18n-ja="Phase 3 · AI" data-i18n-ko="Phase 3 · AI">Phase 3 · AI</span>
       </div>
 
       <div class="card">
@@ -1108,9 +1128,9 @@
             <path d="M14 16h4M16 14v4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Shape tools" data-i18n-ko="도형 도구">도형 도구</h3>
-        <p data-i18n-en="Insert rectangles, circles, and arrows, and freely adjust their size and color." data-i18n-ko="사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.">사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.</p>
-        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
+        <h3 data-i18n-en="Shape tools" data-i18n-ja="図形ツール" data-i18n-ko="도형 도구">도형 도구</h3>
+        <p data-i18n-en="Insert rectangles, circles, and arrows, and freely adjust their size and color." data-i18n-ja="四角形・円・矢印を挿入し、サイズと色を自由に調整できます。" data-i18n-ko="사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.">사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ja="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
       </div>
 
     </div>
@@ -1124,46 +1144,46 @@
 <section class="phase-section" id="phases">
   <div class="section-inner">
     <div class="section-kicker">Roadmap</div>
-    <h2 class="section-heading" data-i18n-en-html="Building block<br>by block" data-i18n-ko-html="기초부터,<br>단계적으로">기초부터,<br>단계적으로</h2>
-    <p class="section-sub" data-i18n-en="We're not building every feature at once. We build the core first, then stack up from there." data-i18n-ko="처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.">처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.</p>
+    <h2 class="section-heading" data-i18n-en-html="Building block<br>by block" data-i18n-ja-html="基礎から<br>一歩ずつ" data-i18n-ko-html="기초부터,<br>단계적으로">기초부터,<br>단계적으로</h2>
+    <p class="section-sub" data-i18n-en="We're not building every feature at once. We build the core first, then stack up from there." data-i18n-ja="最初からすべての機能を一度に作るのではなく、コアからしっかり積み上げていきます。" data-i18n-ko="처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.">처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.</p>
 
     <div class="phase-list">
       <div class="phase-card">
         <div class="phase-num">01</div>
-        <h3 data-i18n-en="Foundation — core features" data-i18n-ko="기초 — 핵심 기능">기초 — 핵심 기능</h3>
-        <p data-i18n-en="The features the app is built on. Enough for a team to start using it together." data-i18n-ko="앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.">앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.</p>
+        <h3 data-i18n-en="Foundation — core features" data-i18n-ja="基礎 — コア機能" data-i18n-ko="기초 — 핵심 기능">기초 — 핵심 기능</h3>
+        <p data-i18n-en="The features the app is built on. Enough for a team to start using it together." data-i18n-ja="アプリの土台となる機能。これだけでもチームで使い始められます。" data-i18n-ko="앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.">앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.</p>
         <div class="phase-items">
-          <div class="phase-item" data-i18n-en="Infinite canvas" data-i18n-ko="무한 캔버스">무한 캔버스</div>
-          <div class="phase-item" data-i18n-en="Pen &amp; eraser" data-i18n-ko="펜 & 지우개">펜 & 지우개</div>
-          <div class="phase-item" data-i18n-en="Color palette" data-i18n-ko="색상 팔레트">색상 팔레트</div>
-          <div class="phase-item" data-i18n-en="Sticky notes" data-i18n-ko="포스트잇">포스트잇</div>
-          <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
-          <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
+          <div class="phase-item" data-i18n-en="Infinite canvas" data-i18n-ja="無限キャンバス" data-i18n-ko="무한 캔버스">무한 캔버스</div>
+          <div class="phase-item" data-i18n-en="Pen &amp; eraser" data-i18n-ja="ペン &amp; 消しゴム" data-i18n-ko="펜 & 지우개">펜 & 지우개</div>
+          <div class="phase-item" data-i18n-en="Color palette" data-i18n-ja="カラーパレット" data-i18n-ko="색상 팔레트">색상 팔레트</div>
+          <div class="phase-item" data-i18n-en="Sticky notes" data-i18n-ja="付箋" data-i18n-ko="포스트잇">포스트잇</div>
+          <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ja="リアルタイム協業カーソル" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
+          <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ja="共同To-Doリスト" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
         </div>
       </div>
 
       <div class="phase-card">
         <div class="phase-num">02</div>
-        <h3 data-i18n-en="Growth — expanded features" data-i18n-ko="발전 — 확장 기능">발전 — 확장 기능</h3>
-        <p data-i18n-en="Once the foundation is stable, we add richer collaboration experiences." data-i18n-ko="뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.">뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
+        <h3 data-i18n-en="Growth — expanded features" data-i18n-ja="発展 — 拡張機能" data-i18n-ko="발전 — 확장 기능">발전 — 확장 기능</h3>
+        <p data-i18n-en="Once the foundation is stable, we add richer collaboration experiences." data-i18n-ja="土台が安定したら、より豊かな協業体験を追加します。" data-i18n-ko="뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.">뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
         <div class="phase-items">
-          <div class="phase-item" data-i18n-en="Basic shape tools" data-i18n-ko="기본 도형 도구">기본 도형 도구</div>
-          <div class="phase-item" data-i18n-en="Image drag &amp; drop" data-i18n-ko="이미지 드래그 & 드롭">이미지 드래그 & 드롭</div>
-          <div class="phase-item" data-i18n-en="Share link generation" data-i18n-ko="공유 링크 생성">공유 링크 생성</div>
-          <div class="phase-item" data-i18n-en="Mobile optimization" data-i18n-ko="모바일 최적화">모바일 최적화</div>
+          <div class="phase-item" data-i18n-en="Basic shape tools" data-i18n-ja="基本の図形ツール" data-i18n-ko="기본 도형 도구">기본 도형 도구</div>
+          <div class="phase-item" data-i18n-en="Image drag &amp; drop" data-i18n-ja="画像のドラッグ &amp; ドロップ" data-i18n-ko="이미지 드래그 & 드롭">이미지 드래그 & 드롭</div>
+          <div class="phase-item" data-i18n-en="Share link generation" data-i18n-ja="共有リンクの生成" data-i18n-ko="공유 링크 생성">공유 링크 생성</div>
+          <div class="phase-item" data-i18n-en="Mobile optimization" data-i18n-ja="モバイル最適化" data-i18n-ko="모바일 최적화">모바일 최적화</div>
         </div>
       </div>
 
       <div class="phase-card">
         <div class="phase-num">03</div>
-        <h3 data-i18n-en="Advanced — AI features" data-i18n-ko="고도화 — AI 기능">고도화 — AI 기능</h3>
-        <p data-i18n-en="The stage where AI helps you create — going beyond Freeform." data-i18n-ko="AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.">AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.</p>
+        <h3 data-i18n-en="Advanced — AI features" data-i18n-ja="高度化 — AI機能" data-i18n-ko="고도화 — AI 기능">고도화 — AI 기능</h3>
+        <p data-i18n-en="The stage where AI helps you create — going beyond Freeform." data-i18n-ja="AIが創作を助ける差別化の段階。Freeform を超えていきます。" data-i18n-ko="AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.">AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.</p>
         <div class="phase-items">
-          <div class="phase-item" data-i18n-en="AI image editing &amp; generation" data-i18n-ko="AI 이미지 편집·생성">AI 이미지 편집·생성</div>
-          <div class="phase-item" data-i18n-en="AI idea suggestions" data-i18n-ko="AI 아이디어 제안">AI 아이디어 제안</div>
-          <div class="phase-item" data-i18n-en="Automatic layout cleanup" data-i18n-ko="자동 레이아웃 정리">자동 레이아웃 정리</div>
-          <div class="phase-item" data-i18n-en="Version history" data-i18n-ko="버전 히스토리">버전 히스토리</div>
-          <div class="phase-item" data-i18n-en="Offline support" data-i18n-ko="오프라인 지원">오프라인 지원</div>
+          <div class="phase-item" data-i18n-en="AI image editing &amp; generation" data-i18n-ja="AI画像の編集・生成" data-i18n-ko="AI 이미지 편집·생성">AI 이미지 편집·생성</div>
+          <div class="phase-item" data-i18n-en="AI idea suggestions" data-i18n-ja="AIによるアイデア提案" data-i18n-ko="AI 아이디어 제안">AI 아이디어 제안</div>
+          <div class="phase-item" data-i18n-en="Automatic layout cleanup" data-i18n-ja="自動レイアウト整理" data-i18n-ko="자동 레이아웃 정리">자동 레이아웃 정리</div>
+          <div class="phase-item" data-i18n-en="Version history" data-i18n-ja="バージョン履歴" data-i18n-ko="버전 히스토리">버전 히스토리</div>
+          <div class="phase-item" data-i18n-en="Offline support" data-i18n-ja="オフライン対応" data-i18n-ko="오프라인 지원">오프라인 지원</div>
         </div>
       </div>
     </div>
@@ -1185,29 +1205,29 @@
           </div>
           <span class="logo-text">Freedom Ai</span>
         </a>
-        <p data-i18n-en-html="Anywhere, anytime — on web &amp; mobile.<br>Think together with your team on an infinite canvas." data-i18n-ko-html="언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.">언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.</p>
+        <p data-i18n-en-html="Anywhere, anytime — on web &amp; mobile.<br>Think together with your team on an infinite canvas." data-i18n-ja-html="いつでもどこでも — ウェブ &amp; モバイルですぐに。<br>無限キャンバスでチームと一緒に考えましょう。" data-i18n-ko-html="언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.">언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.</p>
       </div>
 
       <!-- 실제로 있는 페이지만 연결한다 (예전엔 요금제·FAQ·블로그·약관 등 대부분이 href="#"인 빈 링크였다) -->
       <div class="footer-col">
-        <h4 data-i18n-en="Product" data-i18n-ko="제품">제품</h4>
-        <a href="#features" data-i18n-en="Features" data-i18n-ko="기능 소개">기능 소개</a>
-        <a href="#phases" data-i18n-en="Roadmap" data-i18n-ko="로드맵">로드맵</a>
-        <a href="#" class="js-soon" data-i18n-en="Updates" data-i18n-ko="업데이트">업데이트</a>
+        <h4 data-i18n-en="Product" data-i18n-ja="製品" data-i18n-ko="제품">제품</h4>
+        <a href="#features" data-i18n-en="Features" data-i18n-ja="機能紹介" data-i18n-ko="기능 소개">기능 소개</a>
+        <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
+        <a href="#" class="js-soon" data-i18n-en="Updates" data-i18n-ja="アップデート" data-i18n-ko="업데이트">업데이트</a>
       </div>
 
       <div class="footer-col">
-        <h4 data-i18n-en="Support" data-i18n-ko="지원">지원</h4>
-        <a href="app.html" data-i18n-en="Get started" data-i18n-ko="시작하기">시작하기</a>
-        <a href="#" id="contact-link" data-i18n-en="Contact us" data-i18n-ko="문의하기">문의하기</a>
+        <h4 data-i18n-en="Support" data-i18n-ja="サポート" data-i18n-ko="지원">지원</h4>
+        <a href="app.html" data-i18n-en="Get started" data-i18n-ja="始める" data-i18n-ko="시작하기">시작하기</a>
+        <a href="#" id="contact-link" data-i18n-en="Contact us" data-i18n-ja="お問い合わせ" data-i18n-ko="문의하기">문의하기</a>
         <a href="#" class="js-soon">GitHub</a>
       </div>
 
       <div class="footer-col">
-        <h4 data-i18n-en="Company" data-i18n-ko="회사">회사</h4>
-        <a href="https://felpenfriends.vercel.app/" target="_blank" rel="noopener" data-i18n-en="About" data-i18n-ko="소개">소개</a>
-        <a href="#" class="js-soon" data-i18n-en="Blog" data-i18n-ko="블로그">블로그</a>
-        <a href="#" class="js-soon" data-i18n-en="Careers" data-i18n-ko="채용">채용</a>
+        <h4 data-i18n-en="Company" data-i18n-ja="会社" data-i18n-ko="회사">회사</h4>
+        <a href="https://felpenfriends.vercel.app/" target="_blank" rel="noopener" data-i18n-en="About" data-i18n-ja="会社概要" data-i18n-ko="소개">소개</a>
+        <a href="#" class="js-soon" data-i18n-en="Blog" data-i18n-ja="ブログ" data-i18n-ko="블로그">블로그</a>
+        <a href="#" class="js-soon" data-i18n-en="Careers" data-i18n-ja="採用" data-i18n-ko="채용">채용</a>
       </div>
 
     </div>
@@ -1226,31 +1246,31 @@
     <button class="contact-close" id="contact-close" aria-label="닫기">✕</button>
 
     <div id="contact-form-view">
-      <h3 data-i18n-en="Contact us" data-i18n-ko="문의하기">문의하기</h3>
-      <p class="contact-sub" data-i18n-en="If you have any questions, feel free to reach out anytime" data-i18n-ko="궁금한 점이 있으시면 언제든지 문의해주세요">궁금한 점이 있으시면 언제든지 문의해주세요</p>
+      <h3 data-i18n-en="Contact us" data-i18n-ja="お問い合わせ" data-i18n-ko="문의하기">문의하기</h3>
+      <p class="contact-sub" data-i18n-en="If you have any questions, feel free to reach out anytime" data-i18n-ja="ご不明な点がありましたら、いつでもお気軽にお問い合わせください" data-i18n-ko="궁금한 점이 있으시면 언제든지 문의해주세요">궁금한 점이 있으시면 언제든지 문의해주세요</p>
 
       <form id="contact-form">
         <div class="contact-field">
-          <label for="contact-name" data-i18n-en="Name" data-i18n-ko="이름">이름</label>
-          <input type="text" id="contact-name" placeholder="홍길동" data-i18n-en-placeholder="Jane Doe" data-i18n-ko-placeholder="홍길동" maxlength="100" required>
+          <label for="contact-name" data-i18n-en="Name" data-i18n-ja="お名前" data-i18n-ko="이름">이름</label>
+          <input type="text" id="contact-name" placeholder="홍길동" data-i18n-en-placeholder="Jane Doe" data-i18n-ja-placeholder="山田 太郎" data-i18n-ko-placeholder="홍길동" maxlength="100" required>
         </div>
         <div class="contact-field">
-          <label for="contact-email" data-i18n-en="Email" data-i18n-ko="이메일">이메일</label>
+          <label for="contact-email" data-i18n-en="Email" data-i18n-ja="メールアドレス" data-i18n-ko="이메일">이메일</label>
           <input type="email" id="contact-email" placeholder="example@email.com" maxlength="200" required>
         </div>
         <div class="contact-field">
-          <label for="contact-message" data-i18n-en="Message" data-i18n-ko="문의 내용">문의 내용</label>
-          <textarea id="contact-message" placeholder="문의하실 내용을 작성해주세요" data-i18n-en-placeholder="Write your message here" data-i18n-ko-placeholder="문의하실 내용을 작성해주세요" maxlength="5000" required></textarea>
+          <label for="contact-message" data-i18n-en="Message" data-i18n-ja="お問い合わせ内容" data-i18n-ko="문의 내용">문의 내용</label>
+          <textarea id="contact-message" placeholder="문의하실 내용을 작성해주세요" data-i18n-en-placeholder="Write your message here" data-i18n-ja-placeholder="お問い合わせ内容をご記入ください" data-i18n-ko-placeholder="문의하실 내용을 작성해주세요" maxlength="5000" required></textarea>
         </div>
         <div class="contact-error" id="contact-error"></div>
-        <button type="submit" class="btn-primary" id="contact-submit" data-i18n-en="Send message" data-i18n-ko="문의 보내기">문의 보내기</button>
+        <button type="submit" class="btn-primary" id="contact-submit" data-i18n-en="Send message" data-i18n-ja="送信する" data-i18n-ko="문의 보내기">문의 보내기</button>
       </form>
     </div>
 
     <div id="contact-success-view" class="contact-success" style="display:none;">
       <div class="check-mark">✓</div>
-      <h3 data-i18n-en="Your message has been sent" data-i18n-ko="문의가 접수되었습니다">문의가 접수되었습니다</h3>
-      <p data-i18n-en-html="We'll get back to you as soon as possible.<br>Thank you for reaching out." data-i18n-ko-html="빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.">빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.</p>
+      <h3 data-i18n-en="Your message has been sent" data-i18n-ja="お問い合わせを受け付けました" data-i18n-ko="문의가 접수되었습니다">문의가 접수되었습니다</h3>
+      <p data-i18n-en-html="We'll get back to you as soon as possible.<br>Thank you for reaching out." data-i18n-ja-html="できるだけ早くご返信いたします。<br>ご利用ありがとうございます。" data-i18n-ko-html="빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.">빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.</p>
     </div>
   </div>
 </div>
@@ -1285,7 +1305,7 @@
       e.preventDefault();
       const toast = document.getElementById('soon-toast');
       if (!toast) return;
-      toast.textContent = window._faLang === 'en' ? 'Coming soon' : '현재 준비중입니다';
+      toast.textContent = window._faT('현재 준비중입니다', 'Coming soon', '現在準備中です');
       toast.classList.add('show');
       clearTimeout(soonTimer);
       soonTimer = setTimeout(() => toast.classList.remove('show'), 2000);
@@ -1303,9 +1323,9 @@
     const email = document.getElementById('contact-email').value.trim();
     const message = document.getElementById('contact-message').value.trim();
 
-    const isEn = window._faLang === 'en';
+    const t = window._faT;
     submitBtn.disabled = true;
-    submitBtn.textContent = isEn ? 'Sending...' : '보내는 중...';
+    submitBtn.textContent = t('보내는 중...', 'Sending...', '送信中...');
 
     try {
       const res = await fetch('/api/contact', {
@@ -1314,8 +1334,8 @@
         body: JSON.stringify({ name, email, message }),
       });
       if (!res.ok) {
-        if (res.status === 429) throw new Error(isEn ? 'Too many requests. Please try again shortly.' : '너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.');
-        throw new Error(isEn ? 'Failed to send your message. Please try again.' : '문의 전송에 실패했습니다. 다시 시도해주세요.');
+        if (res.status === 429) throw new Error(t('너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.', 'Too many requests. Please try again shortly.', 'リクエストが多すぎます。しばらくしてからもう一度お試しください。'));
+        throw new Error(t('문의 전송에 실패했습니다. 다시 시도해주세요.', 'Failed to send your message. Please try again.', 'お問い合わせの送信に失敗しました。もう一度お試しください。'));
       }
       formView.style.display = 'none';
       successView.style.display = '';
@@ -1323,7 +1343,7 @@
       errorEl.textContent = err.message;
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = isEn ? 'Send message' : '문의 보내기';
+      submitBtn.textContent = t('문의 보내기', 'Send message', '送信する');
     }
   });
 })();
@@ -1343,31 +1363,46 @@ document.querySelector('.btn-ghost').addEventListener('click', () => {
 
 <script>
 (function () {
+  // 한국어 → 영어 → 일본어 순으로 돌아가며, 버튼에는 "다음에 바뀔 언어"를 표시한다.
+  // (버튼이 EN이면 누를 때 영어로 바뀐다 — 2개 언어였을 때와 같은 규칙)
+  const LANGS = ['ko', 'en', 'ja'];
+  const LABEL = { ko: 'KO', en: 'EN', ja: 'JP' };
+
+  // data-i18n-ko / -en / -ja 를 dataset 키(i18nKo / i18nEn / i18nJa)로 바꾼다
+  function pick(el, lang, suffix) {
+    const key = l => 'i18n' + l[0].toUpperCase() + l.slice(1) + suffix;
+    // 해당 언어 값이 없으면 영어 → 한국어 순으로 내려간다 (번역이 빠져도 빈칸이 되지 않게)
+    return el.dataset[key(lang)] ?? el.dataset[key('en')] ?? el.dataset[key('ko')];
+  }
+
   function applyLang(lang) {
+    if (!LANGS.includes(lang)) lang = 'ko';
     document.querySelectorAll('[data-i18n-en],[data-i18n-en-html]').forEach(el => {
       const isHtml = el.hasAttribute('data-i18n-en-html');
-      const val = lang === 'en'
-        ? (isHtml ? el.dataset.i18nEnHtml : el.dataset.i18nEn)
-        : (isHtml ? el.dataset.i18nKoHtml : el.dataset.i18nKo);
+      const val = pick(el, lang, isHtml ? 'Html' : '');
       if (val == null) return;
       if (isHtml) el.innerHTML = val; else el.textContent = val;
     });
     document.querySelectorAll('[data-i18n-en-placeholder]').forEach(el => {
-      el.placeholder = lang === 'en' ? el.dataset.i18nEnPlaceholder : el.dataset.i18nKoPlaceholder;
+      const val = pick(el, lang, 'Placeholder');
+      if (val != null) el.placeholder = val;
     });
     document.documentElement.lang = lang;
     const toggle = document.getElementById('lang-toggle');
-    if (toggle) toggle.textContent = lang === 'en' ? 'KO' : 'EN';
+    if (toggle) toggle.textContent = LABEL[LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]];
     try { localStorage.setItem('fa_lang', lang); } catch (e) {}
     window._faLang = lang;
   }
+
+  // 스크립트 안에서 쓰는 문구(토스트·문의 폼 안내)도 같은 언어를 따라가게 하는 헬퍼
+  window._faT = (ko, en, ja) => window._faLang === 'en' ? en : window._faLang === 'ja' ? ja : ko;
 
   let saved = 'ko';
   try { saved = localStorage.getItem('fa_lang') || 'ko'; } catch (e) {}
   applyLang(saved);
 
   document.getElementById('lang-toggle')?.addEventListener('click', () => {
-    applyLang(window._faLang === 'en' ? 'ko' : 'en');
+    applyLang(LANGS[(LANGS.indexOf(window._faLang) + 1) % LANGS.length]);
   });
 })();
 </script>
