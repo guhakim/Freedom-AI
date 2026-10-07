@@ -56,6 +56,9 @@ module.exports = async (req, res) => {
       const key = `fa:room:${roomId}:members`;
       let members = normalize(await kv.get(key));
       if (!members.length) {
+        // 만든 사람이 기록된 방은 그 사람만 비공개로 전환할 수 있다 (기록 이전에 만들어진 방은 예전처럼 누구나)
+        const room = await kv.get(`fa:room:${roomId}`);
+        if (room?.createdBy && room.createdBy !== email.toLowerCase()) return res.status(403).json({ error: 'owner_only' });
         members = [email.toLowerCase()];
         await kv.set(key, members);
       } else if (!members.includes(email.toLowerCase())) {

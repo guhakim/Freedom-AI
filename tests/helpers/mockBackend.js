@@ -6,18 +6,28 @@
 // 자체는 require.resolve가 성공해야 하므로 최소 1회는 설치돼 있어야 함)
 // api/*.js가 그 안의 require() 호출에서 이 가짜 구현을 받아가게 된다.
 
+// 진짜 @vercel/kv는 값을 JSON으로 직렬화해 Redis에 넣고, get할 때마다 새로 파싱한
+// 객체를 돌려준다 — 저장소 안의 객체와 핸들러가 들고 있는 객체는 별개다. 가짜 구현이
+// 참조를 그대로 내주면 핸들러가 state를 제자리에서 변형하는 순간(action.js의
+// `let state = existingState`) 저장소 값도 같이 바뀌어서, kvSet()을 아예 호출하지
+// 않아도 "KV에 저장됐다"는 검증이 통과해 버린다. 그러면 운영에서 데이터 유실이 되는
+// 저장 누락 버그를 테스트가 전혀 잡지 못한다. 넣을 때와 꺼낼 때 모두 복제해 끊어준다.
+function clone(v) {
+  return (v === null || typeof v !== 'object') ? v : structuredClone(v);
+}
+
 function makeFakeKv() {
   const store = new Map();
   return {
     store,
-    async get(k) { return store.has(k) ? store.get(k) : null; },
+    async get(k) { return store.has(k) ? clone(store.get(k)) : null; },
     // action.js의 acquireRoomLock()은 진짜 Redis의 SET NX EX 원자적 동작에 기대어
     // 락을 건다. nx를 그냥 무시하면 항상 "이미 있음"으로 취급돼(store.set 자체는
     // 실패하지 않으므로) 매번 20회 재시도 백오프를 다 태워 테스트가 초 단위로
     // 느려진다 — nx를 제대로 흉내내야 락이 1회에 바로 잡혀서 테스트가 빨라진다.
     async set(k, v, opts) {
       if (opts?.nx && store.has(k)) return null;
-      store.set(k, v);
+      store.set(k, clone(v));
       return opts?.nx ? 'OK' : undefined;
     },
     async del(k) { store.delete(k); },
@@ -70,6 +80,10 @@ function installMocks() {
 function freshHandler(modulePath) {
   const resolved = require.resolve(modulePath);
   delete require.cache[resolved];
+  // lib/auth.js도 같이 버린다. 안 그러면 모듈 수준의 verifyCache(토큰→이메일, 5분)가 한
+  // 파일의 모든 테스트에 공유돼, 앞선 테스트가 캐싱해 둔 매핑이 뒤 테스트의 결과를 바꾼다
+  // — 같은 토큰 문자열을 다른 이메일로 쓰면 조용히 틀린 결과가 나와 디버깅이 어렵다.
+  delete require.cache[require.resolve('../../lib/auth')];
   return require(modulePath);
 }
 

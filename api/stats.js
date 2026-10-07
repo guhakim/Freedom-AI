@@ -9,7 +9,11 @@ async function getKv() {
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Key');
+  // POST(가입·페이지뷰 집계, 문의 접수)는 공개 폼에서 오므로 모든 출처를 허용한다. 다만
+  // X-Admin-Key까지 모든 출처에 허용하면, 아무 제3자 페이지가 방문자 브라우저를 이용해
+  // 관리자 키를 추측해 보고 적중 시 응답 본문(가입 이메일·문의 전문)까지 읽을 수 있다.
+  // 관리자 키를 쓰는 요청은 같은 출처(admin.html)에서만 보내므로 그 헤더는 허용하지 않는다.
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const kv = await getKv();

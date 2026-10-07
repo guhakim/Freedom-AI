@@ -1,6 +1,6 @@
 'use strict';
 const Pusher = require('pusher');
-const { isValidRoomId, checkAccess } = require('../lib/auth');
+const { isValidRoomId, checkAccess, verifyEmail, acquireRoomLock, releaseRoomLock } = require('../lib/auth');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -24,6 +24,17 @@ async function kvSet(key, val, opts) {
 // 삭제) 실제 사용 중에는 안 지워지되 방치된 방은 정리되게 한다. (kv.set은 ex 옵션 없이 쓰면
 // Redis 기본 동작상 기존 TTL을 지우므로, 로그인 사용자가 같은 방을 쓰면 TTL이 자연히 해제된다.)
 const GUEST_ROOM_TTL_SECONDS = 60 * 60 * 24;
+
+// userId는 획·노트·이미지 등 모든 객체에 그대로 저장된다. 예전엔 빈 문자열만 걸러서,
+// 10만 자짜리 userId도 통과해 방 상태를 부풀릴 수 있었다(결국 kv.set이 실패해 그 방
+// 사용자 전원이 500을 받는다). api/join.js·api/pusher-auth.js처럼 길이를 제한한다.
+// 문자셋까지 강제하지는 않는다 — 예전 버전이 발급한 userId를 들고 있는 클라이언트가
+// 갑자기 400을 받으면 그 사람의 삭제·이동이 전부 서버에 반영되지 않는다.
+const MAX_USERID = 64;
+function isValidUserId(userId) {
+  return typeof userId === 'string' && userId.length > 0 && userId.length <= MAX_USERID
+    && !/[\u0000-\u001f]/.test(userId);
+}
 
 const MAX_STROKES  = 1000;
 const MAX_NOTE_TXT = 10_000;
@@ -76,26 +87,8 @@ function toChannelSafe(str) {
   return Buffer.from(str, 'utf8').toString('base64url');
 }
 
-// 룸 단위 락: 동시 요청이 같은 룸 상태를 읽고-수정하고-쓰는 과정에서
-// 서로를 덮어써 스트로크/포스트잇 등이 유실되는 것을 방지한다.
-// 확보하지 못하면 null — 예전엔 락 없이 그대로 진행해서, 동시에 들어온 요청끼리 서로의
-// 변경을 덮어써 조용히 유실됐다. 이제는 503을 돌려 클라이언트가 서버 상태로 다시 맞추게 한다.
-async function acquireRoomLock(kv, kvKey) {
-  const key = `${kvKey}:lock`;
-  const token = Date.now().toString(36) + Math.random().toString(36).slice(2);
-  for (let i = 0; i < 30; i++) {
-    const ok = await kv.set(key, token, { nx: true, ex: 5 });
-    if (ok) return { key, token };
-    await new Promise(r => setTimeout(r, 40 + Math.random() * 60));
-  }
-  return null;
-}
-// 내가 건 락일 때만 푼다 — 처리 시간이 TTL(5초)을 넘긴 사이 다른 요청이 새로 건 락을
-// 지워버리지 않게 한다.
-async function releaseRoomLock(kv, lock) {
-  if (!lock) return;
-  try { if ((await kv.get(lock.key)) === lock.token) await kv.del(lock.key); } catch { /* ignore */ }
-}
+// 룸 단위 락은 lib/auth.js로 옮겼다 — api/rename-room.js가 같은 락을 써야 이름 변경과
+// 액션이 서로 끼어들지 않는다. (예전엔 action.js 안에만 있어서 이름 변경이 락을 무시했다)
 
 // Pusher 이벤트는 10KB가 한도라, 넘으면 trigger가 예외를 던져 요청 전체가 500이 되고
 // 다른 사용자에겐 변경이 전달되지 않았다(긴 획·긴 노트 텍스트). 크기를 넘으면 내용 대신
@@ -159,7 +152,7 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST')   return res.status(405).end();
 
   const { roomId, userId, socketId, action, email, isGuest } = req.body || {};
-  if (!isValidRoomId(roomId) || typeof userId !== 'string' || !userId || typeof action?.type !== 'string') return res.status(400).json({ error: 'invalid' });
+  if (!isValidRoomId(roomId) || !isValidUserId(userId) || typeof action?.type !== 'string') return res.status(400).json({ error: 'invalid' });
 
   const pusher  = getPusher();
   const channel = `presence-room-${toChannelSafe(roomId)}`;
@@ -197,6 +190,20 @@ module.exports = async (req, res) => {
   // 방(진짜 로그인 사용자의 프로젝트일 수 있음)에는 절대 새로 붙이지 않는다 — 그래야 게스트가
   // 우연히 같은 이름을 입력해도 기존 방에 만료가 걸리는 일이 없다.
   if (existingState === null && isGuest) state._guest = true;
+  // 로그인한 사용자가 쓰는 방에는 주인을 기록한다 — 이후 비공개 전환·이름 변경은 이 사람만
+  // 할 수 있다 (예전엔 방 이름만 알면 누구나 비공개로 잠그거나 이름을 바꿀 수 있었다).
+  //
+  // "방이 처음 생길 때"만 기록하면 안 된다: 첫 쓰기가 게스트였거나 그 순간 토큰이 만료
+  // 상태였던 방은 createdBy가 영원히 비게 되고, api/team.js의 소유자 검사는 createdBy가
+  // 있을 때만 동작하므로 방 이름만 아는 아무나 비공개로 잠가 원래 쓰던 사람을 영구히
+  // 쫓아낼 수 있었다. 비어 있으면 뒤늦게라도 채워서 그 구멍을 닫는다.
+  if (!isGuest && typeof email === 'string' && email && await verifyEmail(req, email)) {
+    if (!state.createdBy) state.createdBy = email.toLowerCase();
+    // 계정에 귀속된 방이 됐으니 게스트 표시를 뗀다. 이걸 떼지 않으면 저장된 _guest가 계속
+    // 읽혀서 로그인 사용자가 쓸 때마다 24시간 TTL이 새로 걸리고, 하루만 쉬어도 방이 통째로
+    // 사라졌다 (위 주석의 "로그인 사용자가 쓰면 TTL이 자연히 해제된다"가 실제로는 안 됐다).
+    delete state._guest;
+  }
   const kvSetOpts = state._guest ? { ex: GUEST_ROOM_TTL_SECONDS } : undefined;
 
   switch (action.type) {
@@ -364,8 +371,10 @@ module.exports = async (req, res) => {
       if (!validId(image?.id)) break;
       if (!state.images) state.images = [];
       if (state.images.find(i => i.id === image.id)) break;
-      if (state.images.length >= MAX_IMAGES) break;
-      if (typeof image.src !== 'string' || image.src.length > MAX_IMG_SRC) break;
+      // 한도·크기 초과를 조용히 버리면 클라이언트는 이미 화면에 그려놓은 채 ok를 받아,
+      // 새로고침이나 room_resync 때 그 이미지만 흔적 없이 사라졌다. 거절 사유를 돌려준다.
+      if (state.images.length >= MAX_IMAGES) { rejected = 'image_limit'; break; }
+      if (typeof image.src !== 'string' || image.src.length > MAX_IMG_SRC) { rejected = 'image_too_large'; break; }
       if (!VALID_IMG_SRC.test(image.src)) break;
       const img = {
         id:     image.id,
@@ -378,6 +387,7 @@ module.exports = async (req, res) => {
         userId,
       };
       if (validGroupId(image.groupId)) img.groupId = image.groupId;
+      if (image.bgRemoved === true) img.bgRemoved = true; // 실행 취소로 되살린 배경 제거 이미지
       state.images.push(img);
       await kvSet(kvKey, state, kvSetOpts);
       // src는 Pusher 10KB 한도를 초과하므로 메타데이터만 전송, 수신 측은 /api/room에서 fetch
@@ -426,7 +436,10 @@ module.exports = async (req, res) => {
       const { imageId, src, bgRemoved } = action;
       const img = state.images.find(i => i.id === imageId);
       if (!img) break;
-      if (typeof src !== 'string' || src.length > MAX_IMG_SRC || !VALID_IMG_SRC.test(src)) break;
+      if (typeof src !== 'string' || !VALID_IMG_SRC.test(src)) break;
+      // 너무 크면 조용히 버리지 말고 알려준다 — 예전엔 성공으로 응답해서, 배경 제거한 결과가
+      // 저장되지 않은 채 새로고침하면 원본으로 돌아왔다
+      if (src.length > MAX_IMG_SRC) { rejected = 'image_too_large'; break; }
       img.src = src;
       // 배경 제거 결과인지 표시해둬야, 새로고침/재동기화 후에도 클라이언트가
       // 투명 배경 이미지의 사각형 그림자를 계속 숨길 수 있다.
@@ -454,7 +467,8 @@ module.exports = async (req, res) => {
       if (!shape?.id) break;
       if (!state.shapes) state.shapes = [];
       if (state.shapes.find(s => s.id === shape.id)) break;
-      if (state.shapes.length >= MAX_SHAPES) break;
+      // image_add와 같은 이유로, 한도 초과는 조용히 버리지 않고 사유를 알린다.
+      if (state.shapes.length >= MAX_SHAPES) { rejected = 'shape_limit'; break; }
       if (!VALID_SHAPE_TYPE.has(shape.type)) break;
       const color = VALID_COLOR.test(shape.color) ? shape.color : '#0e0e0d';
       let s;
@@ -524,8 +538,13 @@ module.exports = async (req, res) => {
       if (typeof action.x2 === 'number') s.x2 = action.x2;
       if (typeof action.y2 === 'number') s.y2 = action.y2;
       if (typeof action.bend === 'number') s.bend = Math.min(2000, Math.max(-2000, action.bend));
+      // 화살표 끝을 노트에서 떼어내면 연결도 풀어야 한다 — 예전엔 연결 정보가 남아 있어서
+      // 그 노트가 움직이거나 새로고침하면 화살표가 원래 자리로 되돌아갔다
+      if ('fromId' in action) { const b = resolveBinding(state, action.fromId, action.fromSide); s.fromId = b.id; s.fromSide = b.side; }
+      if ('toId' in action)   { const b = resolveBinding(state, action.toId, action.toSide);     s.toId = b.id;   s.toSide = b.side; }
       await kvSet(kvKey, state, kvSetOpts);
-      await trigger('shape_arrow_update', { shapeId: action.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend });
+      await trigger('shape_arrow_update', { shapeId: action.shapeId, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, bend: s.bend,
+        fromId: s.fromId, fromSide: s.fromSide, toId: s.toId, toSide: s.toSide });
       break;
     }
 

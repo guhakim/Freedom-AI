@@ -150,6 +150,11 @@ const httpServer = http.createServer((req, res) => {
 
   const rel = path.relative(__dirname, filePath);
   if (rel.startsWith('..') || path.isAbsolute(rel)) { res.writeHead(403); return res.end(); }
+  // ".." 탈출만 막고 점파일·비공개 파일 필터가 없어서, 이 서버가 떠 있는 동안
+  // /.env (HF 토큰·관리자 키·KV 토큰)와 /data.json (저장된 방 내용 전체)을 포트에 닿을 수
+  // 있는 누구나 그대로 받아갈 수 있었다. 공개할 파일 종류만 통과시킨다.
+  const SERVE_DENY = /(^|[\\/])(\.|node_modules|data\.json$|package(-lock)?\.json$)/;
+  if (SERVE_DENY.test(rel)) { res.writeHead(404); return res.end('Not found'); }
 
   fs.readFile(filePath, (err, data) => {
     if (err) { res.writeHead(404); return res.end('Not found'); }

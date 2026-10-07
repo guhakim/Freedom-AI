@@ -4,12 +4,25 @@
   "outputDirectory": ".",
   "headers": [
     {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
       "source": "/app.html",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        }
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/admin.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
       ]
     }
   ],

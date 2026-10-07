@@ -24,8 +24,9 @@ module.exports = async (req, res) => {
       : null;
     // todos 기능 이전에 만들어진 방은 저장된 state에 todos 키 자체가 없을 수 있다 —
     // state가 존재하는 경우에도(=falsy 기본값으로 안 빠지는 경우에도) 보정해준다.
-    const resolved = state || { strokes: [], notes: [], images: [], shapes: [], todos: {} };
+    const resolved = state ? { ...state } : { strokes: [], notes: [], images: [], shapes: [], todos: {} };
     if (!resolved.todos) resolved.todos = {};
+    delete resolved.createdBy; // 만든 사람 이메일은 방에 들어온 다른 사람에게 노출하지 않는다
     res.json(resolved);
   } catch (e) {
     console.error('room', e);

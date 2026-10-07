@@ -1,0 +1,10 @@
+# Vercel은 outputDirectory가 "." 이라 레포 루트를 그대로 정적 서빙한다. 아래 파일들은
+# 배포에 필요 없는데도 공개 URL로 그대로 받아갈 수 있었다 — 특히 tests/는 어떤 공격
+# 벡터를 어떻게 막았는지 그대로 열거한 문서가 된다.
+tests/
+hf-server/
+server.js
+.claude/
+*.af
+product-screenshot.png
+CleanShot*.png

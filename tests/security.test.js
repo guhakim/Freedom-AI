@@ -179,3 +179,186 @@ test('contact form reports failure when the message could not be stored', async 
   await freshHandler(api('contact'))(mockReq({ body: { name: 'a', email: 'a@x.com', message: 'hi' } }), res);
   assert.equal(res.statusCode, 503);
 });
+
+// 회귀 테스트: 방 이름만 알면 누구나 그 방을 비공개로 잠그거나 이름을 바꿔 옮길 수 있었다
+test('the creator recorded on first write is the only one who can make the room private or rename it', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'own-tok': 'creator@x.com', 'oth-tok': 'other@x.com' });
+  try {
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer own-tok' }, body: { roomId: 'board', userId: 'u1',
+      email: 'creator@x.com', action: { type: 'note_add', note: { id: 'n1' } } } }), mockRes());
+    assert.equal((await kv.get(kvKey('board'))).createdBy, 'creator@x.com');
+
+    // 다른 사람이 방을 열어도 만든 사람 이메일은 보이지 않음
+    const view = mockRes();
+    await freshHandler(api('room'))(mockReq({ method: 'GET', query: { roomId: 'board' } }), view);
+    assert.equal(view.body.createdBy, undefined);
+
+    const team = freshHandler(api('team'));
+    const invite = mockRes();
+    await team(mockReq({ headers: { authorization: 'Bearer oth-tok' }, body: { action: 'invite', roomId: 'board', email: 'other@x.com' } }), invite);
+    assert.equal(invite.statusCode, 403);
+    assert.equal(await kv.get(`${kvKey('board')}:members`), null);
+
+    const rename = mockRes();
+    await freshHandler(api('rename-room'))(mockReq({ headers: { authorization: 'Bearer oth-tok' },
+      body: { oldRoomId: 'board', newRoomId: 'stolen', email: 'other@x.com' } }), rename);
+    assert.equal(rename.statusCode, 403);
+    assert.ok(await kv.get(kvKey('board')));
+
+    const ownInvite = mockRes();
+    await team(mockReq({ headers: { authorization: 'Bearer own-tok' }, body: { action: 'invite', roomId: 'board', email: 'creator@x.com' } }), ownInvite);
+    assert.equal(ownInvite.statusCode, 200);
+  } finally { restore(); }
+});
+
+test('image_update reports image_too_large instead of silently dropping the result', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), { strokes: [], notes: [], shapes: [], images: [{ id: 'i1', src: 'data:image/png;base64,AAAA', x: 0, y: 0, w: 10, h: 10 }] });
+  const res = mockRes();
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'image_update', imageId: 'i1', src: 'data:image/png;base64,' + 'A'.repeat(2_100_000), bgRemoved: true } } }), res);
+  assert.equal(res.body.rejected, 'image_too_large');
+  assert.equal((await kv.get(kvKey('r1'))).images[0].src, 'data:image/png;base64,AAAA');
+});
+
+// 회귀 테스트: createdBy는 "방이 처음 생길 때"만 기록돼서, 첫 쓰기가 게스트였던 방(또는 그
+// 순간 토큰이 만료였던 방)은 주인이 영원히 비어 있었다. api/team.js의 소유자 검사는 createdBy가
+// 있을 때만 동작하므로, 방 이름만 아는 아무나 비공개로 잠가 원래 쓰던 사람을 영구히 쫓아냈다.
+test('a guest-created room gets its owner backfilled on the first verified write, so a stranger cannot claim it', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'own-tok': 'owner@x.com', 'atk-tok': 'attacker@evil.com' });
+  try {
+    // 게스트가 방을 만든다 → createdBy 없음, 24시간 TTL
+    await freshHandler(api('action'))(mockReq({ body: { roomId: 'board', userId: 'g1', isGuest: true,
+      action: { type: 'note_add', note: { id: 'n1' } } } }), mockRes());
+    assert.equal((await kv.get(kvKey('board'))).createdBy, undefined);
+
+    // 로그인 사용자가 그 방에서 작업한다 → 뒤늦게라도 주인으로 기록돼야 한다
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer own-tok' },
+      body: { roomId: 'board', userId: 'u1', email: 'owner@x.com',
+        action: { type: 'note_add', note: { id: 'n2' } } } }), mockRes());
+    assert.equal((await kv.get(kvKey('board'))).createdBy, 'owner@x.com');
+
+    // 그 결과 방 이름만 아는 제3자는 비공개로 잠글 수 없다
+    const invite = mockRes();
+    await freshHandler(api('team'))(mockReq({ headers: { authorization: 'Bearer atk-tok' },
+      body: { action: 'invite', roomId: 'board', email: 'attacker@evil.com' } }), invite);
+    assert.equal(invite.statusCode, 403);
+    assert.equal(await kv.get(`${kvKey('board')}:members`), null);
+  } finally { restore(); }
+});
+
+// 회귀 테스트: _guest 플래그가 저장된 state에서 계속 읽혀 한 번 붙으면 떨어지지 않았다.
+// 그래서 로그인 사용자가 그 방을 이어 써도 쓰기마다 24시간 TTL이 새로 걸렸고, 하루만
+// 쉬면 방이 통째로 삭제됐다 (게스트로 체험 → 로그인해서 계속 쓰는 흔한 흐름).
+test('a guest-created room loses its 24h expiry once a verified user adopts it', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'own-tok': 'owner@x.com' });
+  try {
+    await freshHandler(api('action'))(mockReq({ body: { roomId: 'board', userId: 'g1', isGuest: true,
+      action: { type: 'note_add', note: { id: 'n1' } } } }), mockRes());
+    assert.equal((await kv.get(kvKey('board')))._guest, true);
+
+    const opts = [];
+    const realSet = kv.set.bind(kv);
+    kv.set = async (k, v, o) => { if (k === kvKey('board')) opts.push(o); return realSet(k, v, o); };
+
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer own-tok' },
+      body: { roomId: 'board', userId: 'u1', email: 'owner@x.com',
+        action: { type: 'note_add', note: { id: 'n2' } } } }), mockRes());
+    kv.set = realSet;
+
+    assert.equal((await kv.get(kvKey('board')))._guest, undefined);
+    assert.deepEqual(opts, [undefined]); // TTL 없이 저장 — 더는 만료되지 않는다
+  } finally { restore(); }
+});
+
+// 회귀 테스트: 이름 변경이 "읽어서 비었는지 확인 → 쓰기"였고 락도 안 잡아서, 서로 다른 두 방을
+// 같은 이름으로 동시에 바꾸면 둘 다 ok를 받고 한쪽 방이 오류 없이 사라졌다.
+test('two rooms renamed to the same name concurrently: one wins, the loser keeps its content', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('a'), { strokes: [], notes: [{ id: 'from-a' }], images: [], shapes: [] });
+  await kv.set(kvKey('b'), { strokes: [], notes: [{ id: 'from-b' }], images: [], shapes: [] });
+
+  const [ra, rb] = [mockRes(), mockRes()];
+  await Promise.all([
+    freshHandler(api('rename-room'))(mockReq({ body: { oldRoomId: 'a', newRoomId: 'c' } }), ra),
+    freshHandler(api('rename-room'))(mockReq({ body: { oldRoomId: 'b', newRoomId: 'c' } }), rb),
+  ]);
+
+  const codes = [ra.statusCode, rb.statusCode].sort();
+  assert.deepEqual(codes, [200, 409], '한쪽은 반드시 name_taken으로 거절돼야 한다');
+
+  // 이긴 쪽만 c로 옮겨지고, 진 쪽은 원래 이름에 내용이 그대로 남아 있어야 한다
+  const winner = ra.statusCode === 200 ? 'a' : 'b';
+  const loser  = winner === 'a' ? 'b' : 'a';
+  assert.equal((await kv.get(kvKey('c'))).notes[0].id, `from-${winner}`);
+  assert.equal(await kv.get(kvKey(winner)), null);
+  assert.equal((await kv.get(kvKey(loser))).notes[0].id, `from-${loser}`);
+});
+
+// 회귀 테스트: 이름 변경이 api/action.js의 룸 락을 무시해서, 변경 도중에 들어온 액션이 이미
+// 지워진 옛 키에 상태를 되살려 써 넣었다 — 방이 두 이름으로 갈라지고 그 사이 그린 게 유실됐다.
+test('rename refuses with 503 while the room lock is held, instead of splitting the room', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('a'), { strokes: [], notes: [{ id: 'n1' }], images: [], shapes: [] });
+  await kv.set(`${kvKey('a')}:lock`, 'someone-elses-token');
+
+  const res = mockRes();
+  await freshHandler(api('rename-room'))(mockReq({ body: { oldRoomId: 'a', newRoomId: 'c' } }), res);
+  assert.equal(res.statusCode, 503);
+  assert.equal(await kv.get(kvKey('c')), null);
+  assert.ok(await kv.get(kvKey('a')), '거절된 이름 변경은 원래 방을 건드리지 않아야 한다');
+});
+
+// 회귀 테스트: join이 KV 읽기 실패를 "KV 미설정"과 같이 묶어 삼키고 빈 캔버스를 200으로
+// 돌려줬다 — 처음 들어오는 협업자는 오류 없이 백지를 받아 그게 방의 전부라고 믿었다.
+test('join returns 500 when the room state cannot be read, instead of serving a blank canvas', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), { strokes: [], notes: [{ id: 'a' }, { id: 'b' }], images: [], shapes: [] });
+  const realGet = kv.get.bind(kv);
+  kv.get = async k => { if (k === kvKey('r1')) throw new Error('kv down'); return realGet(k); };
+
+  const res = mockRes();
+  await freshHandler(api('join'))(mockReq({ body: { roomId: 'r1' } }), res);
+  kv.get = realGet;
+  assert.equal(res.statusCode, 500);
+  assert.equal(res.body.state, undefined);
+});
+
+// 회귀 테스트: 이미지·도형 개수 한도를 넘으면 조용히 버리고 ok만 돌려줬다. 클라이언트에는
+// 한도 검사가 아예 없어서, 사용자는 화면에 그려진 것을 보고 작업을 이어가다 새로고침하면
+// 그 항목만 사라진 것을 발견했다.
+test('image_add and shape_add report the cap instead of dropping the item with ok:true', async () => {
+  const { kv } = installMocks();
+  const img = i => ({ id: `i${i}`, src: 'data:image/png;base64,AAAA', x: 0, y: 0, w: 10, h: 10 });
+  await kv.set(kvKey('r1'), {
+    strokes: [], notes: [],
+    images: Array.from({ length: 20 }, (_, i) => img(i)),
+    shapes: Array.from({ length: 300 }, (_, i) => ({ id: `s${i}`, type: 'rect', x: 0, y: 0, w: 5, h: 5 })),
+  });
+
+  const ri = mockRes();
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'image_add', image: img(99) } } }), ri);
+  assert.equal(ri.body.rejected, 'image_limit');
+  assert.equal((await kv.get(kvKey('r1'))).images.length, 20);
+
+  const rs = mockRes();
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'shape_add', shape: { id: 's999', type: 'rect', x: 0, y: 0, w: 5, h: 5 } } } }), rs);
+  assert.equal(rs.body.rejected, 'shape_limit');
+  assert.equal((await kv.get(kvKey('r1'))).shapes.length, 300);
+});
+
+// 회귀 테스트: userId는 빈 문자열만 걸러서 10만 자짜리도 모든 객체에 그대로 저장됐다 —
+// 방 상태를 부풀려 결국 kv.set이 실패하면 그 방 사용자 전원이 500을 받는다.
+test('an absurdly long userId is rejected instead of being persisted onto every object', async () => {
+  const { kv } = installMocks();
+  const res = mockRes();
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u'.repeat(100_000),
+    action: { type: 'note_add', note: { id: 'n1' } } } }), res);
+  assert.equal(res.statusCode, 400);
+  assert.equal(await kv.get(kvKey('r1')), null);
+});
