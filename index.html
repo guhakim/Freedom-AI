@@ -6,17 +6,23 @@
 <title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ja="Freedom AI — 無限キャンバス・コラボレーションツール" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
-<!-- 본문 폰트(BM Dohyeon)에는 한자와 장음(ー)이 없어 일본어가 빈칸으로 보였다. 없는 글자만
-     이 폰트로 넘어가도록 폰트 목록 뒤에 붙인다. 한국어·영어 모양은 그대로 유지된다. -->
+<!-- 본문 폰트 — 한글·한자·가나를 모두 담은 폰트를 언어별로 하나씩 쓴다 (자세한 사정은 fonts.css) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap">
 <link rel="stylesheet" href="fonts.css">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
 
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* 본문 폰트 — 한글·한자·가나를 한 폰트가 모두 담도록 언어별로 하나씩 쓴다.
+     한자는 한국어와 일본어의 글자 모양이 달라서 하나로 합치지 않고 언어별로 나눈다.
+     로고는 KOTRA Bold 그대로. (예전 본문 폰트를 바꾼 경위는 fonts.css 주석 참고) */
+  :root { --font-body: 'Noto Sans KR', sans-serif; }
+  html[lang="ja"] { --font-body: 'Noto Sans JP', sans-serif; }
+
 
   :root {
     --ink: #0e0e0d;
@@ -38,7 +44,7 @@
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+    font-family: var(--font-body);
     background: var(--paper);
     color: var(--ink);
     font-size: 16px;
@@ -240,7 +246,10 @@
   }
 
   h1 {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
+    font-family: var(--font-body);
+    /* BM Dohyeon은 굵기가 하나뿐이라 굵기 지정이 없었다. 일반 굵기 폰트로 바뀌면서
+       제목이 가늘어지므로, 원래 인상에 맞춰 굵기를 명시한다. */
+    font-weight: 900;
     font-size: clamp(48px, 8vw, 80px);
     line-height: 1.32;
     letter-spacing: -0.03em;
@@ -468,7 +477,8 @@
   }
 
   .section-heading {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
+    font-family: var(--font-body);
+    font-weight: 900;
     font-size: clamp(32px, 5vw, 50px);
     line-height: 1.1;
     letter-spacing: -0.025em;
@@ -605,7 +615,8 @@
   }
 
   .phase-num {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
+    font-family: var(--font-body);
+    font-weight: 900;
     font-size: 48px;
     line-height: 1;
     color: var(--paper);
@@ -791,7 +802,8 @@
   .contact-close:hover { background: var(--ink); color: var(--white); }
 
   .contact-modal h3 {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
+    font-family: var(--font-body);
+    font-weight: 700;
     font-size: 22px;
     font-weight: 400;
     margin-bottom: 6px;
@@ -893,20 +905,6 @@
   }
   .soon-toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-  /* 일본어 표시용 — 본문 폰트(BM Dohyeon)에 한자와 장음(ー)이 빈 글리프로 들어 있어,
-     글자별 폰트 폴백이 동작하지 않고 그 글자들이 통째로 사라져 보였다. 그래서 일본어일
-     때는 폴백에 기대지 않고 폰트를 교체한다. 로고는 라틴 문자라 원래 폰트를 유지한다. */
-  html[lang="ja"] body,
-  html[lang="ja"] h1,
-  html[lang="ja"] .section-heading,
-  html[lang="ja"] .phase-num,
-  html[lang="ja"] .contact-modal h3,
-  html[lang="ja"] button,
-  html[lang="ja"] input,
-  html[lang="ja"] textarea {
-    font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
-  }
-  html[lang="ja"] .logo-text { font-family: 'KOTRA Bold', serif; }
 </style>
 </head>
 <body>
