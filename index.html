@@ -10,33 +10,11 @@
      이 폰트로 넘어가도록 폰트 목록 뒤에 붙인다. 한국어·영어 모양은 그대로 유지된다. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<link rel="stylesheet" href="fonts.css">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
-  @font-face {
-    font-family: 'BM Dohyeon';
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-    src: url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff2') format('woff2'),
-         url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff') format('woff');
-    /* BM Dohyeon은 한자(U+4E00-9FFF 4,620자)와 CJK 호환한자(U+F900-FAFF 268자), 장음 ー(U+30FC)를
-       cmap에 등록해 두고 실제 윤곽선은 0개인 "빈 글리프"로 가지고 있다. 그래서 브라우저는 이 폰트가
-       그 글자들을 지원한다고 보고 다음 폰트로 넘어가지 않았고, 일본어 한자가 통째로 빈칸이 됐다.
-       (폰트 파일을 직접 열어 확인: 그 세 구간은 글자가 있는 문자 0개)
-       그 구간만 이 폰트에서 빼면 나머지는 글자별 폴백으로 Noto Sans JP가 받는다 — UI 언어가
-       한국어·영어여도 포스트잇에 입력한 일본어가 제대로 보인다. */
-    unicode-range: U+0-30FB, U+30FD-4DFF, U+A000-F8FF, U+FB00-10FFFF;
-  }
 
-  /* Freedom AI 로고 글씨 전용 — KOTRA 볼드체 (KOTRA 배포 상업용 무료 폰트) */
-  @font-face {
-    font-family: 'KOTRA Bold';
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10-21@1.1/KOTRA_BOLD-Bold.woff') format('woff');
-  }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -60,7 +38,7 @@
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', sans-serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', sans-serif;
     background: var(--paper);
     color: var(--ink);
     font-size: 16px;
@@ -262,7 +240,7 @@
   }
 
   h1 {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
     font-size: clamp(48px, 8vw, 80px);
     line-height: 1.32;
     letter-spacing: -0.03em;
@@ -490,7 +468,7 @@
   }
 
   .section-heading {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
     font-size: clamp(32px, 5vw, 50px);
     line-height: 1.1;
     letter-spacing: -0.025em;
@@ -627,7 +605,7 @@
   }
 
   .phase-num {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
     font-size: 48px;
     line-height: 1;
     color: var(--paper);
@@ -813,7 +791,7 @@
   .contact-close:hover { background: var(--ink); color: var(--white); }
 
   .contact-modal h3 {
-    font-family: 'BM Dohyeon', 'Noto Sans JP', serif;
+    font-family: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', serif;
     font-size: 22px;
     font-weight: 400;
     margin-bottom: 6px;
@@ -926,7 +904,7 @@
   html[lang="ja"] button,
   html[lang="ja"] input,
   html[lang="ja"] textarea {
-    font-family: 'Noto Sans JP', sans-serif;
+    font-family: 'Noto Sans JP', 'Noto Sans KR', sans-serif;
   }
   html[lang="ja"] .logo-text { font-family: 'KOTRA Bold', serif; }
 </style>

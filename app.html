@@ -13,32 +13,10 @@
 <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<link rel="stylesheet" href="fonts.css">
 <style>
-  @font-face {
-    font-family: 'BM Dohyeon';
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-    src: url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff2') format('woff2'),
-         url('https://cdn.jsdelivr.net/gh/fonts-archive/BMDOHYEON/BMDOHYEON.woff') format('woff');
-    /* BM Dohyeon은 한자(U+4E00-9FFF 4,620자)와 CJK 호환한자(U+F900-FAFF 268자), 장음 ー(U+30FC)를
-       cmap에 등록해 두고 실제 윤곽선은 0개인 "빈 글리프"로 가지고 있다. 그래서 브라우저는 이 폰트가
-       그 글자들을 지원한다고 보고 다음 폰트로 넘어가지 않았고, 일본어 한자가 통째로 빈칸이 됐다.
-       (폰트 파일을 직접 열어 확인: 그 세 구간은 글자가 있는 문자 0개)
-       그 구간만 이 폰트에서 빼면 나머지는 글자별 폴백으로 Noto Sans JP가 받는다 — UI 언어가
-       한국어·영어여도 포스트잇에 입력한 일본어가 제대로 보인다. */
-    unicode-range: U+0-30FB, U+30FD-4DFF, U+A000-F8FF, U+FB00-10FFFF;
-  }
 
-  /* Freedom AI 로고 글씨 전용 — KOTRA 볼드체 (KOTRA 배포 상업용 무료 폰트) */
-  @font-face {
-    font-family: 'KOTRA Bold';
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-10-21@1.1/KOTRA_BOLD-Bold.woff') format('woff');
-  }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -47,8 +25,8 @@
      일본어 폰트를 붙여도 글자별 폴백이 동작하지 않고 그 글자들이 사라져 보인다. 그래서
      일본어일 때는 폴백에 기대지 않고 폰트 자체를 바꾼다. */
   /* 한자·장음은 위 unicode-range 덕분에 BM Dohyeon을 건너뛰고 이 폰트가 받는다 */
-  :root { --font-body: 'BM Dohyeon', 'Noto Sans JP', sans-serif; }
-  html[lang="ja"] { --font-body: 'Noto Sans JP', sans-serif; }
+  :root { --font-body: 'BM Dohyeon', 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
+  html[lang="ja"] { --font-body: 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
 
 
   :root {
