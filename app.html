@@ -13,7 +13,15 @@
 <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+<!-- 한국어·영어 화면이 쓰는 폰트만 먼저 받는다. 두 패밀리를 한 요청으로 받으면 CSS가
+     268KB(gzip)나 되고 그동안 화면이 그려지지 않는다 — Google Fonts는 CJK를 문자 범위별로
+     쪼개느라 @font-face가 1,200개를 넘는다. 일본어용은 아래에서 비동기로 받는다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+<!-- 일본어 글자(한자·가나)는 한국어 화면에서도 포스트잇 내용으로 나올 수 있으니 항상 받되,
+     렌더를 막지 않게 뒤로 미룬다. media 트릭은 자바스크립트 없이도 동작한다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap"
+      media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap"></noscript>
 <link rel="stylesheet" href="fonts.css">
 <style>
 
