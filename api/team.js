@@ -122,7 +122,10 @@ module.exports = async (req, res) => {
 
       const updated = members.filter(m => m !== removeEmail.toLowerCase());
       // 멤버가 0명이 되면, kv에 저장된 빈 배열([])은 "값 있음"으로 취급되어
-      // checkAccess()가 그 방을 아무도 못 들어오는 상태로 영구히 잠가버린다 — 마지막 멤버는 제거 금지
+      // checkAccess()가 그 방을 아무도 못 들어오는 상태로 영구히 잠가버린다 — 마지막 멤버는 제거 금지.
+      // 지금 구조에서는 위의 cannot_remove_owner가 members[0]을 항상 지켜주므로 여기까지 오지
+      // 않는다(변이 테스트로 확인: 이 줄을 지워도 깨지는 테스트가 없다). 소유자 규칙이 바뀌면
+      // 바로 필요해지는 마지막 방어선이라 남겨 둔다.
       if (!updated.length) return res.status(400).json({ error: 'cannot_remove_last_member' });
       await kv.set(key, updated);
       return res.json({ members: updated });

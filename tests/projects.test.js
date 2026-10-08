@@ -91,3 +91,25 @@ test('the list is capped at 30 entries and names at the shared room-name limit',
     assert.ok(!res.body.projects.some(p => p.length > 32), '방 이름 한도를 넘는 이름은 걸러야 한다');
   } finally { restore(); }
 });
+
+// 입력 검증 — 빠지면 이메일 없이 호출해 다른 사람 칸을 건드리거나, 배열이 아닌 값으로
+// 목록을 망가뜨릴 수 있다
+test('malformed requests are rejected before touching storage', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'tok': 'me@x.com' });
+  try {
+    await kv.set(key('me@x.com'), ['지켜져야 함']);
+    const bad = [
+      [{ method: 'GET', query: {} }, 'GET에 이메일 없음'],
+      [{ body: { projects: ['a'] } }, 'POST에 이메일 없음'],
+      [{ headers: { authorization: 'Bearer tok' }, body: { email: 'me@x.com', projects: 'not-an-array' } }, '배열이 아닌 목록'],
+      [{ headers: { authorization: 'Bearer tok' }, body: { email: 'me@x.com' } }, '목록 누락'],
+    ];
+    for (const [req, label] of bad) {
+      const res = mockRes();
+      await freshHandler(api)(mockReq(req), res);
+      assert.equal(res.statusCode, 400, `${label}: 400으로 거절해야 한다`);
+    }
+    assert.deepEqual(await kv.get(key('me@x.com')), ['지켜져야 함'], '거절된 요청이 저장소를 건드리면 안 된다');
+  } finally { restore(); }
+});

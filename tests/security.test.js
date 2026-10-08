@@ -527,3 +527,50 @@ test('Infinity / NaN coordinates are replaced with a usable value, not stored as
   }
   assert.ok(drawable(st.images[0].z), '이미지 앞뒤 순서도 숫자여야 정렬이 깨지지 않는다');
 });
+
+// pusher-auth 입력 검증 — 빠지면 아무 문자열이나 presence member id로 쓰이거나,
+// 채널 이름에서 뽑아낸 방 이름이 검증 없이 KV 키 조회에 들어간다.
+test('pusher-auth rejects a malformed user id or room name', async () => {
+  const { kv } = installMocks();
+  const chan = r => `presence-room-${Buffer.from(r, 'utf8').toString('base64url')}`;
+  const call = body => {
+    const res = mockRes();
+    return freshHandler(api('pusher-auth'))(mockReq({ body }), res).then(() => res);
+  };
+  assert.equal((await call({ socket_id: '1.1', channel_name: chan('r1'), user_id: 'ab' })).statusCode, 400,
+    '너무 짧은 user_id');
+  assert.equal((await call({ socket_id: '1.1', channel_name: chan('r1'), user_id: '한글아이디' })).statusCode, 400,
+    '허용되지 않는 문자');
+  assert.equal((await call({ socket_id: '1.1', channel_name: chan('x'.repeat(100)), user_id: 'abcd1234' })).statusCode, 400,
+    '한도를 넘는 방 이름');
+  assert.equal((await call({ socket_id: '1.1', channel_name: chan('r1:lock'), user_id: 'abcd1234' })).statusCode, 400,
+    '보조 키 접미사가 붙은 방 이름');
+  assert.equal((await call({ socket_id: '1.1', channel_name: 'private-something', user_id: 'abcd1234' })).statusCode, 403,
+    '이 앱의 채널이 아님');
+});
+
+// 회귀 테스트: 주인이 기록되지 않은 방은 "그 방에서 실제로 작업한 사람"만 이름을 바꿀 수
+// 있어야 한다. 이 가드가 빠지면 방 이름만 아는 제3자가 남의 방을 다른 이름으로 옮겨
+// 함께 쓰던 사람들 화면에서 통째로 사라지게 만들 수 있다.
+test('only someone who worked in an ownerless room can rename it', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'alice': 'alice@x.com', 'evil': 'stranger@evil.com' });
+  try {
+    // alice가 쓴 기록만 있는, 주인이 기록되지 않은 방
+    await kv.set(kvKey('board'), { strokes: [], notes: [{ id: 'n1' }], images: [], shapes: [],
+      contributors: ['alice@x.com'] });
+
+    const stranger = mockRes();
+    await freshHandler(api('rename-room'))(mockReq({ headers: { authorization: 'Bearer evil' },
+      body: { oldRoomId: 'board', newRoomId: 'stolen', email: 'stranger@evil.com' } }), stranger);
+    assert.equal(stranger.statusCode, 403, '그 방을 쓴 적 없는 사람은 이름을 바꿀 수 없다');
+    assert.equal(await kv.get(kvKey('stolen')), null);
+    assert.ok(await kv.get(kvKey('board')), '원래 방은 그대로여야 한다');
+
+    const owner = mockRes();
+    await freshHandler(api('rename-room'))(mockReq({ headers: { authorization: 'Bearer alice' },
+      body: { oldRoomId: 'board', newRoomId: 'renamed', email: 'alice@x.com' } }), owner);
+    assert.equal(owner.statusCode, 200, '그 방을 쓴 사람은 바꿀 수 있어야 한다');
+    assert.equal((await kv.get(kvKey('renamed'))).notes[0].id, 'n1');
+  } finally { restore(); }
+});
