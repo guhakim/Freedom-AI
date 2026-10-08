@@ -40,6 +40,7 @@ module.exports = async (req, res) => {
       // todos 기능 이전에 만들어진 방은 저장된 state에 todos 키가 없을 수 있다.
       if (!state.todos) state.todos = {};
       delete state.createdBy; // 만든 사람 이메일은 노출하지 않는다
+      delete state.contributors; // 함께 쓴 사람들의 이메일도 마찬가지
     } catch (e) {
       // 예전엔 이 실패를 "KV 미설정"과 같이 묶어 삼키고 빈 state를 200으로 돌려줬다. 그러면
       // 처음 들어오는 협업자는 오류 한 줄 없이 백지 캔버스를 받아 그게 방의 전부라고 믿게 된다

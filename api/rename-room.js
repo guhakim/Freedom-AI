@@ -1,7 +1,7 @@
 'use strict';
-const { isValidRoomId, verifyEmail, getMembers, acquireRoomLock, releaseRoomLock } = require('../lib/auth');
+const { isValidRoomId, verifyEmail, getMembers, acquireRoomLock, releaseRoomLock, MAX_ROOMID } = require('../lib/auth');
 
-const MAX_ROOMID = 32;
+// 방 이름 한도는 lib/auth.js의 MAX_ROOMID와 같아야 한다
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
     return res.json({ ok: true, migrated: false });
   }
 
-  let lock = null;
+  let lock = null, lock2 = null;
   try {
     const access = await checkAccess(kv, req, oldRoomId, email);
     if (!access.ok) return res.status(403).json({ error: 'access_denied' });
@@ -45,14 +45,29 @@ module.exports = async (req, res) => {
     // 이름 변경은 방 상태를 옛 키에서 새 키로 옮기는 읽고-수정하고-쓰기다. api/action.js와
     // 같은 락을 잡아야, 옮기는 중에 들어온 액션이 이미 지운 옛 키에 상태를 되살려 써서 방이
     // 두 이름으로 갈라지고 그 사이 그린 내용이 사라지는 일을 막을 수 있다.
-    lock = await acquireRoomLock(kv, `fa:room:${oldRoomId}`);
+    //
+    // 출발지만 잡으면 안 된다 — 목적지 이름으로 이미 누군가 작업 중이면, 그 요청이 자기가
+    // 읽은(비어 있던) 상태를 나중에 써 넣어 방금 옮겨온 내용을 통째로 덮어쓴다. 두 방을
+    // 모두 잠그되, 두 이름 변경이 서로를 기다리며 영원히 엇갈리지 않게 이름순으로 잡는다.
+    const [lockA, lockB] = [oldRoomId, newRoomId].sort();
+    lock = await acquireRoomLock(kv, `fa:room:${lockA}`);
     if (!lock) return res.status(503).json({ error: 'busy' });
+    lock2 = await acquireRoomLock(kv, `fa:room:${lockB}`);
+    if (!lock2) return res.status(503).json({ error: 'busy' });
 
     const oldState = await kv.get(`fa:room:${oldRoomId}`);
     // 만든 사람이 기록된 방은 그 사람만 이름을 바꿀 수 있다 (방이 통째로 다른 이름으로 옮겨져
     // 함께 쓰던 사람들 화면에서 사라지는 일을 막는다)
     if (oldState?.createdBy && !(await verifyEmail(req, email) && email.toLowerCase() === oldState.createdBy)) {
       return res.status(403).json({ error: 'owner_only' });
+    }
+    // 주인이 기록되지 않은 방은, 그 방에서 실제로 작업한 적 있는 사람만 이름을 바꿀 수 있다
+    // (방 이름만 아는 제3자가 남의 방을 다른 이름으로 옮겨 사라지게 만드는 것을 막는다)
+    if (!oldState?.createdBy && Array.isArray(oldState?.contributors) && oldState.contributors.length) {
+      const me = typeof email === 'string' ? email.toLowerCase() : '';
+      const ok = me && oldState.contributors.map(c => String(c).toLowerCase()).includes(me)
+                 && await verifyEmail(req, email);
+      if (!ok) return res.status(403).json({ error: 'owner_only' });
     }
 
     const newKey = `fa:room:${newRoomId}`;
@@ -72,7 +87,26 @@ module.exports = async (req, res) => {
         await kv.del(newKey);
         return res.status(409).json({ error: 'name_taken' });
       }
-      await kv.del(`fa:room:${oldRoomId}`);
+      // 여기부터는 새 이름에 내용이 올라간 상태다. 중간에 실패하면 되돌려야 한다 —
+      // 안 그러면 그 이름이 빈 방에 영구히 선점되거나(재시도마다 409), 옛 이름에는
+      // 아무것도 없는데 사용자가 모르는 새 이름에만 내용이 남는다.
+      try {
+        await kv.del(`fa:room:${oldRoomId}`);
+        if (access.members) {
+          await kv.set(newMembersKey, access.members);
+          await kv.del(`fa:room:${oldRoomId}:members`);
+        }
+      } catch (e) {
+        console.error('rename-room rollback', e);
+        try {
+          await kv.set(`fa:room:${oldRoomId}`, oldState);
+          if (access.members) await kv.set(`fa:room:${oldRoomId}:members`, access.members);
+          await kv.del(newKey);
+          await kv.del(newMembersKey);
+        } catch { /* 되돌리기까지 실패하면 더 할 수 있는 게 없다 */ }
+        return res.status(500).json({ error: 'server_error' });
+      }
+      return res.json({ ok: true, migrated: true });
     } else if (await kv.get(newKey) || await kv.get(newMembersKey)) {
       // 서버에 옮길 상태가 없는 방(로컬 저장만 쓰던 방)이라 선점할 값이 없다. 덮어쓸 내용도
       // 없으므로 읽어서 확인하는 것으로 충분하다.
@@ -88,6 +122,7 @@ module.exports = async (req, res) => {
     console.error('rename-room', e);
     res.status(500).json({ error: 'server_error' });
   } finally {
+    await releaseRoomLock(kv, lock2);
     await releaseRoomLock(kv, lock);
   }
 };

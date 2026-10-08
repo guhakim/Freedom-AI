@@ -27,6 +27,7 @@ module.exports = async (req, res) => {
     const resolved = state ? { ...state } : { strokes: [], notes: [], images: [], shapes: [], todos: {} };
     if (!resolved.todos) resolved.todos = {};
     delete resolved.createdBy; // 만든 사람 이메일은 방에 들어온 다른 사람에게 노출하지 않는다
+    delete resolved.contributors; // 함께 쓴 사람들의 이메일도 마찬가지
     res.json(resolved);
   } catch (e) {
     console.error('room', e);

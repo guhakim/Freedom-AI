@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('crypto');
-const { isValidRoomId, verifyEmail } = require('../lib/auth');
+const { isValidRoomId, verifyEmail, MAX_ROOMID } = require('../lib/auth');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -8,7 +8,7 @@ async function getKv() {
 }
 
 const INVITE_TTL = 7 * 24 * 3600; // 초대 링크 유효기간: 7일
-const MAX_ROOMID = 32;
+// 방 이름 한도는 lib/auth.js의 MAX_ROOMID와 같아야 한다
 
 const verifyOwner = verifyEmail;
 
@@ -56,10 +56,22 @@ module.exports = async (req, res) => {
       const key = `fa:room:${roomId}:members`;
       let members = normalize(await kv.get(key));
       if (!members.length) {
-        // 만든 사람이 기록된 방은 그 사람만 비공개로 전환할 수 있다 (기록 이전에 만들어진 방은 예전처럼 누구나)
         const room = await kv.get(`fa:room:${roomId}`);
-        if (room?.createdBy && room.createdBy !== email.toLowerCase()) return res.status(403).json({ error: 'owner_only' });
-        members = [email.toLowerCase()];
+        const me = email.toLowerCase();
+        // 만든 사람이 기록된 방은 그 사람만 비공개로 전환할 수 있다
+        if (room?.createdBy && room.createdBy !== me) return res.status(403).json({ error: 'owner_only' });
+        // 만든 사람이 기록되지 않은 방(이 기능 이전에 만들어졌거나 게스트가 만든 방)은 주인을
+        // 알 수 없다. 그렇다고 아무나 잠그게 두면 원래 쓰던 사람이 영구히 쫓겨나므로:
+        //  (1) 그 방에서 실제로 작업한 적 있는 사람만 비공개로 바꿀 수 있고,
+        //  (2) 바꿀 때 함께 쓰던 사람을 모두 멤버로 넣어 아무도 떨어져 나가지 않게 한다.
+        const contributors = Array.isArray(room?.contributors) ? room.contributors.map(c => String(c).toLowerCase()) : [];
+        if (!room?.createdBy && contributors.length && !contributors.includes(me)) {
+          return res.status(403).json({ error: 'not_a_member' });
+        }
+        // 기록된 순서를 그대로 둔다 — members[0]이 소유자(다른 멤버를 내보낼 수 있는 사람)다.
+        // 요청한 사람을 앞에 두면, 남의 방에 한 글자 쓰고 비공개로 바꾼 사람이 소유자가 되어
+        // 원래 쓰던 사람을 내보낼 수 있다. 가장 먼저 그 방을 쓴 사람을 소유자로 둔다.
+        members = [me];
         await kv.set(key, members);
       } else if (!members.includes(email.toLowerCase())) {
         return res.status(403).json({ error: 'not_a_member' });

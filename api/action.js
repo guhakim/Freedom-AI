@@ -30,6 +30,9 @@ const GUEST_ROOM_TTL_SECONDS = 60 * 60 * 24;
 // 사용자 전원이 500을 받는다). api/join.js·api/pusher-auth.js처럼 길이를 제한한다.
 // 문자셋까지 강제하지는 않는다 — 예전 버전이 발급한 userId를 들고 있는 클라이언트가
 // 갑자기 400을 받으면 그 사람의 삭제·이동이 전부 서버에 반영되지 않는다.
+// 이 방을 쓴 로그인 사용자 목록의 상한 (방 상태가 무한정 커지지 않게)
+const MAX_CONTRIBUTORS = 50;
+
 const MAX_USERID = 64;
 function isValidUserId(userId) {
   return typeof userId === 'string' && userId.length > 0 && userId.length <= MAX_USERID
@@ -190,20 +193,29 @@ module.exports = async (req, res) => {
   // 방(진짜 로그인 사용자의 프로젝트일 수 있음)에는 절대 새로 붙이지 않는다 — 그래야 게스트가
   // 우연히 같은 이름을 입력해도 기존 방에 만료가 걸리는 일이 없다.
   if (existingState === null && isGuest) state._guest = true;
-  // 로그인한 사용자가 쓰는 방에는 주인을 기록한다 — 이후 비공개 전환·이름 변경은 이 사람만
-  // 할 수 있다 (예전엔 방 이름만 알면 누구나 비공개로 잠그거나 이름을 바꿀 수 있었다).
-  //
-  // "방이 처음 생길 때"만 기록하면 안 된다: 첫 쓰기가 게스트였거나 그 순간 토큰이 만료
-  // 상태였던 방은 createdBy가 영원히 비게 되고, api/team.js의 소유자 검사는 createdBy가
-  // 있을 때만 동작하므로 방 이름만 아는 아무나 비공개로 잠가 원래 쓰던 사람을 영구히
-  // 쫓아낼 수 있었다. 비어 있으면 뒤늦게라도 채워서 그 구멍을 닫는다.
-  if (!isGuest && typeof email === 'string' && email && await verifyEmail(req, email)) {
-    if (!state.createdBy) state.createdBy = email.toLowerCase();
-    // 계정에 귀속된 방이 됐으니 게스트 표시를 뗀다. 이걸 떼지 않으면 저장된 _guest가 계속
-    // 읽혀서 로그인 사용자가 쓸 때마다 24시간 TTL이 새로 걸리고, 하루만 쉬어도 방이 통째로
-    // 사라졌다 (위 주석의 "로그인 사용자가 쓰면 TTL이 자연히 해제된다"가 실제로는 안 됐다).
-    delete state._guest;
+  // 방을 만든 사람은 처음 한 번만 기록한다. 한때 "비어 있으면 뒤늦게라도 채운다"고 했었는데,
+  // 그러면 주인이 없는 방(이 기능 이전에 만들어진 방, 게스트가 만든 방)에 **아무 로그인
+  // 사용자나 먼저 한 글자 쓰면 주인이 되어** 원래 쓰던 사람을 비공개 전환으로 쫓아낼 수
+  // 있었다. 주인이 누구인지 모르는 방은 추측하지 않는다.
+  if (existingState === null && !isGuest && typeof email === 'string' && email
+      && await verifyEmail(req, email)) {
+    state.createdBy = email.toLowerCase();
   }
+
+  // 대신 "이 방을 실제로 쓴 로그인 사용자" 목록을 남긴다. 주인을 정하기 위한 게 아니라,
+  // 나중에 누가 이 방을 비공개로 바꿔도 함께 쓰던 사람들이 멤버로 들어가 쫓겨나지 않게
+  // 하기 위한 것이다 (api/team.js). 이메일이라 방에 들어온 사람에게는 내려보내지 않는다.
+  if (!isGuest && typeof email === 'string' && email && await verifyEmail(req, email)) {
+    const me = email.toLowerCase();
+    const list = Array.isArray(state.contributors) ? state.contributors : [];
+    if (!list.includes(me) && list.length < MAX_CONTRIBUTORS) list.push(me);
+    /* 제거 */
+  }
+
+  // 로그인한 클라이언트가 쓰는 방이면 게스트 만료를 해제한다. 토큰 검증 성공에 묶어두면,
+  // 토큰이 만료된 1시간 뒤부터는 검증이 실패해 24시간 TTL이 매 쓰기마다 다시 걸리고
+  // 하루만 쉬어도 방이 통째로 사라진다 — 바로 그 경우를 고치려던 수정이었다.
+  if (!isGuest) delete state._guest;
   const kvSetOpts = state._guest ? { ex: GUEST_ROOM_TTL_SECONDS } : undefined;
 
   switch (action.type) {

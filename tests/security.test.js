@@ -222,30 +222,82 @@ test('image_update reports image_too_large instead of silently dropping the resu
   assert.equal((await kv.get(kvKey('r1'))).images[0].src, 'data:image/png;base64,AAAA');
 });
 
-// 회귀 테스트: createdBy는 "방이 처음 생길 때"만 기록돼서, 첫 쓰기가 게스트였던 방(또는 그
-// 순간 토큰이 만료였던 방)은 주인이 영원히 비어 있었다. api/team.js의 소유자 검사는 createdBy가
-// 있을 때만 동작하므로, 방 이름만 아는 아무나 비공개로 잠가 원래 쓰던 사람을 영구히 쫓아냈다.
-test('a guest-created room gets its owner backfilled on the first verified write, so a stranger cannot claim it', async () => {
+// 회귀 테스트: 주인이 기록되지 않은 방(이 기능 이전에 만들어졌거나 게스트가 만든 방)에
+// 대해 한때 "먼저 쓴 로그인 사용자를 주인으로 기록"하게 했더니, 방 이름만 아는 제3자가
+// 한 글자 쓰고 주인이 되어 원래 쓰던 사람을 비공개 전환으로 영구히 쫓아낼 수 있었다.
+// 이제는 주인을 추측하지 않고, 대신 그 방을 실제로 쓴 사람만 잠글 수 있게 한다.
+test('a stranger cannot take over a room that has no recorded owner', async () => {
   const { kv } = installMocks();
-  const restore = stubGoogleAuth({ 'own-tok': 'owner@x.com', 'atk-tok': 'attacker@evil.com' });
+  const restore = stubGoogleAuth({ 'alice-tok': 'alice@x.com', 'evil-tok': 'stranger@evil.com' });
   try {
-    // 게스트가 방을 만든다 → createdBy 없음, 24시간 TTL
-    await freshHandler(api('action'))(mockReq({ body: { roomId: 'board', userId: 'g1', isGuest: true,
-      action: { type: 'note_add', note: { id: 'n1' } } } }), mockRes());
+    // alice가 쭉 쓰던, 주인이 기록되지 않은 방
+    await kv.set(kvKey('board'), { strokes: [], notes: [{ id: 'a1' }], images: [], shapes: [] });
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer alice-tok' },
+      body: { roomId: 'board', userId: 'u1', email: 'alice@x.com',
+        action: { type: 'note_add', note: { id: 'a2' } } } }), mockRes());
+
+    // 주인을 멋대로 정하지 않는다
     assert.equal((await kv.get(kvKey('board'))).createdBy, undefined);
 
-    // 로그인 사용자가 그 방에서 작업한다 → 뒤늦게라도 주인으로 기록돼야 한다
-    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer own-tok' },
-      body: { roomId: 'board', userId: 'u1', email: 'owner@x.com',
-        action: { type: 'note_add', note: { id: 'n2' } } } }), mockRes());
-    assert.equal((await kv.get(kvKey('board'))).createdBy, 'owner@x.com');
+    // 제3자가 써도 주인이 되지 않고, 비공개로 잠글 수도 없다
+    const w = mockRes();
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer evil-tok' },
+      body: { roomId: 'board', userId: 'u2', email: 'stranger@evil.com',
+        action: { type: 'note_add', note: { id: 'e1' } } } }), w);
+    assert.equal(w.statusCode, 200); // 쓰기 자체는 공개 방이므로 허용
+    assert.equal((await kv.get(kvKey('board'))).createdBy, undefined);
 
-    // 그 결과 방 이름만 아는 제3자는 비공개로 잠글 수 없다
+    // 제3자가 비공개로 바꾸더라도 alice가 멤버로 함께 들어가 쫓겨나지 않아야 하고,
+    // 소유자(members[0] — 다른 멤버를 내보낼 수 있는 사람)는 먼저 쓴 alice여야 한다
     const invite = mockRes();
-    await freshHandler(api('team'))(mockReq({ headers: { authorization: 'Bearer atk-tok' },
-      body: { action: 'invite', roomId: 'board', email: 'attacker@evil.com' } }), invite);
-    assert.equal(invite.statusCode, 403);
-    assert.equal(await kv.get(`${kvKey('board')}:members`), null);
+    await freshHandler(api('team'))(mockReq({ headers: { authorization: 'Bearer evil-tok' },
+      body: { action: 'invite', roomId: 'board', email: 'stranger@evil.com' } }), invite);
+    const members = await kv.get(`${kvKey('board')}:members`);
+    assert.ok(members.includes('alice@x.com'), 'alice가 멤버에서 빠지면 안 된다');
+    assert.equal(members[0], 'alice@x.com', '먼저 쓴 사람이 소유자여야 한다');
+
+    // 그래서 제3자는 alice를 내보낼 수 없다
+    const kick = mockRes();
+    await freshHandler(api('team'))(mockReq({ headers: { authorization: 'Bearer evil-tok' },
+      body: { action: 'remove', roomId: 'board', email: 'stranger@evil.com', removeEmail: 'alice@x.com' } }), kick);
+    assert.equal(kick.statusCode, 403);
+
+    // alice는 여전히 들어갈 수 있다
+    const view = mockRes();
+    await freshHandler(api('room'))(mockReq({ method: 'GET',
+      headers: { authorization: 'Bearer alice-tok' }, query: { roomId: 'board', email: 'alice@x.com' } }), view);
+    assert.equal(view.statusCode, 200);
+  } finally { restore(); }
+});
+
+// 주인이 없는 방을 함께 쓰던 사람이 비공개로 바꾸면, 같이 쓰던 사람들이 모두 멤버로
+// 들어가야 한다 — 안 그러면 먼저 누른 사람만 남고 나머지가 조용히 쫓겨난다.
+test('making an ownerless room private keeps everyone who worked in it', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'a-tok': 'alice@x.com', 'b-tok': 'bob@x.com' });
+  try {
+    await kv.set(kvKey('team'), { strokes: [], notes: [], images: [], shapes: [] });
+    for (const [tok, em, id] of [['a-tok','alice@x.com','n1'], ['b-tok','bob@x.com','n2']]) {
+      await freshHandler(api('action'))(mockReq({ headers: { authorization: `Bearer ${tok}` },
+        body: { roomId: 'team', userId: 'u', email: em, action: { type: 'note_add', note: { id } } } }), mockRes());
+    }
+    // 함께 쓴 사람이 둘 다 기록된다
+    assert.deepEqual((await kv.get(kvKey('team'))).contributors, ['alice@x.com', 'bob@x.com']);
+
+    const invite = mockRes();
+    await freshHandler(api('team'))(mockReq({ headers: { authorization: 'Bearer b-tok' },
+      body: { action: 'invite', roomId: 'team', email: 'bob@x.com' } }), invite);
+    assert.equal(invite.statusCode, 200);
+    const members = await kv.get(`${kvKey('team')}:members`);
+    assert.ok(members.includes('alice@x.com'), 'alice가 쫓겨나면 안 된다');
+    assert.ok(members.includes('bob@x.com'));
+
+    // alice는 그대로 들어갈 수 있다
+    const view = mockRes();
+    await freshHandler(api('room'))(mockReq({ method: 'GET',
+      headers: { authorization: 'Bearer a-tok' }, query: { roomId: 'team', email: 'alice@x.com' } }), view);
+    assert.equal(view.statusCode, 200);
+    assert.equal(view.body.contributors, undefined, '함께 쓴 사람 이메일은 내려보내지 않는다');
   } finally { restore(); }
 });
 
@@ -361,4 +413,95 @@ test('an absurdly long userId is rejected instead of being persisted onto every 
     action: { type: 'note_add', note: { id: 'n1' } } } }), res);
   assert.equal(res.statusCode, 400);
   assert.equal(await kv.get(kvKey('r1')), null);
+});
+
+// 회귀 테스트: 이름 변경이 출발지 락만 잡아서, 목적지 이름으로 이미 작업 중인 요청이
+// 자기가 읽은(비어 있던) 상태를 나중에 써 넣어 방금 옮겨온 내용을 통째로 덮어썼다.
+test('rename refuses with 503 while the DESTINATION room is locked', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('a'), { strokes: [], notes: [{ id: 'keep-me' }], images: [], shapes: [] });
+  await kv.set(`${kvKey('c')}:lock`, 'someone-working-in-c');
+
+  const res = mockRes();
+  await freshHandler(api('rename-room'))(mockReq({ body: { oldRoomId: 'a', newRoomId: 'c' } }), res);
+  assert.equal(res.statusCode, 503, '목적지가 잠겨 있으면 거절해야 한다');
+  assert.equal(await kv.get(kvKey('c')), null, '목적지에 아무것도 쓰면 안 된다');
+  assert.equal((await kv.get(kvKey('a'))).notes[0].id, 'keep-me', '출발지는 그대로여야 한다');
+});
+
+// 회귀 테스트: 비공개 방의 실시간 채널 인증이 멤버 검사 없이 서명해 주면, 멤버가 아닌
+// 사람이 접속자 목록(이메일·이름)과 커서·그리는 중인 획을 그대로 받아볼 수 있다.
+test('pusher-auth refuses to sign a private room channel for a non-member', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'mem-tok': 'member@x.com', 'out-tok': 'outsider@x.com' });
+  try {
+    await kv.set(`${kvKey('secret')}:members`, ['member@x.com']);
+    const chan = `presence-room-${Buffer.from('secret', 'utf8').toString('base64url')}`;
+
+    const denied = mockRes();
+    await freshHandler(api('pusher-auth'))(mockReq({ headers: { authorization: 'Bearer out-tok' },
+      body: { socket_id: '1.1', channel_name: chan, email: 'outsider@x.com', user_id: 'abcd1234' } }), denied);
+    assert.equal(denied.statusCode, 403);
+
+    const allowed = mockRes();
+    await freshHandler(api('pusher-auth'))(mockReq({ headers: { authorization: 'Bearer mem-tok' },
+      body: { socket_id: '1.1', channel_name: chan, email: 'member@x.com', user_id: 'abcd1234' } }), allowed);
+    assert.equal(allowed.statusCode, 200);
+  } finally { restore(); }
+});
+
+// 회귀 테스트: 락은 내가 건 것일 때만 풀어야 한다. 무조건 삭제하면, 처리 시간이 TTL을
+// 넘긴 사이 다른 요청이 새로 건 락을 지워 두 요청이 같은 방을 동시에 고치게 된다.
+test('releaseRoomLock only deletes the lock it acquired', async () => {
+  const { kv } = installMocks();
+  const { acquireRoomLock, releaseRoomLock } = freshHandler(path.join(__dirname, '..', 'lib', 'auth.js'));
+  const lock = await acquireRoomLock(kv, kvKey('r1'));
+  assert.ok(lock);
+  // TTL이 지나 다른 요청이 새로 락을 건 상황을 흉내낸다
+  await kv.set(`${kvKey('r1')}:lock`, 'someone-elses-token');
+  await releaseRoomLock(kv, lock);
+  assert.equal(await kv.get(`${kvKey('r1')}:lock`), 'someone-elses-token', '남의 락을 지우면 안 된다');
+});
+
+// 회귀 테스트: 처리 중 예외가 나도 락은 반드시 풀려야 한다. 안 풀리면 그 방의 모든 쓰기가
+// TTL(10초) 동안 503이 되어 사용자마다 "저장 실패" 안내와 전체 재동기화를 반복한다.
+test('the room lock is released even when the handler throws', async () => {
+  const { kv } = installMocks();
+  await kv.set(kvKey('r1'), { strokes: [], notes: [], images: [], shapes: [] });
+  const realSet = kv.set.bind(kv);
+  kv.set = async (k, v, o) => { if (k === kvKey('r1')) throw new Error('kv down'); return realSet(k, v, o); };
+
+  const res = mockRes();
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'note_add', note: { id: 'n1' } } } }), res);
+  kv.set = realSet;
+  assert.equal(res.statusCode, 500);
+  assert.equal(await kv.get(`${kvKey('r1')}:lock`), null, '예외가 나도 락은 풀려 있어야 한다');
+});
+
+// 회귀 테스트: 방 이름 한도가 파일마다 32자/64자로 달라서, 33~64자 방은 만들 수는 있는데
+// 이름 변경·비공개 전환이 영구히 400으로 거절됐다. 한 곳(lib/auth.js)에서만 정한다.
+test('a room name that can be created can also be renamed and made private', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'tok': 'owner@x.com' });
+  try {
+    const long = '방'.repeat(40); // 한도를 넘는 이름
+    const act = mockRes();
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer tok' },
+      body: { roomId: long, userId: 'u1', email: 'owner@x.com',
+        action: { type: 'note_add', note: { id: 'n1' } } } }), act);
+    assert.equal(act.statusCode, 400, '만들 수 없는 길이라면 쓰기 단계에서 막혀야 한다');
+
+    // 한도 안의 이름은 세 곳 모두에서 받아들여져야 한다
+    const ok = '방'.repeat(32);
+    await freshHandler(api('action'))(mockReq({ headers: { authorization: 'Bearer tok' },
+      body: { roomId: ok, userId: 'u1', email: 'owner@x.com',
+        action: { type: 'note_add', note: { id: 'n1' } } } }), mockRes());
+    assert.ok(await kv.get(kvKey(ok)));
+
+    const inv = mockRes();
+    await freshHandler(api('team'))(mockReq({ headers: { authorization: 'Bearer tok' },
+      body: { action: 'invite', roomId: ok, email: 'owner@x.com' } }), inv);
+    assert.equal(inv.statusCode, 200, '만들 수 있는 이름은 비공개 전환도 돼야 한다');
+  } finally { restore(); }
 });

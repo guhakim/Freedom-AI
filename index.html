@@ -9,7 +9,7 @@
 <!-- 본문 폰트 — 한글·한자·가나를 모두 담은 폰트를 언어별로 하나씩 쓴다 (자세한 사정은 fonts.css) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
 <link rel="stylesheet" href="fonts.css">
 <script src="https://accounts.google.com/gsi/client" async></script>
 <style>
@@ -20,8 +20,8 @@
   /* 본문 폰트 — 한글·한자·가나를 한 폰트가 모두 담도록 언어별로 하나씩 쓴다.
      한자는 한국어와 일본어의 글자 모양이 달라서 하나로 합치지 않고 언어별로 나눈다.
      로고는 KOTRA Bold 그대로. (예전 본문 폰트를 바꾼 경위는 fonts.css 주석 참고) */
-  :root { --font-body: 'Noto Sans KR', sans-serif; }
-  html[lang="ja"] { --font-body: 'Noto Sans JP', sans-serif; }
+  :root { --font-body: 'Noto Sans KR', 'Noto Sans JP', sans-serif; }
+  html[lang="ja"] { --font-body: 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
 
 
   :root {
@@ -805,7 +805,6 @@
     font-family: var(--font-body);
     font-weight: 700;
     font-size: 22px;
-    font-weight: 400;
     margin-bottom: 6px;
     padding-right: 30px;
   }

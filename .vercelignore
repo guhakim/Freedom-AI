@@ -2,6 +2,11 @@
 # 배포에 필요 없는데도 공개 URL로 그대로 받아갈 수 있었다 — 특히 tests/는 어떤 공격
 # 벡터를 어떻게 막았는지 그대로 열거한 문서가 된다.
 tests/
+# README의 변경 이력도 어떤 취약점을 어떻게 막았는지, 환경변수 이름이 무엇인지 그대로
+# 열거한다 — tests/를 막은 것과 같은 이유로 함께 제외한다 (GitHub에는 그대로 공개)
+README.md
+package.json
+package-lock.json
 hf-server/
 server.js
 .claude/
