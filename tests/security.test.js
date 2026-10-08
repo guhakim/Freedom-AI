@@ -505,3 +505,25 @@ test('a room name that can be created can also be renamed and made private', asy
     assert.equal(inv.statusCode, 200, '만들 수 있는 이름은 비공개 전환도 돼야 한다');
   } finally { restore(); }
 });
+
+// 회귀 테스트: 좌표·크기를 typeof로만 검사하면 Infinity·NaN이 통과하는데, 그 값은 KV에
+// JSON으로 저장되는 순간 null이 되어 항목이 화면에서 위치를 잃거나 사라진다.
+// (가짜 KV가 structuredClone만 쓰던 동안에는 Infinity가 그대로 살아남아 재현되지 않았다)
+test('Infinity / NaN coordinates are replaced with a usable value, not stored as null', async () => {
+  const { kv } = installMocks();
+  const drawable = v => typeof v === 'number' && Number.isFinite(v);
+
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'note_add', note: { id: 'n1', x: Infinity, y: NaN, w: 200, h: 150 } } } }), mockRes());
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'image_add', image: { id: 'i1', src: 'data:image/png;base64,AAAA',
+      x: NaN, y: -Infinity, w: 10, h: 10, z: NaN } } } }), mockRes());
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'shape_add', shape: { id: 's1', type: 'rect', x: NaN, y: Infinity, w: 10, h: 10 } } } }), mockRes());
+
+  const st = await kv.get(kvKey('r1'));
+  for (const [label, o] of [['노트', st.notes[0]], ['이미지', st.images[0]], ['도형', st.shapes[0]]]) {
+    assert.ok(drawable(o.x) && drawable(o.y), `${label}의 좌표가 화면에 그릴 수 없는 값이다: ${JSON.stringify([o.x, o.y])}`);
+  }
+  assert.ok(drawable(st.images[0].z), '이미지 앞뒤 순서도 숫자여야 정렬이 깨지지 않는다');
+});

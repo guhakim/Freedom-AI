@@ -13,7 +13,13 @@
 // 않아도 "KV에 저장됐다"는 검증이 통과해 버린다. 그러면 운영에서 데이터 유실이 되는
 // 저장 누락 버그를 테스트가 전혀 잡지 못한다. 넣을 때와 꺼낼 때 모두 복제해 끊어준다.
 function clone(v) {
-  return (v === null || typeof v !== 'object') ? v : structuredClone(v);
+  if (v === null || typeof v !== 'object') return v;
+  // Set은 Redis의 집합 타입(sadd)이라 JSON을 거치지 않는다 — 그대로 복제한다.
+  if (v instanceof Set) return new Set(v);
+  // 나머지(방 상태·멤버 목록 등)는 진짜 @vercel/kv처럼 JSON을 왕복시킨다.
+  // structuredClone만 쓰면 Infinity·NaN·undefined가 그대로 살아남아, 실제로는
+  // null로 저장되어 좌표가 사라지는 버그 계열이 테스트에서 영원히 재현되지 않았다.
+  return JSON.parse(JSON.stringify(v));
 }
 
 // TTL(ex 옵션·expire)을 가상 시계로 흉내낸다. 예전엔 전부 무시해서, 만료에 기대는 동작이
@@ -71,7 +77,8 @@ function makeFakePusherClass(triggers) {
 }
 
 // 테스트별로 새 인메모리 kv/pusher를 만들어 require.cache에 꽂아넣는다.
-// 반환된 kv.store로 시드 데이터를 넣거나 결과를 직접 들여다볼 수 있고,
+// 결과 확인은 kv.get()으로 한다 — kv.store를 직접 읽으면 저장소 안의 객체를 그대로 잡게 되어,
+// 복제로 막아둔 "저장하지 않아도 통과하는" 구멍이 되돌아온다. 시드 데이터는 kv.set()으로 넣는다.
 // triggers 배열로 어떤 Pusher 이벤트가 나갔는지 확인할 수 있다.
 function installMocks() {
   const kv = makeFakeKv();

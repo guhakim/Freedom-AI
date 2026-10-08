@@ -105,6 +105,8 @@ async function safeTrigger(pusher, channel, event, data, excl) {
   } catch (e) { console.error('pusher trigger failed', event, e?.message); }
 }
 
+// 좌표·크기는 반드시 이걸로 검사한다. typeof만 보면 Infinity·NaN이 통과하는데, 그 값은
+// KV에 JSON으로 저장되는 순간 null이 되어 항목이 화면에서 깨진다(위치를 잃거나 사라진다).
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
 const validGroupId = g => (typeof g === 'string' && g.length > 0 && g.length <= 40) ? g : undefined;
 const validId = id => typeof id === 'string' && id.length > 0 && id.length <= 64;
@@ -306,13 +308,13 @@ module.exports = async (req, res) => {
       if (state.notes.length >= MAX_NOTES) { rejected = 'note_limit'; break; }
       const n = {
         id:     note.id,
-        x:      typeof note.x === 'number' ? note.x : 0,
-        y:      typeof note.y === 'number' ? note.y : 0,
+        x:      isNum(note.x) ? note.x : 0,
+        y:      isNum(note.y) ? note.y : 0,
         w:      Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, note.w || 160)),
         h:      Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, note.h || 130)),
         color:  VALID_COLOR.test(note.color) ? note.color : '#fef08a',
         text:   String(note.text || '').slice(0, MAX_NOTE_TXT),
-        fontSize: typeof note.fontSize === 'number' ? Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, note.fontSize)) : 13,
+        fontSize: isNum(note.fontSize) ? Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, note.fontSize)) : 13,
         userId,
       };
       if (validGroupId(note.groupId)) n.groupId = note.groupId; // 실행 취소로 복원할 때 그룹 유지
@@ -391,11 +393,11 @@ module.exports = async (req, res) => {
       const img = {
         id:     image.id,
         src:    image.src,
-        x:      typeof image.x === 'number' ? image.x : 0,
-        y:      typeof image.y === 'number' ? image.y : 0,
+        x:      isNum(image.x) ? image.x : 0,
+        y:      isNum(image.y) ? image.y : 0,
         w:      Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, image.w || 200)),
         h:      Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, image.h || 200)),
-        z:      typeof image.z === 'number' ? image.z : 0,
+        z:      isNum(image.z) ? image.z : 0,
         userId,
       };
       if (validGroupId(image.groupId)) img.groupId = image.groupId;
@@ -493,7 +495,7 @@ module.exports = async (req, res) => {
           y1:   typeof shape.y1 === 'number' ? shape.y1 : 0,
           x2:   typeof shape.x2 === 'number' ? shape.x2 : 100,
           y2:   typeof shape.y2 === 'number' ? shape.y2 : 0,
-          bend: Math.min(2000, Math.max(-2000, typeof shape.bend === 'number' ? shape.bend : 0)),
+          bend: Math.min(2000, Math.max(-2000, isNum(shape.bend) ? shape.bend : 0)),
           strokeWidth: Math.min(60, Math.max(1, shape.strokeWidth || 6)),
           color, userId,
           fromId: from.id, fromSide: from.side,
@@ -502,8 +504,8 @@ module.exports = async (req, res) => {
       } else {
         s = {
           id:   shape.id, type: shape.type,
-          x:    typeof shape.x === 'number' ? shape.x : 0,
-          y:    typeof shape.y === 'number' ? shape.y : 0,
+          x:    isNum(shape.x) ? shape.x : 0,
+          y:    isNum(shape.y) ? shape.y : 0,
           w:    Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, shape.w || 160)),
           h:    Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, shape.h || 120)),
           color, userId,
@@ -549,7 +551,7 @@ module.exports = async (req, res) => {
       if (typeof action.y1 === 'number') s.y1 = action.y1;
       if (typeof action.x2 === 'number') s.x2 = action.x2;
       if (typeof action.y2 === 'number') s.y2 = action.y2;
-      if (typeof action.bend === 'number') s.bend = Math.min(2000, Math.max(-2000, action.bend));
+      if (isNum(action.bend)) s.bend = Math.min(2000, Math.max(-2000, action.bend));
       // 화살표 끝을 노트에서 떼어내면 연결도 풀어야 한다 — 예전엔 연결 정보가 남아 있어서
       // 그 노트가 움직이거나 새로고침하면 화살표가 원래 자리로 되돌아갔다
       if ('fromId' in action) { const b = resolveBinding(state, action.fromId, action.fromSide); s.fromId = b.id; s.fromSide = b.side; }
