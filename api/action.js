@@ -209,7 +209,7 @@ module.exports = async (req, res) => {
     const me = email.toLowerCase();
     const list = Array.isArray(state.contributors) ? state.contributors : [];
     if (!list.includes(me) && list.length < MAX_CONTRIBUTORS) list.push(me);
-    /* 제거 */
+    state.contributors = list;
   }
 
   // 로그인한 클라이언트가 쓰는 방이면 게스트 만료를 해제한다. 토큰 검증 성공에 묶어두면,

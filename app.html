@@ -1033,7 +1033,10 @@ function undoEntryImgBytes(entry) {
 function trimUndoImgBytes() {
   let total = 0;
   for (const e of undoStack) total += undoEntryImgBytes(e);
-  for (let i = 0; i < undoStack.length && total > UNDO_IMG_BUDGET; i++) {
+  // 가장 최근 항목은 버리지 않는다. 방금 한 동작(특히 이미지를 한꺼번에 지운 경우)이
+  // 예산을 혼자 넘기면 그게 통째로 사라져서, Ctrl+Z가 방금 한 삭제가 아니라 엉뚱한
+  // 과거 동작을 되돌렸다 — 사용자 입장에선 되돌리기가 고장 난 것으로 보인다.
+  for (let i = 0; i < undoStack.length - 1 && total > UNDO_IMG_BUDGET; i++) {
     const bytes = undoEntryImgBytes(undoStack[i]);
     if (!bytes) continue;
     undoStack.splice(i, 1); i--;
@@ -2953,15 +2956,26 @@ function flushPendingNoteText(leaving) {
     const note = notes.find(n => n.el === active.closest('.note'));
     if (note) note.text = active.innerText; // 마지막 입력 이벤트 이후 바뀐 글자까지 반영
   }
+  // keepalive 요청은 본문 합계가 64KiB를 넘으면 브라우저가 네트워크 오류로 거부한다.
+  // 포스트잇 텍스트에는 길이 제한이 없어서, 긴 노트 하나 또는 여러 노트를 한꺼번에
+  // 확정하면 그대로 전송이 무산됐다. 한도 안에서만 keepalive를 쓰고, 넘치는 건 일반
+  // 요청으로 보낸다 — 탭이 닫히는 중이면 취소될 수 있지만 거부되는 것보다는 낫다.
+  const KEEPALIVE_BUDGET = 56 * 1024;   // 헤더·다른 요청 몫을 남겨 둔 여유분
+  let budget = KEEPALIVE_BUDGET;
   for (const [noteId, timer] of pendingNoteText) {
     clearTimeout(timer);
     const note = notes.find(n => n.id === noteId);
-    if (note) sendAction({ type:'note_text', noteId, text:note.text }, { keepalive: !!leaving });
+    if (!note) continue;
+    const size = new Blob([note.text || '']).size + 512; // 본문 외 필드 대략치
+    const useKeepalive = !!leaving && size <= budget;
+    if (useKeepalive) budget -= size;
+    sendAction({ type:'note_text', noteId, text:note.text }, { keepalive: useKeepalive });
   }
   pendingNoteText.clear();
 }
 
 let _saveTimer = null;
+let _localSaveFailed = false;  // 같은 안내를 반복해 띄우지 않기 위한 플래그
 function saveLocalNow() {
   if (!roomId) return;
   try {
@@ -2979,7 +2993,17 @@ function saveLocalNow() {
     };
     data.todos = todos; // 할 일만 있는 방도 서버가 비어 보일 때 복원되도록
     localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
-  } catch(e) {}
+    _localSaveFailed = false;
+  } catch(e) {
+    // 예전엔 여기서 조용히 삼켜서, 용량 초과(이미지가 많은 보드)로 사본이 안 남는데도
+    // 사용자는 백업이 있다고 믿었다. 서버 저장과 달리 이건 복구 수단이라 한 번은 알린다.
+    if (!_localSaveFailed) {
+      _localSaveFailed = true;
+      showToast(tr('이 브라우저에 사본을 남기지 못했어요 (이미지가 많아 공간이 부족합니다) — 서버 저장은 정상입니다',
+                   'Could not keep a local backup (not enough space — too many images). Server saving still works.',
+                   'このブラウザに控えを保存できませんでした（画像が多く容量不足）— サーバー保存は正常です'));
+    }
+  }
 }
 function scheduleLocalSave() {
   clearTimeout(_saveTimer);
@@ -4670,8 +4694,19 @@ function refreshGoogleToken() {
       client_id: GOOGLE_CLIENT_ID,
       scope: 'openid profile email',
       hint: myEmail,
-      callback: resp => {
+      callback: async resp => {
         if (resp.error || !resp.access_token) { onSessionRefreshFailed(); return; }
+        // 계정 선택 창에서 다른 계정을 고를 수 있다. 그 토큰으로는 이 방의 저장이 전부
+        // 403이 되는데, 예전엔 확인 없이 "연장했습니다"를 띄워서 사용자는 저장되는 줄 알고
+        // 계속 작업했다. 받은 토큰이 정말 이 계정 것인지 확인한 뒤에만 성공으로 처리한다.
+        const owner = await googleTokenEmail(resp.access_token);
+        if (owner && owner !== myEmail.toLowerCase()) {
+          showToast(tr(`다른 계정(${owner})으로 로그인했어요 — ${myEmail} 계정으로 다시 시도해주세요`,
+                       `That signed in as ${owner} — please pick ${myEmail} instead`,
+                       `別のアカウント(${owner})でログインしました — ${myEmail} で再度お試しください`));
+          showSessionBanner(true);
+          return;
+        }
         sessionRefreshInteractive = false;
         saveGoogleToken(resp);
         hideSessionBanner();
@@ -4686,6 +4721,17 @@ function refreshGoogleToken() {
   sessionRefreshClient.requestAccessToken(sessionRefreshInteractive
     ? { prompt: 'select_account' }
     : { prompt: '', hint: myEmail });
+}
+
+// 토큰이 어느 계정 것인지 Google에 물어본다. 확인할 수 없으면(네트워크 문제 등) null을
+// 돌려주고, 호출하는 쪽은 그때만 기존처럼 통과시킨다 — 확인 실패로 연장을 막지는 않는다.
+async function googleTokenEmail(token) {
+  try {
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(token));
+    if (!r.ok) return null;
+    const info = await r.json();
+    return typeof info.email === 'string' ? info.email.toLowerCase() : null;
+  } catch { return null; }
 }
 
 function onSessionRefreshFailed() {

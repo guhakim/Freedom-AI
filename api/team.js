@@ -71,7 +71,7 @@ module.exports = async (req, res) => {
         // 기록된 순서를 그대로 둔다 — members[0]이 소유자(다른 멤버를 내보낼 수 있는 사람)다.
         // 요청한 사람을 앞에 두면, 남의 방에 한 글자 쓰고 비공개로 바꾼 사람이 소유자가 되어
         // 원래 쓰던 사람을 내보낼 수 있다. 가장 먼저 그 방을 쓴 사람을 소유자로 둔다.
-        members = [me];
+        members = [...new Set([...contributors, me])];
         await kv.set(key, members);
       } else if (!members.includes(email.toLowerCase())) {
         return res.status(403).json({ error: 'not_a_member' });
