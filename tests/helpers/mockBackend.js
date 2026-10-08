@@ -16,23 +16,41 @@ function clone(v) {
   return (v === null || typeof v !== 'object') ? v : structuredClone(v);
 }
 
+// TTL(ex 옵션·expire)을 가상 시계로 흉내낸다. 예전엔 전부 무시해서, 만료에 기대는 동작이
+// 구조적으로 검증 불가능했다 — 문의 레이트리밋(1분), 초대 링크(7일), 게스트 방(24시간),
+// 룸 락(10초)이 전부 그랬다. 실제 타이머를 쓰면 테스트가 그만큼 느려지므로,
+// kv.advance(ms)로 시간을 앞당겨 만료를 재현한다.
 function makeFakeKv() {
   const store = new Map();
+  const expiry = new Map();   // key -> 만료 시각(가상 ms)
+  let now = 0;                // 가상 경과 시간
+
+  const expired = k => expiry.has(k) && expiry.get(k) <= now;
+  const reap = k => { if (expired(k)) { store.delete(k); expiry.delete(k); return true; } return false; };
+  const setTtl = (k, opts) => {
+    if (opts && typeof opts.ex === 'number') expiry.set(k, now + opts.ex * 1000);
+    else expiry.delete(k);   // 진짜 Redis도 ex 없이 덮어쓰면 기존 TTL이 사라진다
+  };
+
   return {
     store,
-    async get(k) { return store.has(k) ? clone(store.get(k)) : null; },
+    // 테스트에서 시간을 앞당긴다 (예: kv.advance(10_000) → 10초 뒤)
+    advance(ms) { now += ms; },
+    async get(k) { reap(k); return store.has(k) ? clone(store.get(k)) : null; },
     // action.js의 acquireRoomLock()은 진짜 Redis의 SET NX EX 원자적 동작에 기대어
     // 락을 건다. nx를 그냥 무시하면 항상 "이미 있음"으로 취급돼(store.set 자체는
     // 실패하지 않으므로) 매번 20회 재시도 백오프를 다 태워 테스트가 초 단위로
     // 느려진다 — nx를 제대로 흉내내야 락이 1회에 바로 잡혀서 테스트가 빨라진다.
     async set(k, v, opts) {
+      reap(k);
       if (opts?.nx && store.has(k)) return null;
       store.set(k, clone(v));
+      setTtl(k, opts);
       return opts?.nx ? 'OK' : undefined;
     },
-    async del(k) { store.delete(k); },
-    async incr(k) { const v = (store.get(k) || 0) + 1; store.set(k, v); return v; },
-    async expire() { /* 테스트에서는 TTL을 신경 쓰지 않는다 */ },
+    async del(k) { store.delete(k); expiry.delete(k); },
+    async incr(k) { reap(k); const v = (store.get(k) || 0) + 1; store.set(k, v); return v; },
+    async expire(k, sec) { if (store.has(k)) expiry.set(k, now + sec * 1000); },
     async sadd(k, v) { const s = store.get(k) || new Set(); s.add(v); store.set(k, s); },
     async scard(k) { const s = store.get(k); return s ? s.size : 0; },
     async smembers(k) { const s = store.get(k); return s ? [...s] : []; },

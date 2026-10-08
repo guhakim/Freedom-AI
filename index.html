@@ -4,6 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ja="Freedom AI — 無限キャンバス・コラボレーションツール" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
+<meta name="description" content="Freedom AI — 무한 캔버스 위에서 팀이 실시간으로 함께 그리고 생각하는 협업 도구. 브라우저만 있으면 바로 시작할 수 있습니다.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/">
+
+<!-- 링크를 공유했을 때 보이는 미리보기 (카카오톡·슬랙·X 등) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:title" content="Freedom AI — 생각을 함께 그리는 공간">
+<meta property="og:description" content="무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구. 브라우저만 있으면 어디서든 시작할 수 있어요.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<meta property="og:locale" content="ko_KR">
+<!-- UI 언어는 같은 주소에서 버튼으로 바꾼다(별도 URL이 없다). 크롤러에 "이 주소가
+     이 언어들도 제공한다"고 알려 두되, 주소가 하나뿐이므로 모두 같은 곳을 가리킨다. -->
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Freedom AI — 생각을 함께 그리는 공간">
+<meta name="twitter:description" content="무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구.">
+<meta name="twitter:image" content="https://freedomai-app.vercel.app/logo.png">
+
 <link rel="icon" type="image/png" href="logo.png">
 <link rel="apple-touch-icon" href="logo.png">
 <!-- 본문 폰트 — 한글·한자·가나를 모두 담은 폰트를 언어별로 하나씩 쓴다 (자세한 사정은 fonts.css) -->
@@ -922,7 +942,7 @@
   <nav>
     <a href="#features" data-i18n-en="Features" data-i18n-ja="機能" data-i18n-ko="기능">기능</a>
     <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
-    <a href="#about" data-i18n-en="About" data-i18n-ja="紹介" data-i18n-ko="소개">소개</a>
+    <a href="#about" data-i18n-en="About" data-i18n-ja="概要" data-i18n-ko="소개">소개</a>
   </nav>
 
   <div class="header-cta">
@@ -965,7 +985,7 @@
 
         <div class="sticky sticky-yellow" data-i18n-en-html="🎯 Core features<br>sort first" data-i18n-ja-html="🎯 コア機能を<br>先に整理する" data-i18n-ko-html="🎯 핵심 기능<br>우선 정리하기">🎯 핵심 기능<br>우선 정리하기</div>
         <div class="sticky sticky-pink" data-i18n-en-html="Design references<br>Miro, FigJam" data-i18n-ja-html="デザイン参考<br>Miro, FigJam" data-i18n-ko-html="디자인 레퍼런스<br>Miro, FigJam">디자인 레퍼런스<br>Miro, FigJam</div>
-        <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ja-html="WebSocketで<br>リアルタイム協業!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
+        <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ja-html="WebSocketで<br>リアルタイム共同編集!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
         <div class="sticky sticky-blue" data-i18n-en-html="Phase 1<br>build the skeleton" data-i18n-ja-html="Phase 1<br>骨組みから着手" data-i18n-ko-html="Phase 1<br>뼈대부터 시작">Phase 1<br>뼈대부터 시작</div>
         <div class="sticky sticky-peach" data-i18n-en-html="AI image<br>editing 🤖" data-i18n-ja-html="AI画像<br>編集機能 🤖" data-i18n-ko-html="AI 이미지<br>편집 기능 🤖">AI 이미지<br>편집 기능 🤖</div>
 
@@ -1058,8 +1078,8 @@
             <path d="M7 11h8M11 7v8" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
           </svg>
         </div>
-        <h3 data-i18n-en="Real-time collaboration" data-i18n-ja="リアルタイム協業" data-i18n-ko="실시간 협업">실시간 협업</h3>
-        <p data-i18n-en="See your teammates' cursors live. Collaborate like you're in the same room." data-i18n-ja="チームメンバーのカーソルがリアルタイムで見えます。同じ空間にいるような感覚で協業できます。" data-i18n-ko="팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.">팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
+        <h3 data-i18n-en="Real-time collaboration" data-i18n-ja="リアルタイム共同編集" data-i18n-ko="실시간 협업">실시간 협업</h3>
+        <p data-i18n-en="See your teammates' cursors live. Collaborate like you're in the same room." data-i18n-ja="チームメンバーのカーソルがリアルタイムで見えます。同じ空間にいるような感覚で作業できます。" data-i18n-ko="팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.">팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
         <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
       </div>
 
@@ -1139,7 +1159,7 @@
           <div class="phase-item" data-i18n-en="Pen &amp; eraser" data-i18n-ja="ペン &amp; 消しゴム" data-i18n-ko="펜 & 지우개">펜 & 지우개</div>
           <div class="phase-item" data-i18n-en="Color palette" data-i18n-ja="カラーパレット" data-i18n-ko="색상 팔레트">색상 팔레트</div>
           <div class="phase-item" data-i18n-en="Sticky notes" data-i18n-ja="付箋" data-i18n-ko="포스트잇">포스트잇</div>
-          <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ja="リアルタイム協業カーソル" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
+          <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ja="リアルタイム共同編集カーソル" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
           <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ja="共同To-Doリスト" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
         </div>
       </div>
@@ -1147,7 +1167,7 @@
       <div class="phase-card">
         <div class="phase-num">02</div>
         <h3 data-i18n-en="Growth — expanded features" data-i18n-ja="発展 — 拡張機能" data-i18n-ko="발전 — 확장 기능">발전 — 확장 기능</h3>
-        <p data-i18n-en="Once the foundation is stable, we add richer collaboration experiences." data-i18n-ja="土台が安定したら、より豊かな協業体験を追加します。" data-i18n-ko="뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.">뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
+        <p data-i18n-en="Once the foundation is stable, we add richer collaboration experiences." data-i18n-ja="土台が安定したら、より豊かな共同編集の体験を追加します。" data-i18n-ko="뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.">뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
         <div class="phase-items">
           <div class="phase-item" data-i18n-en="Basic shape tools" data-i18n-ja="基本の図形ツール" data-i18n-ko="기본 도형 도구">기본 도형 도구</div>
           <div class="phase-item" data-i18n-en="Image drag &amp; drop" data-i18n-ja="画像のドラッグ &amp; ドロップ" data-i18n-ko="이미지 드래그 & 드롭">이미지 드래그 & 드롭</div>
@@ -1225,7 +1245,8 @@
 ══════════════════════════ -->
 <div class="contact-overlay" id="contact-overlay">
   <div class="contact-modal">
-    <button class="contact-close" id="contact-close" aria-label="닫기">✕</button>
+    <button class="contact-close" id="contact-close" aria-label="닫기"
+            data-i18n-ko-aria-label="닫기" data-i18n-en-aria-label="Close" data-i18n-ja-aria-label="閉じる">✕</button>
 
     <div id="contact-form-view">
       <h3 data-i18n-en="Contact us" data-i18n-ja="お問い合わせ" data-i18n-ko="문의하기">문의하기</h3>
@@ -1368,6 +1389,16 @@ document.querySelector('.btn-ghost').addEventListener('click', () => {
     document.querySelectorAll('[data-i18n-en-placeholder]').forEach(el => {
       const val = pick(el, lang, 'Placeholder');
       if (val != null) el.placeholder = val;
+    });
+    // 화면에 글자로 보이지 않는 것(스크린리더가 읽는 이름, 마우스를 올렸을 때 뜨는 설명)도
+    // 언어를 따라가야 한다 — 예전엔 분기가 없어서 영어·일본어 화면에서도 한국어로 읽혔다.
+    document.querySelectorAll('[data-i18n-en-aria-label]').forEach(el => {
+      const val = pick(el, lang, 'AriaLabel');
+      if (val != null) el.setAttribute('aria-label', val);
+    });
+    document.querySelectorAll('[data-i18n-en-title]').forEach(el => {
+      const val = pick(el, lang, 'Title');
+      if (val != null) el.title = val;
     });
     document.documentElement.lang = lang;
     const toggle = document.getElementById('lang-toggle');
