@@ -310,8 +310,8 @@ module.exports = async (req, res) => {
         id:     note.id,
         x:      isNum(note.x) ? note.x : 0,
         y:      isNum(note.y) ? note.y : 0,
-        w:      Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, note.w || 160)),
-        h:      Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, note.h || 130)),
+        w:      Math.min(MAX_NOTE_W, Math.max(MIN_NOTE_W, isNum(note.w) ? note.w : 160)),
+        h:      Math.min(MAX_NOTE_H, Math.max(MIN_NOTE_H, isNum(note.h) ? note.h : 130)),
         color:  VALID_COLOR.test(note.color) ? note.color : '#fef08a',
         text:   String(note.text || '').slice(0, MAX_NOTE_TXT),
         fontSize: isNum(note.fontSize) ? Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, note.fontSize)) : 13,
@@ -329,7 +329,7 @@ module.exports = async (req, res) => {
     // 세션에서 만든(옛 랜덤 userId) 노트는 지금 세션의 고정 clientId와 절대 일치하지
     // 않아 이 체크가 있으면 영구히 삭제/이동이 안 되는 노트가 생긴다.
     case 'note_move': {
-      if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
+      if (!isNum(action.x) || !isNum(action.y)) break;
       const n = state.notes.find(n => n.id === action.noteId);
       if (!n) break;
       n.x = action.x; n.y = action.y;
@@ -352,7 +352,7 @@ module.exports = async (req, res) => {
 
     case 'note_font_size': {
       const n = state.notes.find(n => n.id === action.noteId);
-      if (!n || typeof action.fontSize !== 'number') break;
+      if (!n || !isNum(action.fontSize)) break;
       n.fontSize = Math.min(MAX_NOTE_FONT, Math.max(MIN_NOTE_FONT, action.fontSize));
       await kvSet(kvKey, state, kvSetOpts);
       await trigger('note_font_size', { noteId: action.noteId, fontSize: n.fontSize });
@@ -395,8 +395,8 @@ module.exports = async (req, res) => {
         src:    image.src,
         x:      isNum(image.x) ? image.x : 0,
         y:      isNum(image.y) ? image.y : 0,
-        w:      Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, image.w || 200)),
-        h:      Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, image.h || 200)),
+        w:      Math.min(MAX_IMG_W, Math.max(MIN_IMG_W, isNum(image.w) ? image.w : 200)),
+        h:      Math.min(MAX_IMG_H, Math.max(MIN_IMG_H, isNum(image.h) ? image.h : 200)),
         z:      isNum(image.z) ? image.z : 0,
         userId,
       };
@@ -411,7 +411,7 @@ module.exports = async (req, res) => {
 
     // 이미지/도형 이동·크기조절·삭제도 노트/획과 동일하게 소유자 무관 정책으로 통일.
     case 'image_move': {
-      if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
+      if (!isNum(action.x) || !isNum(action.y)) break;
       if (!state.images) break;
       const img = state.images.find(i => i.id === action.imageId);
       if (!img) break;
@@ -491,12 +491,12 @@ module.exports = async (req, res) => {
         const to   = resolveBinding(state, shape.toId,   shape.toSide);
         s = {
           id:   shape.id, type: 'arrow',
-          x1:   typeof shape.x1 === 'number' ? shape.x1 : 0,
-          y1:   typeof shape.y1 === 'number' ? shape.y1 : 0,
-          x2:   typeof shape.x2 === 'number' ? shape.x2 : 100,
-          y2:   typeof shape.y2 === 'number' ? shape.y2 : 0,
+          x1:   isNum(shape.x1) ? shape.x1 : 0,
+          y1:   isNum(shape.y1) ? shape.y1 : 0,
+          x2:   isNum(shape.x2) ? shape.x2 : 100,
+          y2:   isNum(shape.y2) ? shape.y2 : 0,
           bend: Math.min(2000, Math.max(-2000, isNum(shape.bend) ? shape.bend : 0)),
-          strokeWidth: Math.min(60, Math.max(1, shape.strokeWidth || 6)),
+          strokeWidth: Math.min(60, Math.max(1, isNum(shape.strokeWidth) ? shape.strokeWidth : 6)),
           color, userId,
           fromId: from.id, fromSide: from.side,
           toId:   to.id,   toSide:   to.side,
@@ -506,8 +506,8 @@ module.exports = async (req, res) => {
           id:   shape.id, type: shape.type,
           x:    isNum(shape.x) ? shape.x : 0,
           y:    isNum(shape.y) ? shape.y : 0,
-          w:    Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, shape.w || 160)),
-          h:    Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, shape.h || 120)),
+          w:    Math.min(MAX_SHAPE_W, Math.max(MIN_SHAPE_W, isNum(shape.w) ? shape.w : 160)),
+          h:    Math.min(MAX_SHAPE_H, Math.max(MIN_SHAPE_H, isNum(shape.h) ? shape.h : 120)),
           color, userId,
         };
       }
@@ -519,7 +519,7 @@ module.exports = async (req, res) => {
     }
 
     case 'shape_move': {
-      if (typeof action.x !== 'number' || typeof action.y !== 'number') break;
+      if (!isNum(action.x) || !isNum(action.y)) break;
       if (!state.shapes) break;
       const s = state.shapes.find(s => s.id === action.shapeId);
       if (!s || s.type === 'arrow') break;
@@ -547,10 +547,10 @@ module.exports = async (req, res) => {
       if (!state.shapes) break;
       const s = state.shapes.find(s => s.id === action.shapeId && s.type === 'arrow');
       if (!s) break;
-      if (typeof action.x1 === 'number') s.x1 = action.x1;
-      if (typeof action.y1 === 'number') s.y1 = action.y1;
-      if (typeof action.x2 === 'number') s.x2 = action.x2;
-      if (typeof action.y2 === 'number') s.y2 = action.y2;
+      if (isNum(action.x1)) s.x1 = action.x1;
+      if (isNum(action.y1)) s.y1 = action.y1;
+      if (isNum(action.x2)) s.x2 = action.x2;
+      if (isNum(action.y2)) s.y2 = action.y2;
       if (isNum(action.bend)) s.bend = Math.min(2000, Math.max(-2000, action.bend));
       // 화살표 끝을 노트에서 떼어내면 연결도 풀어야 한다 — 예전엔 연결 정보가 남아 있어서
       // 그 노트가 움직이거나 새로고침하면 화살표가 원래 자리로 되돌아갔다
@@ -692,9 +692,14 @@ module.exports = async (req, res) => {
     }
   }
 
+  // 락은 응답을 보내기 *전에* 푼다. Vercel은 응답이 끝나면 함수를 얼려서 그 뒤의 작업(finally의
+  // 해제)이 다음 호출 때까지 미뤄질 수 있다 — 그러면 같은 방의 다음 액션이 락을 못 잡고 503을
+  // 받는다. 라이브에서 획+포스트잇을 연달아 만들 때 획 쪽이 503을 받아 사라진 적이 있다.
+  await releaseRoomLock(kv, lock); lock = null;
   res.json(rejected ? { ok: true, rejected } : { ok: true });
   } catch (e) {
     console.error('action', action.type, e);
+    await releaseRoomLock(kv, lock); lock = null;
     res.status(500).json({ error: 'server_error' });
   } finally {
     await releaseRoomLock(kv, lock);

@@ -3054,9 +3054,24 @@ document.addEventListener('visibilitychange', () => {
 // 방금 지운 게 되살아나는 버그가 됐다. 실패를 감지해 알려주고, 서버 기준으로 즉시 다시
 // 맞춰서(resync) 화면이 거짓말하지 않게 한다.
 let pendingActions = new Set();
+// 서버는 같은 방에 동시에 들어온 요청을 방 단위 락으로 줄 세우고, 락을 끝내 못 잡으면
+// 503(busy)을 돌려준다. 예전엔 이것도 실패로 보고 곧장 서버 상태로 덮어써서, 방금 그린 획이
+// 화면에서도 서버에서도 사라졌다. busy는 "잠시 뒤 다시"라는 뜻이라 몇 번 더 보내본다.
+const BUSY_RETRIES = 3;
+async function postActionWithRetry(init) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch('/api/action', init);
+    if (res.status !== 503 || attempt >= BUSY_RETRIES) return res;
+    // busy만 다시 보낸다 — 서버는 락을 못 잡으면 방 상태를 건드리기 전에 돌려보내므로 재전송해도
+    // 두 번 반영되지 않는다. 다른 이유의 503(인프라 오류 등)은 어디까지 처리됐는지 모른다.
+    const body = await res.clone().json().catch(() => null);
+    if (body?.error !== 'busy') return res;
+    await new Promise(r => setTimeout(r, 300 * (attempt + 1) + Math.random() * 200));
+  }
+}
 function sendAction(action, opts) {
   scheduleLocalSave();
-  const fetchPromise = fetch('/api/action', {
+  const fetchPromise = postActionWithRetry({
     method: 'POST',
     // 페이지를 떠나는 중에는 keepalive로 보내야 요청이 취소되지 않는다. (navigator.sendBeacon은
     // Authorization 헤더를 붙일 수 없어서 비공개 방 인증에 쓸 수 없다)

@@ -528,6 +528,53 @@ test('Infinity / NaN coordinates are replaced with a usable value, not stored as
   assert.ok(drawable(st.images[0].z), '이미지 앞뒤 순서도 숫자여야 정렬이 깨지지 않는다');
 });
 
+// 회귀 테스트: 추가(add)만 막고 이동·화살표 수정은 typeof만 봐서, 이미 있는 항목을
+// Infinity(JSON.parse('1e400')로 만들 수 있다)로 옮겨 위치를 망가뜨릴 수 있었다. 크기를
+// 문자열로 보내면 `w || 160`이 그 문자열을 그대로 Math.max에 넣어 NaN이 저장됐다.
+test('move / arrow-update / string sizes cannot store unusable numbers', async () => {
+  const { kv } = installMocks();
+  const drawable = v => typeof v === 'number' && Number.isFinite(v);
+  const send = action => freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1', action } }), mockRes());
+
+  await send({ type: 'note_add', note: { id: 'n1', x: 0, y: 0, w: 'abc', h: 'abc' } });
+  await send({ type: 'image_add', image: { id: 'i1', src: 'data:image/png;base64,AAAA', x: 0, y: 0, w: 'abc', h: {} } });
+  await send({ type: 'shape_add', shape: { id: 's1', type: 'rect', x: 0, y: 0, w: 'abc', h: 'abc' } });
+  await send({ type: 'shape_add', shape: { id: 'a1', type: 'arrow', x1: 0, y1: 0, x2: 10, y2: 0, strokeWidth: 'thick' } });
+
+  await send({ type: 'note_move', noteId: 'n1', x: Infinity, y: 5 });
+  await send({ type: 'note_font_size', noteId: 'n1', fontSize: Infinity });
+  await send({ type: 'image_move', imageId: 'i1', x: 5, y: -Infinity });
+  await send({ type: 'shape_move', shapeId: 's1', x: NaN, y: 5 });
+  await send({ type: 'shape_arrow_update', shapeId: 'a1', x1: Infinity, y1: NaN, x2: -Infinity, y2: 3 });
+
+  const st = await kv.get(kvKey('r1'));
+  const [note, img, rect, arrow] = [st.notes[0], st.images[0], st.shapes[0], st.shapes[1]];
+  for (const [label, vals] of [
+    ['노트', [note.x, note.y, note.w, note.h, note.fontSize ?? 0]],
+    ['이미지', [img.x, img.y, img.w, img.h]],
+    ['도형', [rect.x, rect.y, rect.w, rect.h]],
+    ['화살표', [arrow.x1, arrow.y1, arrow.x2, arrow.y2, arrow.strokeWidth]],
+  ]) assert.ok(vals.every(drawable), `${label}에 그릴 수 없는 값이 저장됐다: ${JSON.stringify(vals)}`);
+  assert.deepEqual([note.x, img.y, rect.x], [0, 0, 0], '잘못된 이동은 무시하고 원래 위치를 지켜야 한다');
+  assert.deepEqual([arrow.x1, arrow.y1, arrow.x2, arrow.y2], [0, 0, 10, 3], '화살표는 올바른 끝점만 바뀌어야 한다');
+});
+
+// 회귀 테스트: 락을 finally에서(응답을 보낸 뒤에) 풀면, Vercel이 응답 직후 함수를 얼리는
+// 동안 락이 남아 같은 방의 다음 액션이 503(busy)을 받는다. 응답 시점엔 이미 풀려 있어야 한다.
+test('the room lock is already released when the action response is sent', async () => {
+  const { kv } = installMocks();
+  const lockKey = `${kvKey('r1')}:lock`;
+  const heldAtResponse = [];
+  const res = mockRes();
+  const origJson = res.json;
+  res.json = function (body) { heldAtResponse.push(kv.get(lockKey)); return origJson.call(this, body); };
+
+  await freshHandler(api('action'))(mockReq({ body: { roomId: 'r1', userId: 'u1',
+    action: { type: 'note_add', note: { id: 'n1' } } } }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(await heldAtResponse[0], null, '응답을 보낼 때 락이 아직 잡혀 있다');
+});
+
 // pusher-auth 입력 검증 — 빠지면 아무 문자열이나 presence member id로 쓰이거나,
 // 채널 이름에서 뽑아낸 방 이름이 검증 없이 KV 키 조회에 들어간다.
 test('pusher-auth rejects a malformed user id or room name', async () => {
