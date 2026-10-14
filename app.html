@@ -421,9 +421,15 @@
   .name-modal-inner { background:var(--white); border-radius:20px;
     padding:36px 32px; width:340px; max-width:90vw;
     box-shadow:0 24px 64px rgba(14,14,13,.18); text-align:center; }
-  .name-modal-logo { font-size:22px; font-weight:500; color:var(--ink);
+  /* 로그인·프로젝트 이름 창의 제목은 랜딩 헤더 로고와 같게(F 마크 + KOTRA Bold) */
+  .name-modal-logo { display:flex; align-items:center; justify-content:center; gap:10px;
+    font-family:'KOTRA Bold',sans-serif; font-size:24px; font-weight:700; color:var(--ink);
     letter-spacing:-.02em; margin-bottom:8px; }
-  .name-modal-sub { font-size:14px; color:var(--ink3); margin-bottom:24px; }
+  .name-modal-logo img { width:30px; height:30px; display:block; }
+  .name-modal-sub { font-size:14px; font-weight:500; color:var(--ink2); margin-bottom:24px; }
+  /* 랜딩 버튼(.btn-ghost)과 같은 검은 테두리 + 그림자 */
+  #google-btn:hover { transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink) !important; }
+  #google-btn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink) !important; }
   .modal-input { width:100%; border:.5px solid rgba(14,14,13,.2); border-radius:10px;
     padding:12px 14px; font-size:15px; font-family:var(--font-body);
     color:var(--ink); outline:none; margin-bottom:12px; transition:border-color .2s; }
@@ -809,21 +815,22 @@
 <!-- ── LOGIN MODAL ── -->
 <div class="name-modal" id="name-modal" style="display:none;">
   <div class="name-modal-inner">
-    <div class="name-modal-logo">Freedom AI</div>
+    <div class="name-modal-logo"><img src="logo-mark.png" alt="">Freedom Ai</div>
     <div class="name-modal-sub" data-i18n-en="Log in to get started" data-i18n-ja="始めるにはログインしてください" data-i18n-ko="시작하려면 로그인하세요">시작하려면 로그인하세요</div>
     <div id="login-status" style="font-size:12px;color:#ef4444;text-align:center;min-height:16px;margin-bottom:4px;"></div>
     <button id="google-btn" type="button" style="
       width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
-      border:1.5px solid rgba(14,14,13,.15);border-radius:100px;padding:11px 16px;
-      background:#fff;cursor:pointer;font-size:14px;font-weight:500;
-      font-family:var(--font-body);color:#3c4043;margin-top:8px;
-      transition:background .15s,box-shadow .15s;">
+      border:1.5px solid var(--ink);border-radius:100px;padding:11px 16px;
+      background:#fff;cursor:pointer;font-size:14px;font-weight:700;
+      font-family:var(--font-body);color:var(--ink);margin-top:8px;
+      box-shadow:3px 3px 0 var(--ink);
+      transition:transform .12s ease,box-shadow .12s ease;">
       <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/><path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
       <span data-i18n-en="Sign in with Google" data-i18n-ja="Googleでログイン" data-i18n-ko="Google로 로그인">Google로 로그인</span>
     </button>
     <button id="guest-btn" type="button" style="
       width:100%;border:none;background:none;cursor:pointer;
-      font-size:13px;font-family:var(--font-body);color:var(--ink3);
+      font-size:13px;font-weight:500;font-family:var(--font-body);color:var(--ink3);
       margin-top:14px;text-decoration:underline;">
       <span data-i18n-en="Continue as guest" data-i18n-ja="ゲストとして入る" data-i18n-ko="게스트로 입장">게스트로 입장</span>
     </button>
@@ -833,7 +840,7 @@
 <!-- ── PROJECT MODAL ── -->
 <div class="name-modal" id="project-modal" style="display:none;">
   <div class="name-modal-inner">
-    <div class="name-modal-logo">Freedom AI</div>
+    <div class="name-modal-logo"><img src="logo-mark.png" alt="">Freedom Ai</div>
     <div class="name-modal-sub" data-i18n-en="Enter a project name" data-i18n-ja="プロジェクト名を入力してください" data-i18n-ko="프로젝트 이름을 입력하세요">프로젝트 이름을 입력하세요</div>
     <form id="project-form">
       <input class="modal-input" id="project-input" type="text"
