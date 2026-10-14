@@ -3070,6 +3070,34 @@ function saveCurrentWork() {
   showToast(tr('저장했습니다', 'Saved', '保存しました'));
 }
 
+// 지금 열려 있지 않은 프로젝트의 "저장" — 화면에 올라와 있는 작업물이 없으므로, 서버에 저장된
+// 최신 내용을 받아 이 브라우저의 사본(fa:room:*)을 새로 만든다. 서버가 비어 있을 때 사본을
+// 복원하는 경로(main)가 이 사본을 쓴다.
+async function saveProjectSnapshot(name) {
+  const rid = name.slice(0, 32);
+  const fail = () => showToast(tr('저장하지 못했어요', 'Couldn’t save', '保存できませんでした'));
+  try {
+    const res = await fetch(`/api/room?roomId=${encodeURIComponent(rid)}&email=${encodeURIComponent(myEmail)}`, {
+      headers: { 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` },
+    });
+    if (!res.ok) return fail();
+    const s = await res.json();
+    const data = {
+      strokes: s.strokes || [], notes: s.notes || [], images: s.images || [],
+      shapes: s.shapes || [], todos: s.todos || {},
+    };
+    const empty = !data.strokes.length && !data.notes.length && !data.images.length
+      && !data.shapes.length && !Object.keys(data.todos).length;
+    // 서버가 비어 있으면 덮어쓰지 않는다 — 그때는 이 브라우저의 사본이 유일한 복구 수단일 수 있다
+    if (empty && store.getItem('fa:room:' + rid)) {
+      showToast(tr('서버에 내용이 없어 기존 백업을 그대로 두었어요', 'Nothing on the server — kept the existing backup', 'サーバーに内容がないため、既存のバックアップを残しました'));
+      return;
+    }
+    store.setItem('fa:room:' + rid, JSON.stringify(data));
+    showToast(tr('저장했습니다', 'Saved', '保存しました'));
+  } catch { fail(); }
+}
+
 // 떠나기 직전 확정. pagehide는 모바일 사파리에서 beforeunload가 안 불리는 경우까지 덮고,
 // visibilitychange(hidden)는 탭·앱 전환으로 백그라운드에 간 뒤 그대로 정리되는 경우를 덮는다.
 // localStorage 쓰기는 동기라 이 시점에도 확실히 끝난다.
@@ -5384,11 +5412,10 @@ async function main() {
           const items = [
             { label: tr('제목 바꾸기', 'Rename', '名前を変更'), onClick: () => startRenameProject(row, btn, name) },
           ];
-          // 지금 열려있는 프로젝트일 때만 "저장"을 보여준다 — 다른 프로젝트는 캔버스가
-          // 메모리에 로드돼 있지 않아 저장할 "지금 작업물"이 없다.
-          if (name.slice(0,32) === roomId) {
-            items.push({ label: tr('저장', 'Save', '保存'), onClick: saveCurrentWork });
-          }
+          // 열려 있는 프로젝트는 화면의 작업물을 저장하고, 다른 프로젝트는 캔버스가 메모리에
+          // 없으므로 서버의 최신 내용을 받아 이 브라우저에 백업한다.
+          items.push({ label: tr('저장', 'Save', '保存'),
+            onClick: name.slice(0,32) === roomId ? saveCurrentWork : () => saveProjectSnapshot(name) });
           showProjectMenu(e.clientX, e.clientY, items);
         });
 
