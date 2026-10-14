@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Freedom AI — Stats</title>
+<link rel="icon" type="image/png" href="logo.png">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Pretendard, sans-serif;
+    background: #0f0f13;
+    color: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 640px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 20px;
+  }
+  .gate {
+    display: flex;
+    gap: 8px;
+  }
+  input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    background: #1a1a20;
+    color: #eee;
+    font-size: 14px;
+  }
+  button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #8b5cf6;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:hover { background: #7c3aed; }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .stat {
+    background: #1a1a20;
+    border: 1px solid #2a2a32;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .stat .label {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+  .stat .value {
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .msg {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #f87171;
+    min-height: 18px;
+  }
+  .note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #777;
+    line-height: 1.5;
+  }
+  h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 32px 0 12px;
+  }
+  .contact-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+  .contact-item {
+    background: #1a1a20;
+    border: 1px solid #2a2a32;
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .contact-item .meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .contact-item .who { font-weight: 600; }
+  .contact-item .email { color: #999; }
+  .contact-item .when { color: #666; font-size: 12px; white-space: nowrap; }
+  .contact-item .msg-body {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .empty {
+    font-size: 13px;
+    color: #666;
+    padding: 12px 0;
+  }
+  .daily-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .daily-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .daily-row .date {
+    width: 56px;
+    flex-shrink: 0;
+    color: #999;
+  }
+  .daily-row .bar-track {
+    flex: 1;
+    height: 18px;
+    background: #1a1a20;
+    border: 1px solid #2a2a32;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .daily-row .bar-fill {
+    display: block;
+    height: 100%;
+    background: #8b5cf6;
+  }
+  .daily-row .count {
+    width: 32px;
+    flex-shrink: 0;
+    text-align: right;
+    color: #eee;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Freedom AI 통계</h1>
+  <div class="gate">
+    <input id="key" type="password" placeholder="관리자 키 입력" autocomplete="off">
+    <button id="go">조회</button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <div class="grid" id="grid" style="display:none;">
+    <div class="stat"><div class="label">가입자 수 (고유 이메일)</div><div class="value" id="v-users">-</div></div>
+    <div class="stat"><div class="label">총 방문 수</div><div class="value" id="v-total">-</div></div>
+    <div class="stat"><div class="label">랜딩 페이지 방문</div><div class="value" id="v-index">-</div></div>
+    <div class="stat"><div class="label">앱 진입 수</div><div class="value" id="v-app">-</div></div>
+  </div>
+  <div class="note">가입자 수는 Google 로그인 후 프로젝트 목록을 최소 한 번 동기화한 고유 이메일 수 기준입니다.</div>
+
+  <div id="monthly-section" style="display:none;">
+    <h2>월별 방문 수 (최근 <span id="monthly-months">0</span>개월)</h2>
+    <div class="daily-chart" id="monthly-chart"></div>
+  </div>
+
+  <div id="daily-section" style="display:none;">
+    <h2>일별 방문 수 (최근 <span id="daily-days">0</span>일)</h2>
+    <div class="daily-chart" id="daily-chart"></div>
+  </div>
+
+  <div id="users-section" style="display:none;">
+    <h2>가입자 목록 (<span id="users-count">0</span>명)</h2>
+    <div class="contact-list" id="users-list"></div>
+  </div>
+
+  <div id="contact-section" style="display:none;">
+    <h2>최근 문의 (<span id="contact-count">0</span>건)</h2>
+    <div class="contact-list" id="contact-list"></div>
+  </div>
+</div>
+<script>
+const keyInput = document.getElementById('key');
+const msg = document.getElementById('msg');
+const grid = document.getElementById('grid');
+
+const saved = sessionStorage.getItem('fa_admin_key');
+if (saved) { keyInput.value = saved; load(saved); }
+
+document.getElementById('go').addEventListener('click', () => load(keyInput.value));
+keyInput.addEventListener('keydown', e => { if (e.key === 'Enter') load(keyInput.value); });
+
+// 조회 실패 시 이전에 성공했던 화면(그래프·목록)이 그대로 남아있으면 최신 데이터로
+// 오해할 수 있으므로, 실패한 모든 경로에서 전부 숨긴다.
+function hideAllSections() {
+  grid.style.display = 'none';
+  for (const id of ['monthly-section', 'daily-section', 'users-section', 'contact-section']) {
+    document.getElementById(id).style.display = 'none';
+  }
+}
+
+async function load(key) {
+  if (!key) { msg.textContent = '키를 입력해주세요.'; return; }
+  msg.textContent = '조회 중...';
+  try {
+    const r = await fetch('/api/stats', { headers: { 'X-Admin-Key': key } });
+    if (r.status === 401) { msg.textContent = '키가 올바르지 않습니다.'; hideAllSections(); return; }
+    if (!r.ok) { msg.textContent = '조회 실패 (' + r.status + ')'; hideAllSections(); return; }
+    const data = await r.json();
+    sessionStorage.setItem('fa_admin_key', key);
+    msg.textContent = data.kvConnected ? '' : 'KV 미연결 상태 — 값은 항상 0으로 표시됩니다.';
+    document.getElementById('v-users').textContent = data.users;
+    document.getElementById('v-total').textContent = data.pageviews;
+    document.getElementById('v-index').textContent = data.pageviewsIndex;
+    document.getElementById('v-app').textContent = data.pageviewsApp;
+    grid.style.display = 'grid';
+
+    renderMonthlyStats(data.monthlyStats || []);
+    renderDailyStats(data.dailyStats || []);
+    renderUserEmails(data.userEmails || []);
+    loadContacts(key);
+  } catch (e) {
+    msg.textContent = '네트워크 오류';
+    hideAllSections();
+  }
+}
+
+// stats: [{date|month, count}], chartId/sectionId/countId는 DOM id, labelFn(item)은 막대 왼쪽에 쓸 라벨,
+// emptyMsg는 데이터가 하나도 없을 때 문구.
+function renderBarStats(stats, { sectionId, chartId, countId, labelFn, emptyMsg }) {
+  const section = document.getElementById(sectionId);
+  const chart = document.getElementById(chartId);
+  document.getElementById(countId).textContent = stats.length;
+  chart.innerHTML = '';
+  if (!stats.length) {
+    chart.innerHTML = `<div class="empty">${emptyMsg}</div>`;
+  } else {
+    const max = Math.max(1, ...stats.map(d => d.count));
+    for (const item of stats) {
+      const row = document.createElement('div');
+      row.className = 'daily-row';
+      row.innerHTML = `
+        <span class="date"></span>
+        <span class="bar-track"><span class="bar-fill" style="width:${Math.round((item.count / max) * 100)}%"></span></span>
+        <span class="count"></span>
+      `;
+      row.querySelector('.date').textContent = labelFn(item);
+      row.querySelector('.count').textContent = item.count;
+      chart.appendChild(row);
+    }
+  }
+  section.style.display = 'block';
+}
+
+function renderDailyStats(dailyStats) {
+  renderBarStats(dailyStats, {
+    sectionId: 'daily-section', chartId: 'daily-chart', countId: 'daily-days',
+    labelFn: d => d.date.slice(5), // MM-DD
+    emptyMsg: '아직 기록된 일별 방문 데이터가 없습니다.',
+  });
+}
+
+function renderMonthlyStats(monthlyStats) {
+  renderBarStats(monthlyStats, {
+    sectionId: 'monthly-section', chartId: 'monthly-chart', countId: 'monthly-months',
+    labelFn: d => d.month, // YYYY-MM
+    emptyMsg: '아직 기록된 월별 방문 데이터가 없습니다.',
+  });
+}
+
+function renderUserEmails(emails) {
+  const section = document.getElementById('users-section');
+  const list = document.getElementById('users-list');
+  const countEl = document.getElementById('users-count');
+  countEl.textContent = emails.length;
+  list.innerHTML = '';
+  if (!emails.length) {
+    list.innerHTML = '<div class="empty">아직 가입자가 없습니다.</div>';
+  } else {
+    for (const email of emails) {
+      const item = document.createElement('div');
+      item.className = 'contact-item';
+      const emailEl = document.createElement('div');
+      emailEl.className = 'email';
+      emailEl.textContent = email;
+      item.appendChild(emailEl);
+      list.appendChild(item);
+    }
+  }
+  section.style.display = 'block';
+}
+
+async function loadContacts(key) {
+  const section = document.getElementById('contact-section');
+  const list = document.getElementById('contact-list');
+  const countEl = document.getElementById('contact-count');
+  try {
+    const r = await fetch('/api/contact', { headers: { 'X-Admin-Key': key } });
+    // 실패 시 이전 조회의 문의 목록이 화면에 그대로 남아 최신인 것처럼 보이지 않도록 숨긴다
+    // (통계 그리드 자체는 이 실패와 무관하게 계속 보여준다 — 의도된 동작).
+    if (!r.ok) { section.style.display = 'none'; return; }
+    const { submissions } = await r.json();
+    countEl.textContent = submissions.length;
+    list.innerHTML = '';
+    if (!submissions.length) {
+      list.innerHTML = '<div class="empty">아직 접수된 문의가 없습니다.</div>';
+    } else {
+      for (const s of submissions) {
+        const item = document.createElement('div');
+        item.className = 'contact-item';
+        const when = s.createdAt ? new Date(s.createdAt).toLocaleString('ko-KR') : '';
+        item.innerHTML = `
+          <div class="meta">
+            <span><span class="who"></span> · <span class="email"></span></span>
+            <span class="when"></span>
+          </div>
+          <div class="msg-body"></div>
+        `;
+        item.querySelector('.who').textContent = s.name || '(이름 없음)';
+        item.querySelector('.email').textContent = s.email || '';
+        item.querySelector('.when').textContent = when;
+        item.querySelector('.msg-body').textContent = s.message || '';
+        list.appendChild(item);
+      }
+    }
+    section.style.display = '';
+  } catch (e) { section.style.display = 'none'; }
+}
+</script>
+</body>
+</html>

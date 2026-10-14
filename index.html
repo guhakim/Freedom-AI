@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title" data-i18n-en="Freedom AI — Infinite Canvas Collaboration" data-i18n-ja="Freedom AI — 無限キャンバス・コラボレーションツール" data-i18n-ko="Freedom AI — 무한 캔버스 협업 툴">Freedom AI — 무한 캔버스 협업 툴</title>
+<meta name="description" content="Freedom AI — 무한 캔버스 위에서 팀이 실시간으로 함께 그리고 생각하는 협업 도구. 브라우저만 있으면 바로 시작할 수 있습니다.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/">
+
+<!-- 링크를 공유했을 때 보이는 미리보기 (카카오톡·슬랙·X 등) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:title" content="Freedom AI — 생각을 함께 그리는 공간">
+<meta property="og:description" content="무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구. 브라우저만 있으면 어디서든 시작할 수 있어요.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<meta property="og:locale" content="ko_KR">
+<!-- UI 언어는 같은 주소에서 버튼으로 바꾼다(별도 URL이 없다). 크롤러에 "이 주소가
+     이 언어들도 제공한다"고 알려 두되, 주소가 하나뿐이므로 모두 같은 곳을 가리킨다. -->
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:locale:alternate" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Freedom AI — 생각을 함께 그리는 공간">
+<meta name="twitter:description" content="무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구.">
+<meta name="twitter:image" content="https://freedomai-app.vercel.app/logo.png">
+
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<!-- 본문 폰트 — 한글·한자·가나를 모두 담은 폰트를 언어별로 하나씩 쓴다 (자세한 사정은 fonts.css) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 한국어·영어 화면이 쓰는 폰트만 먼저 받는다. 두 패밀리를 한 요청으로 받으면 CSS가
+     268KB(gzip)나 되고 그동안 화면이 그려지지 않는다 — Google Fonts는 CJK를 문자 범위별로
+     쪼개느라 @font-face가 1,200개를 넘는다. 일본어용은 아래에서 비동기로 받는다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
+<!-- 일본어 글자(한자·가나)는 한국어 화면에서도 포스트잇 내용으로 나올 수 있으니 항상 받되,
+     렌더를 막지 않게 뒤로 미룬다. media 트릭은 자바스크립트 없이도 동작한다. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap"
+      media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap"></noscript>
+<link rel="stylesheet" href="fonts.css">
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* 본문 폰트 — 한글·한자·가나를 한 폰트가 모두 담도록 언어별로 하나씩 쓴다.
+     한자는 한국어와 일본어의 글자 모양이 달라서 하나로 합치지 않고 언어별로 나눈다.
+     로고는 KOTRA Bold 그대로. (예전 본문 폰트를 바꾼 경위는 fonts.css 주석 참고) */
+  :root { --font-body: 'Noto Sans KR', 'Noto Sans JP', sans-serif; }
+  html[lang="ja"] { --font-body: 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
+
+
+  :root {
+    --ink: #0e0e0d;
+    --ink2: #3a3a38;
+    --ink3: #6b6b66;
+    --paper: #ffffff;
+    --paper2: #f4f4ef;
+    --paper3: #e6e6de;
+    --accent: #ddff4f;
+    --accent2: #ff6b57;
+    --gold: #0e0e0d;
+    --gold-light: #ddff4f;
+    --white: #ffffff;
+    --radius: 12px;
+    --radius-lg: 18px;
+    --line: 2px solid var(--ink);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    /* 한글은 기본값(word-break:normal)에서 음절 중간에서도 줄바꿈될 수 있어
+       "있어요"처럼 마지막 단어가 반토막 나 다음 줄에 혼자 떨어지는 경우가 생긴다.
+       단어(어절) 단위로만 줄바꿈되게 해서 이런 어색한 줄바꿈을 막는다. */
+    word-break: keep-all;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    height: 68px;
+    background: var(--paper);
+    border-bottom: var(--line);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+  .logo-text {
+    font-family: 'KOTRA Bold', serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+  }
+
+  nav a {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    position: relative;
+    padding-bottom: 2px;
+    transition: color 0.15s;
+  }
+
+  nav a::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 100%;
+    bottom: -3px;
+    height: 3px;
+    background: var(--accent);
+    transition: right 0.2s ease;
+  }
+
+  nav a:hover::after { right: 0; }
+
+  .header-cta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-ghost {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--white);
+    border: var(--line);
+    border-radius: 100px;
+    cursor: pointer;
+    padding: 8px 18px;
+    font-family: inherit;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .btn-ghost:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+  .btn-ghost:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+
+  .lang-toggle {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--white);
+    border: var(--line);
+    border-radius: 100px;
+    padding: 6px 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+  }
+  .lang-toggle:hover { background: var(--ink); color: var(--white); }
+
+  .btn-primary {
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--accent);
+    border: var(--line);
+    border-radius: 100px;
+    padding: 9px 22px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    letter-spacing: -0.01em;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .btn-primary:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--ink); }
+  .btn-primary:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+
+  /* ── BANNER / HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 120px 40px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* decorative grid — 브루탈리즘 특유의 방안지(graph paper) 질감 */
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(14,14,13,0.07) 1.5px, transparent 1.5px),
+      linear-gradient(90deg, rgba(14,14,13,0.07) 1.5px, transparent 1.5px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    text-align: center;
+    max-width: 800px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--white);
+    border: var(--line);
+    border-radius: 100px;
+    padding: 5px 16px 5px 8px;
+    font-size: 12px;
+    color: var(--ink);
+    margin-bottom: 32px;
+    letter-spacing: -0.01em;
+    animation: fadeUp 0.6s ease both;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .hero-badge-dot {
+    width: 18px;
+    height: 18px;
+    background: var(--ink);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-badge-dot::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  h1 {
+    font-family: var(--font-body);
+    /* BM Dohyeon은 굵기가 하나뿐이라 굵기 지정이 없었다. 일반 굵기 폰트로 바뀌면서
+       제목이 가늘어지므로, 원래 인상에 맞춰 굵기를 명시한다. */
+    font-weight: 900;
+    font-size: clamp(48px, 8vw, 80px);
+    line-height: 1.32;
+    letter-spacing: -0.055em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 24px;
+    animation: fadeUp 0.6s 0.1s ease both;
+    position: relative;
+  }
+
+  /* 레퍼런스의 네온 라임 스파클 악센트를 순수 CSS로 재현 (HTML/텍스트 변경 없음)
+     제목 줄이 아니라 라임 박스(em)의 오른쪽 위 모서리에 붙인다 — 언어마다 박스 위치가
+     달라서, 제목 기준으로 두면 영어에서는 별이 같은 라임색 박스 뒤에 가려졌다. */
+  h1 em::after {
+    content: '✦';
+    position: absolute;
+    top: -0.9em;
+    right: -0.9em;
+    font-size: 0.28em;
+    line-height: 1;
+    color: var(--accent);
+    -webkit-text-stroke: 1.5px var(--ink);
+    text-transform: none;
+    animation: spin 6s linear infinite;
+  }
+
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  h1 em {
+    font-style: normal;
+    color: var(--ink);
+    background: var(--accent);
+    border: var(--line);
+    border-radius: 14px;
+    padding: 8px 22px 10px;
+    margin: 0 4px;
+    letter-spacing: -0.055em;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    vertical-align: middle;
+    transform: rotate(-2deg);
+    position: relative;
+  }
+
+  .hero-desc {
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--ink2);
+    max-width: 560px;
+    margin: 0 auto 40px;
+    line-height: 1.65;
+    letter-spacing: -0.01em;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-hero {
+    font-size: 16px;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--accent);
+    border: var(--line);
+    border-radius: 100px;
+    padding: 15px 34px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    letter-spacing: -0.01em;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .btn-hero:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); }
+  .btn-hero:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+
+  .btn-outline {
+    font-size: 15px;
+    font-weight: 400;
+    font-family: inherit;
+    color: var(--ink);
+    background: var(--white);
+    border: var(--line);
+    border-radius: 100px;
+    padding: 14px 32px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    letter-spacing: -0.01em;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .btn-outline:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); }
+
+  /* canvas preview mockup */
+  .hero-canvas {
+    margin-top: 64px;
+    width: 100%;
+    max-width: 780px;
+    background: var(--white);
+    border: var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: 8px 8px 0 var(--ink);
+    overflow: hidden;
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+
+  .canvas-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: var(--line);
+    background: var(--paper2);
+  }
+
+  .canvas-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+
+  .canvas-dot:nth-child(1) { background: #ff5f57; }
+  .canvas-dot:nth-child(2) { background: #febc2e; }
+  .canvas-dot:nth-child(3) { background: #28c840; }
+
+  .canvas-title {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink3);
+    letter-spacing: -0.01em;
+  }
+
+  .canvas-body {
+    height: 320px;
+    background: var(--paper2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* sticky notes */
+  .sticky {
+    position: absolute;
+    width: 130px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    border: 1.5px solid var(--ink);
+    box-shadow: 3px 3px 0 rgba(14,14,13,0.5);
+    font-weight: 400;
+  }
+
+  .sticky-yellow { background: #fef08a; color: #713f12; top: 40px; left: 60px; transform: rotate(-2deg); }
+  .sticky-pink   { background: #fbcfe8; color: #831843; top: 80px; left: 230px; transform: rotate(1.5deg); }
+  .sticky-green  { background: #bbf7d0; color: #14532d; top: 30px; left: 400px; transform: rotate(-1deg); }
+  .sticky-blue   { background: #bae6fd; color: #0c4a6e; top: 170px; left: 120px; transform: rotate(2deg); }
+  .sticky-peach  { background: #fed7aa; color: #7c2d12; top: 160px; left: 320px; transform: rotate(-1.5deg); }
+
+  /* cursor dots */
+  .cursor-dot {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    pointer-events: none;
+  }
+
+  .cursor-dot-circle {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--white);
+  }
+
+  .cursor-label {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 100px;
+    color: var(--white);
+    white-space: nowrap;
+  }
+
+  .cursor-a { top: 55px; left: 188px; }
+  .cursor-a .cursor-dot-circle { background: #8b5cf6; }
+  .cursor-a .cursor-label { background: #8b5cf6; }
+
+  .cursor-b { top: 175px; left: 460px; }
+  .cursor-b .cursor-dot-circle { background: #0ea5e9; }
+  .cursor-b .cursor-label { background: #0ea5e9; }
+
+  /* ── SECTION SHARED ── */
+  section {
+    padding: 96px 40px;
+  }
+
+  .section-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .section-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  .section-kicker::before {
+    content: '';
+    width: 9px;
+    height: 9px;
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .section-heading {
+    font-family: var(--font-body);
+    font-weight: 900;
+    font-size: clamp(32px, 5vw, 50px);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+
+  .section-sub {
+    font-size: 17px;
+    font-weight: 300;
+    color: var(--ink2);
+    line-height: 1.65;
+    max-width: 520px;
+  }
+
+  /* ── CARD SECTION ── */
+  .cards-section {
+    background: var(--white);
+  }
+
+  .cards-header {
+    margin-bottom: 56px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) {
+    .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    nav { display: none; }
+    header { padding: 0 20px; }
+    section { padding: 72px 20px; }
+    .hero { padding: 100px 20px 60px; }
+  }
+
+  .card {
+    background: var(--paper);
+    border: var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    cursor: default;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .card:hover {
+    transform: translate(-3px,-3px);
+    box-shadow: 8px 8px 0 var(--ink);
+  }
+
+  .card-icon-wrap {
+    width: 44px;
+    height: 44px;
+    background: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .card-icon-wrap svg { display: block; }
+
+  .card h3 {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .card p {
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--ink2);
+    line-height: 1.6;
+  }
+
+  .card-phase {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-top: 16px;
+    letter-spacing: 0.03em;
+  }
+
+  .phase-1 { background: var(--ink); color: var(--white); border: 1.5px solid var(--ink); }
+  .phase-2 { background: var(--white); color: var(--ink); border: 1.5px solid var(--ink); }
+  .phase-3 { background: var(--accent); color: var(--ink); border: 1.5px solid var(--ink); }
+
+  /* featured card */
+  .card-featured {
+    background: var(--ink);
+    color: var(--white);
+    grid-column: span 1;
+  }
+
+  .card-featured .card-icon-wrap { background: var(--accent); border-color: var(--white); }
+  .card-featured h3 { color: var(--white); }
+  .card-featured p { color: rgba(255,255,255,0.65); }
+
+  /* ── PHASE SECTION ── */
+  .phase-section {
+    background: var(--paper2);
+  }
+
+  .phase-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 56px;
+  }
+
+  @media (max-width: 900px) {
+    .phase-list { grid-template-columns: 1fr; }
+  }
+
+  .phase-card {
+    background: var(--white);
+    border: var(--line);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  .phase-num {
+    font-family: var(--font-body);
+    font-weight: 900;
+    font-size: 48px;
+    line-height: 1;
+    color: var(--paper);
+    -webkit-text-stroke: 2px var(--ink);
+    margin-bottom: 16px;
+  }
+
+  .phase-card h3 {
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+
+  .phase-card p {
+    font-size: 13px;
+    color: var(--ink2);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .phase-items {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .phase-item {
+    font-size: 13px;
+    color: var(--ink2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-item::before {
+    content: '';
+    width: 7px; height: 7px;
+    background: var(--accent);
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 64px 40px 40px;
+    border-top: 3px solid var(--accent);
+  }
+
+  .footer-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+  }
+
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 48px;
+    border-bottom: 0.5px solid rgba(245,243,238,0.1);
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 800px) {
+    .footer-top { grid-template-columns: 1fr 1fr; }
+  }
+
+  .footer-brand .logo-text { color: var(--paper); }
+  .footer-brand p {
+    font-size: 13px;
+    color: rgba(245,243,238,0.45);
+    margin-top: 14px;
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .footer-col h4 {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(245,243,238,0.4);
+    margin-bottom: 16px;
+  }
+
+  .footer-col a {
+    display: block;
+    font-size: 14px;
+    color: rgba(245,243,238,0.7);
+    text-decoration: none;
+    margin-bottom: 10px;
+    font-weight: 300;
+    transition: color 0.2s;
+  }
+
+  .footer-col a:hover { color: var(--accent); }
+
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .footer-bottom p {
+    font-size: 12px;
+    color: rgba(245,243,238,0.3);
+    font-weight: 300;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+    color: rgba(245,243,238,0.3);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: rgba(245,243,238,0.7); }
+
+  /* animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── CONTACT MODAL ── */
+  .contact-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    background: rgba(14,14,13,0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .contact-overlay.open { display: flex; }
+
+  .contact-modal {
+    width: 100%;
+    max-width: 440px;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--line);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    position: relative;
+    box-shadow: 8px 8px 0 var(--ink);
+    animation: fadeUp 0.25s ease;
+  }
+
+  .contact-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: var(--white);
+    color: var(--ink);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .contact-close:hover { background: var(--ink); color: var(--white); }
+
+  .contact-modal h3 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 22px;
+    margin-bottom: 6px;
+    padding-right: 30px;
+  }
+
+  .contact-modal p.contact-sub {
+    font-size: 14px;
+    color: var(--ink3);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .contact-field { margin-bottom: 16px; }
+
+  .contact-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--ink2);
+    margin-bottom: 6px;
+  }
+
+  .contact-field input,
+  .contact-field textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--white);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px 12px;
+    transition: box-shadow 0.15s;
+  }
+
+  .contact-field input:focus,
+  .contact-field textarea:focus {
+    outline: none;
+    box-shadow: 3px 3px 0 var(--accent);
+  }
+
+  .contact-field textarea {
+    resize: vertical;
+    min-height: 96px;
+    line-height: 1.5;
+  }
+
+  .contact-error {
+    font-size: 13px;
+    color: #b3392f;
+    margin-bottom: 12px;
+    min-height: 16px;
+  }
+
+  .contact-modal .btn-primary {
+    width: 100%;
+    padding: 11px 22px;
+    font-size: 14px;
+  }
+
+  .contact-modal .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: default;
+    transform: none;
+  }
+
+  .contact-success {
+    text-align: center;
+    padding: 12px 0 4px;
+  }
+
+  .contact-success .check-mark {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .contact-success h3 { margin-bottom: 8px; }
+  .contact-success p { font-size: 14px; color: var(--ink3); line-height: 1.5; }
+
+  /* "준비중" 안내 토스트 */
+  .soon-toast {
+    position: fixed; left: 50%; bottom: 32px; transform: translate(-50%, 12px);
+    background: #1c1c1a; color: #f5f5f0; border: 1px solid rgba(255,255,255,.14);
+    padding: 12px 20px; border-radius: 10px; font-size: 14px; letter-spacing: -.01em;
+    box-shadow: 0 8px 28px rgba(0,0,0,.45);
+    opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease;
+    z-index: 9999;
+  }
+  .soon-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════
+     HEADER
+══════════════════════════ -->
+<header>
+  <a href="#" class="logo">
+    <div class="logo-mark">
+      <img src="logo-mark.png" alt="Freedom AI">
+    </div>
+    <span class="logo-text">Freedom Ai</span>
+  </a>
+
+  <nav>
+    <a href="#features" data-i18n-en="Features" data-i18n-ja="機能" data-i18n-ko="기능">기능</a>
+    <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
+    <a href="#about" data-i18n-en="About" data-i18n-ja="概要" data-i18n-ko="소개">소개</a>
+  </nav>
+
+  <div class="header-cta">
+    <button class="lang-toggle" id="lang-toggle" type="button">EN</button>
+    <button class="btn-ghost" data-i18n-en="Log in" data-i18n-ja="ログイン" data-i18n-ko="로그인">로그인</button>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════
+     BANNER / HERO
+══════════════════════════ -->
+<section class="hero" id="hero">
+  <div class="hero-inner">
+
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      <span data-i18n-en="Anywhere, anytime — on web &amp; mobile" data-i18n-ja="いつでもどこでも — ウェブ &amp; モバイルですぐに" data-i18n-ko="언제 어디서나 쉽게 — 웹 & 모바일에서 바로">언제 어디서나 쉽게 — 웹 & 모바일에서 바로</span>
+    </div>
+
+    <h1 data-i18n-en-html="Think <em>together</em><br>in one space" data-i18n-ja-html="アイデアを<em>一緒に</em><br>描く空間" data-i18n-ko-html="생각을 <em>함께</em><br>그리는 공간">생각을 <em>함께</em><br>그리는 공간</h1>
+
+    <p class="hero-desc" data-i18n-en="Freedom AI is a collaboration tool where teams share ideas in real time on an infinite canvas. All you need is a browser — start from anywhere." data-i18n-ja="Freedom AI は、無限のキャンバス上でチームがリアルタイムにアイデアを共有できるコラボレーションツールです。ブラウザさえあれば、どこからでも始められます。" data-i18n-ko="Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.">
+      Freedom AI는 무한 캔버스 위에서 팀이 실시간으로 아이디어를 나누는 협업 도구입니다. 브라우저만 있으면 어디서든 시작할 수 있어요.
+    </p>
+
+    <div class="hero-actions">
+      <a href="app.html" class="btn-hero" style="text-decoration:none; display:inline-flex; align-items:center;" data-i18n-en="Get started →" data-i18n-ja="今すぐ始める →" data-i18n-ko="지금 시작하기 →">지금 시작하기 →</a>
+    </div>
+
+    <!-- Canvas mockup -->
+    <div class="hero-canvas">
+      <div class="canvas-bar">
+        <div class="canvas-dot"></div>
+        <div class="canvas-dot"></div>
+        <div class="canvas-dot"></div>
+        <div class="canvas-title" data-i18n-en="Untitled board — 3 people working" data-i18n-ja="無題のボード — 3人が作業中" data-i18n-ko="무제 보드 — 3명 작업 중">무제 보드 — 3명 작업 중</div>
+      </div>
+      <div class="canvas-body">
+
+        <div class="sticky sticky-yellow" data-i18n-en-html="🎯 Core features<br>sort first" data-i18n-ja-html="🎯 コア機能を<br>先に整理する" data-i18n-ko-html="🎯 핵심 기능<br>우선 정리하기">🎯 핵심 기능<br>우선 정리하기</div>
+        <div class="sticky sticky-pink" data-i18n-en-html="Design references<br>Miro, FigJam" data-i18n-ja-html="デザイン参考<br>Miro, FigJam" data-i18n-ko-html="디자인 레퍼런스<br>Miro, FigJam">디자인 레퍼런스<br>Miro, FigJam</div>
+        <div class="sticky sticky-green" data-i18n-en-html="Real-time collab<br>via WebSocket!" data-i18n-ja-html="WebSocketで<br>リアルタイム共同編集!" data-i18n-ko-html="WebSocket으로<br>실시간 협업!">WebSocket으로<br>실시간 협업!</div>
+        <div class="sticky sticky-blue" data-i18n-en-html="Phase 1<br>build the skeleton" data-i18n-ja-html="Phase 1<br>骨組みから着手" data-i18n-ko-html="Phase 1<br>뼈대부터 시작">Phase 1<br>뼈대부터 시작</div>
+        <div class="sticky sticky-peach" data-i18n-en-html="AI image<br>editing 🤖" data-i18n-ja-html="AI画像<br>編集機能 🤖" data-i18n-ko-html="AI 이미지<br>편집 기능 🤖">AI 이미지<br>편집 기능 🤖</div>
+
+        <!-- live cursors -->
+        <div class="cursor-dot cursor-a">
+          <div class="cursor-dot-circle"></div>
+          <span class="cursor-label" data-i18n-en="Jiyoung" data-i18n-ja="ジヨン" data-i18n-ko="지영">지영</span>
+        </div>
+        <div class="cursor-dot cursor-b">
+          <div class="cursor-dot-circle"></div>
+          <span class="cursor-label" data-i18n-en="Minjun" data-i18n-ja="ミンジュン" data-i18n-ko="민준">민준</span>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════
+     CARD SECTION — 기능
+══════════════════════════ -->
+<section class="cards-section" id="features">
+  <div class="section-inner">
+
+    <div class="cards-header">
+      <div class="section-kicker" data-i18n-ko="기능" data-i18n-en="Features" data-i18n-ja="機能">기능</div>
+      <h2 class="section-heading" data-i18n-en-html="Everything you need,<br>all in one place" data-i18n-ja-html="必要なものは<br>すべてここに" data-i18n-ko-html="필요한 것,<br>전부 담았어요">필요한 것,<br>전부 담았어요</h2>
+      <p class="section-sub" data-i18n-en="No complicated setup — open the canvas and start drawing with your team right away." data-i18n-ja="複雑な設定なしで、キャンバスを開いてすぐにチームと一緒に描けます。" data-i18n-ko="복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.">복잡한 설정 없이 캔버스를 열고 바로 팀과 함께 그릴 수 있습니다.</p>
+    </div>
+
+    <div class="cards-grid">
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M2 11h18M11 2v18" stroke="#f5f3ee" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="11" cy="11" r="3" stroke="rgba(245,243,238,0.6)" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Infinite canvas" data-i18n-ja="無限キャンバス" data-i18n-ko="무한 캔버스">무한 캔버스</h3>
+        <p data-i18n-en="A workspace that expands endlessly with pinch-zoom and panning. No limit to the size of your ideas." data-i18n-ja="ピンチズームとパンで、どこまでも広がる作業スペース。アイデアの大きさに制限はありません。" data-i18n-ko="핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.">핀치 줌, 패닝으로 끝없이 펼쳐지는 작업 공간. 아이디어의 크기에 제한이 없어요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M15.58 2.75a2.59 2.59 0 0 1 3.67 3.67L6.88 18.79 1.83 20.17l1.38-5.04L15.58 2.75z" stroke="#f5f3ee" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Pen &amp; eraser" data-i18n-ja="ペン &amp; 消しゴム" data-i18n-ko="펜 & 지우개">펜 & 지우개</h3>
+        <p data-i18n-en="Draw freely with your finger or stylus, and clean up with the eraser." data-i18n-ja="指やスタイラスで自由に描き、消しゴムできれいに修正できます。" data-i18n-ko="손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.">손가락이나 스타일러스로 자유롭게 그리고, 지우개로 깔끔하게 수정하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="7" cy="11" r="3" fill="#f5f3ee" opacity="0.9"/>
+            <circle cx="15" cy="7" r="2.5" fill="#f5f3ee" opacity="0.6"/>
+            <circle cx="15" cy="15" r="2.5" fill="#f5f3ee" opacity="0.35"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Color palette" data-i18n-ja="カラーパレット" data-i18n-ko="색상 팔레트">색상 팔레트</h3>
+        <p data-i18n-en="Pick from preset colors for pens and sticky notes. Paint the canvas your way." data-i18n-ja="ペンや付箋に使う色を選んで、自分らしくキャンバスを彩りましょう。" data-i18n-ko="펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.">펜과 포스트잇에 쓸 색상을 골라 내 감각대로 캔버스를 꾸미세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="5" width="7" height="7" rx="2" fill="#f5f3ee" opacity="0.9"/>
+            <rect x="12" y="5" width="7" height="7" rx="2" fill="#f5f3ee" opacity="0.5"/>
+            <rect x="3" y="14" width="16" height="4" rx="2" fill="#f5f3ee" opacity="0.3"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Sticky notes" data-i18n-ja="付箋" data-i18n-ko="포스트잇">포스트잇</h3>
+        <p data-i18n-en="5 colors, resizable, and connect them with arrows. Bring two notes close and they snap together like magnets." data-i18n-ja="5色の付箋を置いてサイズ変更、矢印での接続まで。近づけると磁石のようにくっつきます。" data-i18n-ko="5가지 색상 포스트잇을 놓고 크기 조절, 화살표 연결까지. 가까이 가져가면 자석처럼 붙어요.">5가지 색상 포스트잇을 놓고 크기 조절, 화살표 연결까지. 가까이 가져가면 자석처럼 붙어요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="5" cy="11" r="2" fill="#f5f3ee"/>
+            <circle cx="17" cy="11" r="2" fill="#f5f3ee"/>
+            <circle cx="11" cy="5" r="2" fill="#f5f3ee" opacity="0.5"/>
+            <path d="M7 11h8M11 7v8" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Real-time collaboration" data-i18n-ja="リアルタイム共同編集" data-i18n-ko="실시간 협업">실시간 협업</h3>
+        <p data-i18n-en="See your teammates' cursors live. Collaborate like you're in the same room." data-i18n-ja="チームメンバーのカーソルがリアルタイムで見えます。同じ空間にいるような感覚で作業できます。" data-i18n-ko="팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.">팀원의 커서가 실시간으로 보여요. 같은 공간에서 함께하는 느낌으로 협업하세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 6h14M4 11h10M4 16h7" stroke="#f5f3ee" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="17" cy="16" r="3" fill="#f5f3ee" opacity="0.4"/>
+            <path d="M16 16h2M17 15v2" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Collaborative to-dos" data-i18n-ja="共同To-Do" data-i18n-ko="협업 To-Do">협업 To-Do</h3>
+        <p data-i18n-en="Pick a date on the calendar, write your to-dos, and check them off together in real time." data-i18n-ja="カレンダーで日付を選んでやることを書き、チームとリアルタイムにチェックしていきましょう。" data-i18n-ko="캘린더에서 날짜를 골라 할 일을 적고, 팀원과 실시간으로 체크해 나가세요.">캘린더에서 날짜를 골라 할 일을 적고, 팀원과 실시간으로 체크해 나가세요.</p>
+        <span class="card-phase phase-1" data-i18n-en="Phase 1 · Core" data-i18n-ja="Phase 1 · コア" data-i18n-ko="Phase 1 · 핵심">Phase 1 · 핵심</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="5" width="16" height="12" rx="2.5" fill="#f5f3ee" opacity="0.15" stroke="#f5f3ee" stroke-width="1.2"/>
+            <path d="M3 13l4-3 3 2 4-4 5 4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Drag & drop images" data-i18n-ja="画像のドラッグ &amp; ドロップ" data-i18n-ko="이미지 드래그">이미지 드래그</h3>
+        <p data-i18n-en="Drag reference images straight from your browser onto the canvas." data-i18n-ja="参考画像をブラウザから直接ドラッグして、キャンバスに挿入できます。" data-i18n-ko="레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.">레퍼런스 이미지를 브라우저에 바로 끌어다 놓아 캔버스에 삽입하세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ja="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 3C6.582 3 3 6.582 3 11s3.582 8 8 8 8-3.582 8-8" stroke="#f5f3ee" stroke-width="1.3" stroke-linecap="round"/>
+            <path d="M15 3l2 2-5 5-2-2 5-5z" fill="#ddff4f"/>
+            <path d="M17 5l2-2" stroke="#ddff4f" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="AI background removal" data-i18n-ja="AI背景除去" data-i18n-ko="AI 배경 제거">AI 배경 제거</h3>
+        <p data-i18n-en="Long-press an image on the canvas and AI removes the background automatically. Works on photos of people as well as logos and text." data-i18n-ja="キャンバス上の画像を長押しすると、AIが背景を自動で消します。人物写真はもちろん、ロゴやテキスト画像も認識して処理します。" data-i18n-ko="캔버스 위 이미지를 꾹 누르면 AI가 배경을 자동으로 지워드려요. 인물 사진은 물론, 로고·텍스트 이미지도 인식해서 처리합니다.">캔버스 위 이미지를 꾹 누르면 AI가 배경을 자동으로 지워드려요. 인물 사진은 물론, 로고·텍스트 이미지도 인식해서 처리합니다.</p>
+        <span class="card-phase phase-3" data-i18n-en="Phase 3 · AI" data-i18n-ja="Phase 3 · AI" data-i18n-ko="Phase 3 · AI">Phase 3 · AI</span>
+      </div>
+
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2"/>
+            <rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2" opacity="0.5"/>
+            <rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#f5f3ee" stroke-width="1.2" opacity="0.5"/>
+            <path d="M14 16h4M16 14v4" stroke="#f5f3ee" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </div>
+        <h3 data-i18n-en="Shape tools" data-i18n-ja="図形ツール" data-i18n-ko="도형 도구">도형 도구</h3>
+        <p data-i18n-en="Insert rectangles, circles, and arrows, and freely adjust their size and color." data-i18n-ja="四角形・円・矢印を挿入し、サイズと色を自由に調整できます。" data-i18n-ko="사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.">사각형, 원, 화살표를 삽입하고 크기와 색상을 자유롭게 조절하세요.</p>
+        <span class="card-phase phase-2" data-i18n-en="Phase 2" data-i18n-ja="Phase 2" data-i18n-ko="Phase 2">Phase 2</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════
+     PHASE SECTION — 로드맵
+══════════════════════════ -->
+<section class="phase-section" id="phases">
+  <div class="section-inner">
+    <div class="section-kicker" data-i18n-ko="로드맵" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ">로드맵</div>
+    <h2 class="section-heading" data-i18n-en-html="Building block<br>by block" data-i18n-ja-html="基礎から<br>一歩ずつ" data-i18n-ko-html="기초부터,<br>단계적으로">기초부터,<br>단계적으로</h2>
+    <p class="section-sub" data-i18n-en="We're not building every feature at once. We build the core first, then stack up from there." data-i18n-ja="最初からすべての機能を一度に作るのではなく、コアからしっかり積み上げていきます。" data-i18n-ko="처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.">처음부터 모든 기능을 한꺼번에 만들지 않아요. 핵심부터 탄탄히 쌓아올립니다.</p>
+
+    <div class="phase-list">
+      <div class="phase-card">
+        <div class="phase-num">01</div>
+        <h3 data-i18n-en="Foundation — core features" data-i18n-ja="基礎 — コア機能" data-i18n-ko="기초 — 핵심 기능">기초 — 핵심 기능</h3>
+        <p data-i18n-en="The features the app is built on. Enough for a team to start using it together." data-i18n-ja="アプリの土台となる機能。これだけでもチームで使い始められます。" data-i18n-ko="앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.">앱의 기반이 되는 기능들. 이것만 있어도 팀이 함께 쓸 수 있어요.</p>
+        <div class="phase-items">
+          <div class="phase-item" data-i18n-en="Infinite canvas" data-i18n-ja="無限キャンバス" data-i18n-ko="무한 캔버스">무한 캔버스</div>
+          <div class="phase-item" data-i18n-en="Pen &amp; eraser" data-i18n-ja="ペン &amp; 消しゴム" data-i18n-ko="펜 & 지우개">펜 & 지우개</div>
+          <div class="phase-item" data-i18n-en="Color palette" data-i18n-ja="カラーパレット" data-i18n-ko="색상 팔레트">색상 팔레트</div>
+          <div class="phase-item" data-i18n-en="Sticky notes" data-i18n-ja="付箋" data-i18n-ko="포스트잇">포스트잇</div>
+          <div class="phase-item" data-i18n-en="Real-time collab cursors" data-i18n-ja="リアルタイム共同編集カーソル" data-i18n-ko="실시간 협업 커서">실시간 협업 커서</div>
+          <div class="phase-item" data-i18n-en="Collaborative to-do list" data-i18n-ja="共同To-Doリスト" data-i18n-ko="협업 To-Do List">협업 To-Do List</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num">02</div>
+        <h3 data-i18n-en="Growth — expanded features" data-i18n-ja="発展 — 拡張機能" data-i18n-ko="발전 — 확장 기능">발전 — 확장 기능</h3>
+        <p data-i18n-en="Once the foundation is stable, we add richer collaboration experiences." data-i18n-ja="土台が安定したら、より豊かな共同編集の体験を追加します。" data-i18n-ko="뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.">뼈대가 안정되면 더 풍부한 협업 경험을 더합니다.</p>
+        <div class="phase-items">
+          <div class="phase-item" data-i18n-en="Basic shape tools" data-i18n-ja="基本の図形ツール" data-i18n-ko="기본 도형 도구">기본 도형 도구</div>
+          <div class="phase-item" data-i18n-en="Image drag &amp; drop" data-i18n-ja="画像のドラッグ &amp; ドロップ" data-i18n-ko="이미지 드래그 & 드롭">이미지 드래그 & 드롭</div>
+          <div class="phase-item" data-i18n-en="Share link generation" data-i18n-ja="共有リンクの生成" data-i18n-ko="공유 링크 생성">공유 링크 생성</div>
+          <div class="phase-item" data-i18n-en="Mobile optimization" data-i18n-ja="モバイル最適化" data-i18n-ko="모바일 최적화">모바일 최적화</div>
+        </div>
+      </div>
+
+      <div class="phase-card">
+        <div class="phase-num">03</div>
+        <h3 data-i18n-en="Advanced — AI features" data-i18n-ja="高度化 — AI機能" data-i18n-ko="고도화 — AI 기능">고도화 — AI 기능</h3>
+        <p data-i18n-en="The stage where AI helps you create — going beyond Freeform." data-i18n-ja="AIが創作を助ける差別化の段階。Freeform を超えていきます。" data-i18n-ko="AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.">AI가 창작을 돕는 차별화 단계. Freeform을 넘어섭니다.</p>
+        <div class="phase-items">
+          <div class="phase-item" data-i18n-en="AI image editing &amp; generation" data-i18n-ja="AI画像の編集・生成" data-i18n-ko="AI 이미지 편집·생성">AI 이미지 편집·생성</div>
+          <div class="phase-item" data-i18n-en="AI idea suggestions" data-i18n-ja="AIによるアイデア提案" data-i18n-ko="AI 아이디어 제안">AI 아이디어 제안</div>
+          <div class="phase-item" data-i18n-en="Automatic layout cleanup" data-i18n-ja="自動レイアウト整理" data-i18n-ko="자동 레이아웃 정리">자동 레이아웃 정리</div>
+          <div class="phase-item" data-i18n-en="Version history" data-i18n-ja="バージョン履歴" data-i18n-ko="버전 히스토리">버전 히스토리</div>
+          <div class="phase-item" data-i18n-en="Offline support" data-i18n-ja="オフライン対応" data-i18n-ko="오프라인 지원">오프라인 지원</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════
+     FOOTER
+══════════════════════════ -->
+<footer id="about">
+  <div class="footer-inner">
+    <div class="footer-top">
+
+      <div class="footer-brand">
+        <a href="#" class="logo" style="margin-bottom: 0;">
+          <div class="logo-mark">
+            <img src="logo-mark.png" alt="Freedom AI">
+          </div>
+          <span class="logo-text">Freedom Ai</span>
+        </a>
+        <p data-i18n-en-html="Anywhere, anytime — on web &amp; mobile.<br>Think together with your team on an infinite canvas." data-i18n-ja-html="いつでもどこでも — ウェブ &amp; モバイルですぐに。<br>無限キャンバスでチームと一緒に考えましょう。" data-i18n-ko-html="언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.">언제 어디서나 쉽게 — 웹 & 모바일에서 바로.<br>무한 캔버스 위에서 팀과 함께 생각하세요.</p>
+      </div>
+
+      <!-- 실제로 있는 페이지만 연결한다 (예전엔 요금제·FAQ·블로그·약관 등 대부분이 href="#"인 빈 링크였다) -->
+      <div class="footer-col">
+        <h4 data-i18n-en="Product" data-i18n-ja="製品" data-i18n-ko="제품">제품</h4>
+        <a href="#features" data-i18n-en="Features" data-i18n-ja="機能紹介" data-i18n-ko="기능 소개">기능 소개</a>
+        <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
+        <a href="#" class="js-soon" data-i18n-en="Updates" data-i18n-ja="アップデート" data-i18n-ko="업데이트">업데이트</a>
+      </div>
+
+      <div class="footer-col">
+        <h4 data-i18n-en="Support" data-i18n-ja="サポート" data-i18n-ko="지원">지원</h4>
+        <a href="app.html" data-i18n-en="Get started" data-i18n-ja="始める" data-i18n-ko="시작하기">시작하기</a>
+        <a href="#" id="contact-link" data-i18n-en="Contact us" data-i18n-ja="お問い合わせ" data-i18n-ko="문의하기">문의하기</a>
+        <a href="#" class="js-soon">GitHub</a>
+      </div>
+
+      <div class="footer-col">
+        <h4 data-i18n-en="Company" data-i18n-ja="会社" data-i18n-ko="회사">회사</h4>
+        <a href="https://felpenfriends.vercel.app/" target="_blank" rel="noopener" data-i18n-en="About" data-i18n-ja="会社概要" data-i18n-ko="소개">소개</a>
+        <a href="#" class="js-soon" data-i18n-en="Blog" data-i18n-ja="ブログ" data-i18n-ko="블로그">블로그</a>
+        <a href="#" class="js-soon" data-i18n-en="Careers" data-i18n-ja="採用" data-i18n-ko="채용">채용</a>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 Freedom AI. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════════════════
+     CONTACT MODAL
+══════════════════════════ -->
+<div class="contact-overlay" id="contact-overlay">
+  <div class="contact-modal">
+    <button class="contact-close" id="contact-close" aria-label="닫기"
+            data-i18n-ko-aria-label="닫기" data-i18n-en-aria-label="Close" data-i18n-ja-aria-label="閉じる">✕</button>
+
+    <div id="contact-form-view">
+      <h3 data-i18n-en="Contact us" data-i18n-ja="お問い合わせ" data-i18n-ko="문의하기">문의하기</h3>
+      <p class="contact-sub" data-i18n-en="If you have any questions, feel free to reach out anytime" data-i18n-ja="ご不明な点がありましたら、いつでもお気軽にお問い合わせください" data-i18n-ko="궁금한 점이 있으시면 언제든지 문의해주세요">궁금한 점이 있으시면 언제든지 문의해주세요</p>
+
+      <form id="contact-form">
+        <div class="contact-field">
+          <label for="contact-name" data-i18n-en="Name" data-i18n-ja="お名前" data-i18n-ko="이름">이름</label>
+          <input type="text" id="contact-name" placeholder="홍길동" data-i18n-en-placeholder="Jane Doe" data-i18n-ja-placeholder="山田 太郎" data-i18n-ko-placeholder="홍길동" maxlength="100" required>
+        </div>
+        <div class="contact-field">
+          <label for="contact-email" data-i18n-en="Email" data-i18n-ja="メールアドレス" data-i18n-ko="이메일">이메일</label>
+          <input type="email" id="contact-email" placeholder="example@email.com" maxlength="200" required>
+        </div>
+        <div class="contact-field">
+          <label for="contact-message" data-i18n-en="Message" data-i18n-ja="お問い合わせ内容" data-i18n-ko="문의 내용">문의 내용</label>
+          <textarea id="contact-message" placeholder="문의하실 내용을 작성해주세요" data-i18n-en-placeholder="Write your message here" data-i18n-ja-placeholder="お問い合わせ内容をご記入ください" data-i18n-ko-placeholder="문의하실 내용을 작성해주세요" maxlength="5000" required></textarea>
+        </div>
+        <div class="contact-error" id="contact-error"></div>
+        <button type="submit" class="btn-primary" id="contact-submit" data-i18n-en="Send message" data-i18n-ja="送信する" data-i18n-ko="문의 보내기">문의 보내기</button>
+      </form>
+    </div>
+
+    <div id="contact-success-view" class="contact-success" style="display:none;">
+      <div class="check-mark">✓</div>
+      <h3 data-i18n-en="Your message has been sent" data-i18n-ja="お問い合わせを受け付けました" data-i18n-ko="문의가 접수되었습니다">문의가 접수되었습니다</h3>
+      <p data-i18n-en-html="We'll get back to you as soon as possible.<br>Thank you for reaching out." data-i18n-ja-html="できるだけ早くご返信いたします。<br>ご利用ありがとうございます。" data-i18n-ko-html="빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.">빠른 시일 내에 답변드리겠습니다.<br>이용해주셔서 감사합니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const overlay = document.getElementById('contact-overlay');
+  const openLink = document.getElementById('contact-link');
+  const closeBtn = document.getElementById('contact-close');
+  const form = document.getElementById('contact-form');
+  const errorEl = document.getElementById('contact-error');
+  const submitBtn = document.getElementById('contact-submit');
+  const formView = document.getElementById('contact-form-view');
+  const successView = document.getElementById('contact-success-view');
+
+  function openModal() {
+    overlay.classList.add('open');
+    formView.style.display = '';
+    successView.style.display = 'none';
+    form.reset();
+    errorEl.textContent = '';
+  }
+  function closeModal() { overlay.classList.remove('open'); }
+
+  openLink.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+
+  // 아직 준비되지 않은 메뉴(업데이트·GitHub)는 어디로도 보내지 않고 안내만 띄운다.
+  // 토스트 요소는 이 스크립트보다 뒤에 있으므로 클릭 시점에 찾는다 (미리 잡으면 null)
+  let soonTimer = null;
+  document.querySelectorAll('.js-soon').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const toast = document.getElementById('soon-toast');
+      if (!toast) return;
+      toast.textContent = window._faT('현재 준비중입니다', 'Coming soon', '現在準備中です');
+      toast.classList.add('show');
+      clearTimeout(soonTimer);
+      soonTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+    });
+  });
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorEl.textContent = '';
+
+    const name = document.getElementById('contact-name').value.trim();
+    const email = document.getElementById('contact-email').value.trim();
+    const message = document.getElementById('contact-message').value.trim();
+
+    const t = window._faT;
+    submitBtn.disabled = true;
+    submitBtn.textContent = t('보내는 중...', 'Sending...', '送信中...');
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, message }),
+      });
+      if (!res.ok) {
+        if (res.status === 429) throw new Error(t('너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.', 'Too many requests. Please try again shortly.', 'リクエストが多すぎます。しばらくしてからもう一度お試しください。'));
+        throw new Error(t('문의 전송에 실패했습니다. 다시 시도해주세요.', 'Failed to send your message. Please try again.', 'お問い合わせの送信に失敗しました。もう一度お試しください。'));
+      }
+      formView.style.display = 'none';
+      successView.style.display = '';
+    } catch (err) {
+      errorEl.textContent = err.message;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = t('문의 보내기', 'Send message', '送信する');
+    }
+  });
+})();
+</script>
+
+<script>
+fetch('/api/stats', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ page: 'index' }),
+}).catch(() => {});
+
+document.querySelector('.btn-ghost').addEventListener('click', () => {
+  location.href = 'app.html';
+});
+</script>
+
+<script>
+(function () {
+  // 한국어 → 영어 → 일본어 순으로 돌아가며, 버튼에는 "다음에 바뀔 언어"를 표시한다.
+  // (버튼이 EN이면 누를 때 영어로 바뀐다 — 2개 언어였을 때와 같은 규칙)
+  const LANGS = ['ko', 'en', 'ja'];
+  const LABEL = { ko: 'KO', en: 'EN', ja: 'JP' };
+
+  // data-i18n-ko / -en / -ja 를 dataset 키(i18nKo / i18nEn / i18nJa)로 바꾼다
+  function pick(el, lang, suffix) {
+    const key = l => 'i18n' + l[0].toUpperCase() + l.slice(1) + suffix;
+    // 해당 언어 값이 없으면 영어 → 한국어 순으로 내려간다 (번역이 빠져도 빈칸이 되지 않게)
+    return el.dataset[key(lang)] ?? el.dataset[key('en')] ?? el.dataset[key('ko')];
+  }
+
+  function applyLang(lang) {
+    if (!LANGS.includes(lang)) lang = 'ko';
+    document.querySelectorAll('[data-i18n-en],[data-i18n-en-html]').forEach(el => {
+      const isHtml = el.hasAttribute('data-i18n-en-html');
+      const val = pick(el, lang, isHtml ? 'Html' : '');
+      if (val == null) return;
+      if (isHtml) el.innerHTML = val; else el.textContent = val;
+    });
+    document.querySelectorAll('[data-i18n-en-placeholder]').forEach(el => {
+      const val = pick(el, lang, 'Placeholder');
+      if (val != null) el.placeholder = val;
+    });
+    // 화면에 글자로 보이지 않는 것(스크린리더가 읽는 이름, 마우스를 올렸을 때 뜨는 설명)도
+    // 언어를 따라가야 한다 — 예전엔 분기가 없어서 영어·일본어 화면에서도 한국어로 읽혔다.
+    document.querySelectorAll('[data-i18n-en-aria-label]').forEach(el => {
+      const val = pick(el, lang, 'AriaLabel');
+      if (val != null) el.setAttribute('aria-label', val);
+    });
+    document.querySelectorAll('[data-i18n-en-title]').forEach(el => {
+      const val = pick(el, lang, 'Title');
+      if (val != null) el.title = val;
+    });
+    document.documentElement.lang = lang;
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) toggle.textContent = LABEL[LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]];
+    try { localStorage.setItem('fa_lang', lang); } catch (e) {}
+    window._faLang = lang;
+  }
+
+  // 스크립트 안에서 쓰는 문구(토스트·문의 폼 안내)도 같은 언어를 따라가게 하는 헬퍼
+  window._faT = (ko, en, ja) => window._faLang === 'en' ? en : window._faLang === 'ja' ? ja : ko;
+
+  let saved = 'ko';
+  try { saved = localStorage.getItem('fa_lang') || 'ko'; } catch (e) {}
+  applyLang(saved);
+
+  document.getElementById('lang-toggle')?.addEventListener('click', () => {
+    applyLang(LANGS[(LANGS.indexOf(window._faLang) + 1) % LANGS.length]);
+  });
+})();
+</script>
+<div class="soon-toast" id="soon-toast" role="status" aria-live="polite"></div>
+</body>
+</html>

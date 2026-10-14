@@ -1,0 +1,18 @@
+{
+  "name": "freedom-ai",
+  "version": "1.0.0",
+  "description": "무한 캔버스 실시간 협업 툴",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev",
+    "vercel-build": "echo 'no build step'",
+    "test": "node --test tests/*.test.js"
+  },
+  "dependencies": {
+    "@vercel/kv": "^3.0.0",
+    "pusher": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

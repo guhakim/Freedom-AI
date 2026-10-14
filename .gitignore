@@ -1,0 +1,16 @@
+node_modules/
+data.json
+.vercel
+.env
+.env.*
+.env*
+.DS_Store
+.claude/
+
+# 로컬에만 두는 파일 — 디자인 원본·스크린샷, 구버전 WebSocket 서버
+*.af
+CleanShot*.png
+product-screenshot.png
+Freedom Ai logo.png
+logo 복사본.png
+server.js
