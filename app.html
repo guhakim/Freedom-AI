@@ -731,8 +731,8 @@
   <!-- 화살표 굵기 옵션 -->
   <div id="arrow-thickness-options" style="display:none;align-items:center;gap:3px;">
     <div class="divider"></div>
-    <button class="size-btn arrow-thickness-btn" data-thickness="0" title="얇게" data-i18n-en-title="Thin" data-i18n-ja-title="細い" data-i18n-ko-title="얇게"><div class="size-dot" style="width:4px;height:4px;"></div></button>
-    <button class="size-btn arrow-thickness-btn active" data-thickness="1" title="보통" data-i18n-en-title="Medium" data-i18n-ja-title="標準" data-i18n-ko-title="보통"><div class="size-dot" style="width:8px;height:8px;"></div></button>
+    <button class="size-btn arrow-thickness-btn active" data-thickness="0" title="얇게" data-i18n-en-title="Thin" data-i18n-ja-title="細い" data-i18n-ko-title="얇게"><div class="size-dot" style="width:4px;height:4px;"></div></button>
+    <button class="size-btn arrow-thickness-btn" data-thickness="1" title="보통" data-i18n-en-title="Medium" data-i18n-ja-title="標準" data-i18n-ko-title="보통"><div class="size-dot" style="width:8px;height:8px;"></div></button>
     <button class="size-btn arrow-thickness-btn" data-thickness="2" title="굵게" data-i18n-en-title="Thick" data-i18n-ja-title="太い" data-i18n-ko-title="굵게"><div class="size-dot" style="width:13px;height:13px;"></div></button>
   </div>
 
@@ -1131,7 +1131,7 @@ let shapes    = [];
 let shapeType = 'rect'; // 'rect' | 'ellipse' | 'triangle' | 'arrow'
 
 const ARROW_THICKNESS = [3, 6, 12];
-let arrowSizeIndex = 1;
+let arrowSizeIndex = 0; // 접속할 때마다 얇게(3px)로 시작 — 굵기 선택은 저장하지 않는다
 
 const RESIZE_R = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1 8L8 1M4.5 8L8 4.5M8 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
 const RESIZE_L = `<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M8 8L1 1M4.5 8L1 4.5M1 8V5" stroke="rgba(14,14,13,0.6)" stroke-width="1.2" stroke-linecap="round"/></svg>`;
