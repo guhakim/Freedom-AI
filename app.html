@@ -886,6 +886,32 @@
 <canvas id="canvas"></canvas>
 
 <script>
+// 브라우저 저장소 접근. 저장소가 막힌 환경(사생활 보호 설정 등)에서는 localStorage에 손대기만
+// 해도 예외가 나서 접속 단계에서 앱이 멈췄다 — 그럴 땐 이 탭에서만 쓰는 메모리 저장소로 대신한다.
+const store = (() => {
+  try {
+    const k = '__fa_probe';
+    localStorage.setItem(k, '1'); localStorage.removeItem(k);
+    return localStorage;
+  } catch {
+    const m = new Map();
+    return {
+      getItem: k => (m.has(k) ? m.get(k) : null),
+      setItem: (k, v) => { m.set(k, String(v)); },
+      removeItem: k => { m.delete(k); },
+    };
+  }
+})();
+// 저장된 JSON 읽기. 값이 손상됐거나 기대한 모양(배열 등)이 아니면 기본값 — 예전엔 JSON.parse
+// 예외 하나로 사이드바 전체가 그려지지 않았다.
+function lsJSON(key, fallback) {
+  try {
+    const v = JSON.parse(store.getItem(key) ?? 'null');
+    if (v === null) return fallback;
+    if (Array.isArray(fallback) && !Array.isArray(v)) return fallback;
+    return v;
+  } catch { return fallback; }
+}
 // Vercel 대시보드(계정 잠김) 접근 없이 HF_TOKEN을 등록/교체할 수 있도록,
 // 배경제거·AI이미지변환 두 기능만 별도 서버(hf-server/, Render 배포)로 분리했다.
 // 배포 후 실제 주소로 아래 값을 바꿔야 한다.
@@ -952,7 +978,7 @@ function applyLang(lang) {
   document.documentElement.lang = lang;
   const toggle = document.getElementById('lang-toggle');
   if (toggle) toggle.textContent = LANG_LABEL[LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]];
-  try { localStorage.setItem('fa_lang', lang); } catch (e) {}
+  try { store.setItem('fa_lang', lang); } catch (e) {}
   window._faLang = lang;
   renderCalendar?.();        // 요일·월 표기가 언어를 따라가도록 다시 그린다
   renderCalendarTodos?.();
@@ -965,7 +991,7 @@ function applyLang(lang) {
 const tr = (ko, en, ja) => window._faLang === 'en' ? en : window._faLang === 'ja' ? ja : ko;
 window._faT = tr;
 
-try { window._faLang = localStorage.getItem('fa_lang') || 'ko'; } catch (e) { window._faLang = 'ko'; }
+try { window._faLang = store.getItem('fa_lang') || 'ko'; } catch (e) { window._faLang = 'ko'; }
 document.addEventListener('DOMContentLoaded', () => {
   applyLang(window._faLang);
   document.getElementById('lang-toggle')?.addEventListener('click', () => {
@@ -1118,10 +1144,10 @@ let isGuest    = false;
 // 이 브라우저의 고정 식별자 — 새로고침·재접속해도 항상 같은 값을 써서
 // "본인 것만 삭제/이동" 같은 소유권 체크가 계속 유효하도록 한다.
 function getClientId() {
-  let id = localStorage.getItem('fa_client_id');
+  let id = store.getItem('fa_client_id');
   if (!id || !/^[A-Za-z0-9]{4,64}$/.test(id)) {
     id = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem('fa_client_id', id);
+    store.setItem('fa_client_id', id);
   }
   return id;
 }
@@ -2630,7 +2656,10 @@ async function runAiTransform() {
 
     if (!res.ok) {
       if (data.error === 'model_loading') {
-        statusEl.textContent = '🔄 ' + data.message;
+        // 서버 문구(data.message)는 한국어 고정이라 화면 언어에 맞춰 직접 쓴다
+        statusEl.textContent = tr('🔄 AI 모델을 불러오는 중이에요. 잠시 후 다시 시도해 주세요.',
+          '🔄 The AI model is loading. Please try again in a moment.',
+          '🔄 AIモデルを読み込み中です。しばらくしてから再度お試しください。');
         goBtn.disabled = false;
         return;
       }
@@ -3006,7 +3035,7 @@ function saveLocalNow() {
         : { id:s.id, type:s.type, x:s.x, y:s.y, w:s.w, h:s.h, color:s.color, userId:s.userId, groupId:s.groupId }),
     };
     data.todos = todos; // 할 일만 있는 방도 서버가 비어 보일 때 복원되도록
-    localStorage.setItem('fa:room:' + roomId, JSON.stringify(data));
+    store.setItem('fa:room:' + roomId, JSON.stringify(data));
     _localSaveFailed = false;
   } catch(e) {
     // 예전엔 여기서 조용히 삼켜서, 용량 초과(이미지가 많은 보드)로 사본이 안 남는데도
@@ -3076,7 +3105,7 @@ function sendAction(action, opts) {
     // 페이지를 떠나는 중에는 keepalive로 보내야 요청이 취소되지 않는다. (navigator.sendBeacon은
     // Authorization 헤더를 붙일 수 없어서 비공개 방 인증에 쓸 수 없다)
     keepalive: !!opts?.keepalive,
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` },
     body: JSON.stringify({
       roomId,
       userId:   myUserId,
@@ -3118,7 +3147,7 @@ async function resyncFromServer() {
     // 진행 중인 sendAction들이 다 끝날 때까지(성공이든 실패든) 기다렸다가 읽는다.
     if (pendingActions.size) await Promise.allSettled([...pendingActions]);
     const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+      headers: { 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` },
     });
     if (!res.ok) { handleAuthFailure(res); return; }
     const state = await res.json();
@@ -3208,7 +3237,7 @@ function initPusher(pusherKey, pusherCluster) {
       endpoint:  '/api/pusher-auth',
       transport: 'ajax',
       params:    { user_id: myUserId, user_name: userName, user_color: myColor, email: myEmail },
-      headersProvider: () => ({ 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` }),
+      headersProvider: () => ({ 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` }),
     },
   });
 
@@ -3227,7 +3256,8 @@ function initPusher(pusherKey, pusherCluster) {
 
   channel.bind('pusher:member_added', m => {
     addRemoteCursor(m.id, m.info.name, m.info.color);
-    showToast(tr(`${esc(m.info.name)}님이 입장했어요`, `${esc(m.info.name)} joined`, `${esc(m.info.name)}さんが入室しました`));
+    // showToast는 textContent로 넣으므로 esc()를 하면 "A&B"가 "A&amp;B"로 보였다
+    showToast(tr(`${m.info.name}님이 입장했어요`, `${m.info.name} joined`, `${m.info.name}さんが入室しました`));
   });
 
   channel.bind('pusher:member_removed', m => removeRemoteCursor(m.id));
@@ -3361,7 +3391,7 @@ function initPusher(pusherKey, pusherCluster) {
     if (images.find(i => i.id === data.id)) return;
     try {
       const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+        headers: { 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` },
       });
       const state = await res.json();
       const img = state.images?.find(i => i.id === data.id);
@@ -3380,13 +3410,17 @@ function initPusher(pusherKey, pusherCluster) {
     if (!local) return;
     try {
       const res = await fetch(`/api/room?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+        headers: { 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` },
       });
       const state = await res.json();
       const updated = state.images?.find(i => i.id === data.imageId);
       if (updated) {
         local.src = updated.src;
         local.el.querySelector('img').src = updated.src;
+        // 배경 제거 여부도 함께 맞춘다 — 빠져 있어서 다른 사람이 배경을 지운 이미지에
+        // 새로고침 전까지 사각 테두리·그림자가 남았다
+        local.bgRemoved = !!updated.bgRemoved;
+        local.el.classList.toggle('bg-removed', local.bgRemoved);
         scheduleLocalSave();
       }
     } catch(e) {}
@@ -4682,7 +4716,7 @@ document.getElementById('share-privacy-btn').addEventListener('click', async () 
 });
 
 async function teamApi(body) {
-  const authToken = localStorage.getItem('fa_google_token');
+  const authToken = store.getItem('fa_google_token');
   const r = await fetch('/api/team', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': authToken ? `Bearer ${authToken}` : '' },
@@ -4717,7 +4751,7 @@ async function refreshShareInvite() {
 
   let data = null;
   try {
-    const authToken = localStorage.getItem('fa_google_token');
+    const authToken = store.getItem('fa_google_token');
     const r = await fetch(`/api/team?roomId=${encodeURIComponent(roomId)}&email=${encodeURIComponent(myEmail)}`, {
       headers: { 'Authorization': authToken ? `Bearer ${authToken}` : '' },
     });
@@ -4828,9 +4862,9 @@ async function saveRecentProject(name) {
   // 브라우저에서 실제 계정으로 로그인할 때 그대로 병합되어 "최근 프로젝트"로
   // 보여버린다. 게스트 세션은 로컬 기록 자체를 남기지 않아야 한다.
   if (isGuest) return;
-  const list = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+  const list = lsJSON('fa_projects', []);
   const updated = [name, ...list.filter(p => p !== name)].slice(0, MAX_PROJECTS);
-  localStorage.setItem('fa_projects', JSON.stringify(updated));
+  store.setItem('fa_projects', JSON.stringify(updated));
   await pushProjectsToServer(updated);
 }
 
@@ -4842,8 +4876,8 @@ async function saveRecentProject(name) {
 // 이걸 막기 위해 반환값을 await할 수 있게 해서 호출부에서 순서를 보장하도록 한다.
 async function pushProjectsToServer(projects) {
   try {
-    const u = JSON.parse(localStorage.getItem('fa_user') || 'null');
-    const token = localStorage.getItem('fa_google_token');
+    const u = lsJSON('fa_user', null);
+    const token = store.getItem('fa_google_token');
     if (!u?.email || !token) return;
     await fetch('/api/projects', {
       method: 'POST',
@@ -4854,7 +4888,7 @@ async function pushProjectsToServer(projects) {
 }
 
 function renderRecentProjects(resolveCallback) {
-  const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+  const projects = lsJSON('fa_projects', []);
   const container = document.getElementById('recent-projects');
   const list = document.getElementById('recent-list');
   if (!projects.length) { container.style.display = 'none'; return; }
@@ -4960,7 +4994,7 @@ function startGoogleLogin(resolveCallback) {
         if (!res.ok) throw new Error(res.status);
         const info = await res.json();
         const user = { name: info.name, email: info.email, picture: info.picture };
-        localStorage.setItem('fa_user', JSON.stringify(user));
+        store.setItem('fa_user', JSON.stringify(user));
         saveGoogleToken(tokenResponse);
         document.getElementById('name-modal').style.display = 'none';
         resolveCallback(user);
@@ -4983,12 +5017,12 @@ function startGoogleLogin(resolveCallback) {
 const TOKEN_EXP_KEY = 'fa_google_token_exp';
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 function saveGoogleToken(resp) {
-  localStorage.setItem('fa_google_token', resp.access_token);
-  localStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + (Number(resp.expires_in) || 3599) * 1000));
+  store.setItem('fa_google_token', resp.access_token);
+  store.setItem(TOKEN_EXP_KEY, String(Date.now() + (Number(resp.expires_in) || 3599) * 1000));
 }
 // 남은 유효시간(ms). 만료 시각을 모르면(이 기능 이전에 받은 토큰) 이미 만료된 것으로 본다.
 function tokenTimeLeft() {
-  const exp = Number(localStorage.getItem(TOKEN_EXP_KEY));
+  const exp = Number(store.getItem(TOKEN_EXP_KEY));
   return exp ? exp - Date.now() : -1;
 }
 
@@ -5093,7 +5127,7 @@ function getGoogleUser() {
   return new Promise(resolve => {
     // 사이드바 프로젝트 전환 시 로그인 건너뜀
     const skip = sessionStorage.getItem('fa_sidebar_nav');
-    const stored = localStorage.getItem('fa_user');
+    const stored = store.getItem('fa_user');
     // 토큰이 곧 만료되면 건너뛰지 않고 로그인 화면을 띄운다 — 만료된 토큰으로 비공개 방에
     // 들어가면 멤버인데도 "비공개 프로젝트" 안내가 떴다
     if (skip && stored && tokenTimeLeft() > TOKEN_REFRESH_MARGIN_MS) {
@@ -5127,19 +5161,19 @@ async function main() {
   startSessionWatch();
   if (gUser.email) {
     try {
-      const token = localStorage.getItem('fa_google_token');
+      const token = store.getItem('fa_google_token');
       const r = await fetch(`/api/projects?email=${encodeURIComponent(gUser.email)}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const { projects: serverProjects } = await r.json();
       if (serverProjects?.length) {
-        const local = JSON.parse(localStorage.getItem('fa_projects') || '[]');
-        const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+        const local = lsJSON('fa_projects', []);
+        const trash = lsJSON('fa_trash', []);
         // 로그인 사이 삭제(휴지통 이동)한 프로젝트는 서버 목록에 남아있어도 되살아나지 않도록 제외
         const merged = [...new Set([...serverProjects, ...local])]
           .filter(p => !trash.includes(p))
           .slice(0, MAX_PROJECTS);
-        localStorage.setItem('fa_projects', JSON.stringify(merged));
+        store.setItem('fa_projects', JSON.stringify(merged));
         // 토큰 만료 등으로 서버에 반영되지 못했던 로컬 변경(예: 삭제)을 이번 로그인 시점에 재동기화.
         // await로 순서를 보장 — 안 그러면 뒤이어 나오는 초대 수락/방 입장 쪽 서버 저장과 순서가
         // 뒤바뀌어 방금 추가된 프로젝트가 서버에서 도로 사라질 수 있다.
@@ -5153,7 +5187,7 @@ async function main() {
   const inviteToken = new URLSearchParams(location.search).get('invite');
   if (inviteToken) {
     try {
-      const authToken = localStorage.getItem('fa_google_token');
+      const authToken = store.getItem('fa_google_token');
       const r = await fetch('/api/team', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': authToken ? `Bearer ${authToken}` : '' },
@@ -5177,7 +5211,7 @@ async function main() {
   // 방 입장 & Pusher 설정 수신
   const joinRes = await fetch('/api/join', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token') || ''}` },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${store.getItem('fa_google_token') || ''}` },
     body: JSON.stringify({ roomId, name: userName, email: myEmail, clientId: getClientId() }),
   });
   if (joinRes.status === 403) {
@@ -5207,7 +5241,7 @@ async function main() {
   if (!state.strokes?.length && !state.notes?.length && !state.images?.length && !state.shapes?.length
       && !Object.keys(state.todos || {}).length) {
     try {
-      const local = localStorage.getItem('fa:room:' + roomId);
+      const local = store.getItem('fa:room:' + roomId);
       if (local) resolvedState = JSON.parse(local);
     } catch(e) {}
   }
@@ -5262,7 +5296,7 @@ async function main() {
         const newName = input.value.trim().slice(0, 32);
         if (!commit || !newName || newName === oldName) { restore(); return; }
 
-        const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+        const projects = lsJSON('fa_projects', []);
         if (projects.some(p => p !== oldName && p === newName)) {
           alert(tr('이미 같은 이름의 프로젝트가 있습니다.', 'A project with that name already exists.', '同じ名前のプロジェクトがすでにあります。'));
           restore(); return;
@@ -5271,7 +5305,7 @@ async function main() {
         try {
           const res = await fetch('/api/rename-room', {
             method: 'POST',
-            headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${localStorage.getItem('fa_google_token')||''}` },
+            headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${store.getItem('fa_google_token')||''}` },
             body: JSON.stringify({ oldRoomId: oldName.slice(0,32), newRoomId: newName.slice(0,32), email: myEmail }),
           });
           const data = await res.json().catch(() => ({}));
@@ -5289,12 +5323,14 @@ async function main() {
         }
 
         const updated = projects.map(p => p === oldName ? newName : p);
-        localStorage.setItem('fa_projects', JSON.stringify(updated));
+        // 서버 이름 변경은 이미 끝났다. 여기서 저장 용량 초과로 예외가 나면 목록 갱신·페이지
+        // 이동까지 멈춰 화면만 옛 이름에 남았으므로, 로컬 정리는 실패해도 계속 진행한다.
+        try { store.setItem('fa_projects', JSON.stringify(updated)); } catch {}
         pushProjectsToServer(updated);
-        const oldLocal = localStorage.getItem('fa:room:' + oldName.slice(0,32));
+        const oldLocal = store.getItem('fa:room:' + oldName.slice(0,32));
         if (oldLocal) {
-          localStorage.setItem('fa:room:' + newName.slice(0,32), oldLocal);
-          localStorage.removeItem('fa:room:' + oldName.slice(0,32));
+          try { store.setItem('fa:room:' + newName.slice(0,32), oldLocal); } catch {}
+          store.removeItem('fa:room:' + oldName.slice(0,32));
         }
 
         const wasActive = oldName.slice(0,32) === roomId;
@@ -5319,7 +5355,7 @@ async function main() {
     }
 
     function buildList() {
-      const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+      const projects = lsJSON('fa_projects', []);
       sidebar.style.display = 'block';
       list.innerHTML = '';
       projects.forEach(name => {
@@ -5357,12 +5393,12 @@ async function main() {
           e.stopPropagation();
           if (!confirm(tr(`"${name}" 프로젝트를 삭제하시겠습니까?`, `Delete project "${name}"?`, `プロジェクト「${name}」を削除しますか?`))) return;
           const wasActive = name.slice(0, 32) === roomId;
-          const updated = JSON.parse(localStorage.getItem('fa_projects') || '[]').filter(p => p !== name);
-          localStorage.setItem('fa_projects', JSON.stringify(updated));
+          const updated = lsJSON('fa_projects', []).filter(p => p !== name);
+          store.setItem('fa_projects', JSON.stringify(updated));
           pushProjectsToServer(updated);
-          const trash = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+          const trash = lsJSON('fa_trash', []);
           if (!trash.includes(name)) trash.unshift(name);
-          localStorage.setItem('fa_trash', JSON.stringify(trash.slice(0, 20)));
+          store.setItem('fa_trash', JSON.stringify(trash.slice(0, 20)));
           buildList();
           buildTrash();
 
@@ -5382,7 +5418,7 @@ async function main() {
       });
     }
     function buildTrash() {
-      const items = JSON.parse(localStorage.getItem('fa_trash') || '[]');
+      const items = lsJSON('fa_trash', []);
       const section = document.getElementById('sidebar-trash');
       const trashList = document.getElementById('sidebar-trash-list');
       if (!items.length) { section.style.display = 'none'; return; }
@@ -5413,11 +5449,11 @@ async function main() {
             '휴지통과 이 브라우저에서 지웁니다. 같은 이름으로 다시 만들면 서버에 남아 있던 내용이 보일 수 있어요.',
             'This removes it from the trash and this browser. If you create a project with the same name again, content still on the server may reappear.',
             'ゴミ箱とこのブラウザから削除します。同じ名前で作り直すと、サーバーに残っている内容が表示されることがあります。'))) return;
-          localStorage.removeItem('fa:room:' + name.slice(0, 32));
+          store.removeItem('fa:room:' + name.slice(0, 32));
           // 변수명이 t면 모듈 스코프의 번역 함수 t를 가려서, 위 confirm(t(...))가
           // 초기화 전 접근(TDZ)으로 ReferenceError를 던진다 — 삭제가 아예 안 됐다.
-          const left = JSON.parse(localStorage.getItem('fa_trash') || '[]').filter(p => p !== name);
-          localStorage.setItem('fa_trash', JSON.stringify(left));
+          const left = lsJSON('fa_trash', []).filter(p => p !== name);
+          store.setItem('fa_trash', JSON.stringify(left));
           buildTrash();
         });
         row.appendChild(label);
@@ -5441,9 +5477,9 @@ async function main() {
       if (e.key === 'Enter') {
         const val = newInput.value.trim();
         if (!val) return;
-        const projects = JSON.parse(localStorage.getItem('fa_projects') || '[]');
+        const projects = lsJSON('fa_projects', []);
         const updated  = [val, ...projects.filter(p => p !== val)].slice(0, MAX_PROJECTS);
-        localStorage.setItem('fa_projects', JSON.stringify(updated));
+        store.setItem('fa_projects', JSON.stringify(updated));
         pushProjectsToServer(updated);
         newForm.style.display = 'none';
         sessionStorage.setItem('fa_sidebar_nav', '1');
@@ -5458,12 +5494,12 @@ async function main() {
   if (!isGuest) {
     logoutBtn.style.display = 'inline';
     logoutBtn.addEventListener('click', () => {
-      const token = localStorage.getItem('fa_google_token');
+      const token = store.getItem('fa_google_token');
       if (token && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(token, () => {});
       if (window.google?.accounts?.id) google.accounts.id.disableAutoSelect();
-      localStorage.removeItem('fa_user');
-      localStorage.removeItem('fa_google_token');
-      localStorage.removeItem(TOKEN_EXP_KEY);
+      store.removeItem('fa_user');
+      store.removeItem('fa_google_token');
+      store.removeItem(TOKEN_EXP_KEY);
       location.href = location.pathname;
     });
   }
@@ -5502,7 +5538,7 @@ async function main() {
 function makeDraggable(el, handle) {
   if (window.innerWidth <= 640) return;
   const key = 'fa_pos_' + el.id;
-  const saved = localStorage.getItem(key);
+  const saved = store.getItem(key);
   if (saved) {
     try {
       const p = JSON.parse(saved);
@@ -5537,7 +5573,7 @@ function makeDraggable(el, handle) {
     if (!on) return;
     on = false;
     handle.style.cursor = 'grab';
-    localStorage.setItem(key, JSON.stringify({left: el.style.left, top: el.style.top}));
+    store.setItem(key, JSON.stringify({left: el.style.left, top: el.style.top}));
   });
 }
 

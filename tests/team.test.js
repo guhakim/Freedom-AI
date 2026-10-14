@@ -158,3 +158,36 @@ test('removal tells apart "not a member" from "not the owner"', async () => {
     assert.equal((await call('m', 'a@x.com', 'b@x.com')).body.error, 'owner_only');
   } finally { restore(); }
 });
+
+// 회귀 테스트: 멤버 목록을 락 없이 읽고-고치고-썼다. 두 사람이 같은 초대 링크를 동시에 쓰면
+// 둘 다 [owner]를 읽고 각자 자기만 붙여 써서, 먼저 쓴 사람은 200을 받고도 목록에서 빠졌다.
+test('two people redeeming an invite at the same time both end up as members', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ 'a': 'a@x.com', 'b': 'b@x.com' });
+  try {
+    await kv.set(`${kvKey('board')}:members`, ['owner@x.com']);
+    await kv.set('fa:invite:tok', { roomId: 'board' });
+    const redeem = (tok, email) => {
+      const res = mockRes();
+      return freshHandler(api)(mockReq({ headers: { authorization: `Bearer ${tok}` },
+        body: { action: 'redeem', token: 'tok', email } }), res).then(() => res);
+    };
+    const [ra, rb] = await Promise.all([redeem('a', 'a@x.com'), redeem('b', 'b@x.com')]);
+    assert.equal(ra.statusCode, 200);
+    assert.equal(rb.statusCode, 200);
+    assert.deepEqual([...await kv.get(`${kvKey('board')}:members`)].sort(), ['a@x.com', 'b@x.com', 'owner@x.com']);
+  } finally { restore(); }
+});
+
+// 회귀 테스트: KV가 실패하면 처리되지 않은 예외가 되어 JSON이 아닌 기본 500 페이지가 나갔다.
+test('a KV failure returns a JSON server_error instead of throwing', async () => {
+  const { kv } = installMocks();
+  kv.get = async () => { throw new Error('kv down'); };
+  const res = mockRes();
+  const origError = console.error; console.error = () => {};
+  try {
+    await freshHandler(api)(mockReq({ method: 'GET', query: { roomId: 'board' } }), res);
+  } finally { console.error = origError; }
+  assert.equal(res.statusCode, 500);
+  assert.deepEqual(res.body, { error: 'server_error' });
+});

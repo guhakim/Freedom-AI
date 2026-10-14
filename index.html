@@ -1352,6 +1352,12 @@
       });
       if (!res.ok) {
         if (res.status === 429) throw new Error(t('너무 많은 요청을 보내셨어요. 잠시 후 다시 시도해주세요.', 'Too many requests. Please try again shortly.', 'リクエストが多すぎます。しばらくしてからもう一度お試しください。'));
+        // 원인별로 안내한다 — 예전엔 무엇이 잘못됐든 "다시 시도"만 떠서, 입력을 고쳐야 하는
+        // 경우(400)나 다시 보내도 소용없는 경우(503)에도 같은 시도를 반복하게 했다.
+        const { error } = await res.json().catch(() => ({}));
+        if (error === 'invalid_email') throw new Error(t('이메일 주소를 확인해주세요.', 'Please check your email address.', 'メールアドレスをご確認ください。'));
+        if (error === 'invalid_name' || error === 'invalid_message') throw new Error(t('이름과 내용을 확인해주세요.', 'Please check your name and message.', 'お名前と内容をご確認ください。'));
+        if (error === 'storage_unavailable') throw new Error(t('지금은 문의를 받을 수 없어요. 잠시 후 다시 시도해주세요.', 'We can’t accept messages right now. Please try again later.', '現在お問い合わせを受け付けられません。しばらくしてからもう一度お試しください。'));
         throw new Error(t('문의 전송에 실패했습니다. 다시 시도해주세요.', 'Failed to send your message. Please try again.', 'お問い合わせの送信に失敗しました。もう一度お試しください。'));
       }
       formView.style.display = 'none';

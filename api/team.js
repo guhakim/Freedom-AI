@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('crypto');
-const { isValidRoomId, verifyEmail, MAX_ROOMID } = require('../lib/auth');
+const { isValidRoomId, verifyEmail, MAX_ROOMID, acquireRoomLock, releaseRoomLock } = require('../lib/auth');
 
 async function getKv() {
   if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null;
@@ -30,6 +30,25 @@ module.exports = async (req, res) => {
   const kv = await getKv();
   if (!kv || !process.env.KV_REST_API_URL) return res.status(500).json({ error: 'kv_not_configured' });
 
+  // KV가 실패하면 예전엔 처리되지 않은 예외가 되어 JSON이 아닌 기본 500 페이지가 나갔다
+  try {
+    return await handle(req, res, kv);
+  } catch (e) {
+    console.error('team', e);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+// 멤버 목록은 읽고-고치고-쓰는 사이에 다른 요청이 끼면 마지막 쓰기만 남는다 — 두 사람이 동시에
+// 초대 링크를 쓰면 한 명은 200을 받고도 목록에서 빠져 곧바로 "비공개 프로젝트"로 막혔다.
+// 방 단위 락(api/action.js와 같은 방식)을 멤버 목록 키에 걸어 한 번에 하나씩 고친다.
+async function withMembersLock(kv, roomId, res, fn) {
+  const lock = await acquireRoomLock(kv, `fa:room:${roomId}:members`);
+  if (!lock) return res.status(503).json({ error: 'busy' });
+  try { return await fn(); } finally { await releaseRoomLock(kv, lock); }
+}
+
+async function handle(req, res, kv) {
   // 팀원 목록 조회 — 아직 비공개 전환 안 된(레거시 오픈) 방은 누구나 조회 가능,
   // 비공개 전환된 방은 멤버만 조회 가능
   if (req.method === 'GET') {
@@ -54,19 +73,20 @@ module.exports = async (req, res) => {
       if (!email || !(await verifyOwner(req, email))) return res.status(401).json({ error: 'unauthorized' });
 
       const key = `fa:room:${roomId}:members`;
+      const denied = await withMembersLock(kv, roomId, res, async () => {
       let members = normalize(await kv.get(key));
       if (!members.length) {
         const room = await kv.get(`fa:room:${roomId}`);
         const me = email.toLowerCase();
         // 만든 사람이 기록된 방은 그 사람만 비공개로 전환할 수 있다
-        if (room?.createdBy && room.createdBy !== me) return res.status(403).json({ error: 'owner_only' });
+        if (room?.createdBy && room.createdBy !== me) { res.status(403).json({ error: 'owner_only' }); return true; }
         // 만든 사람이 기록되지 않은 방(이 기능 이전에 만들어졌거나 게스트가 만든 방)은 주인을
         // 알 수 없다. 그렇다고 아무나 잠그게 두면 원래 쓰던 사람이 영구히 쫓겨나므로:
         //  (1) 그 방에서 실제로 작업한 적 있는 사람만 비공개로 바꿀 수 있고,
         //  (2) 바꿀 때 함께 쓰던 사람을 모두 멤버로 넣어 아무도 떨어져 나가지 않게 한다.
         const contributors = Array.isArray(room?.contributors) ? room.contributors.map(c => String(c).toLowerCase()) : [];
         if (!room?.createdBy && contributors.length && !contributors.includes(me)) {
-          return res.status(403).json({ error: 'not_a_member' });
+          res.status(403).json({ error: 'not_a_member' }); return true;
         }
         // 기록된 순서를 그대로 둔다 — members[0]이 소유자(다른 멤버를 내보낼 수 있는 사람)다.
         // 요청한 사람을 앞에 두면, 남의 방에 한 글자 쓰고 비공개로 바꾼 사람이 소유자가 되어
@@ -74,8 +94,12 @@ module.exports = async (req, res) => {
         members = [...new Set([...contributors, me])];
         await kv.set(key, members);
       } else if (!members.includes(email.toLowerCase())) {
-        return res.status(403).json({ error: 'not_a_member' });
+        res.status(403).json({ error: 'not_a_member' }); return true;
       }
+      return false;
+      });
+      // true(또는 락을 못 잡아 보낸 503 응답)면 이미 응답했다
+      if (denied) return;
 
       const inviteToken = genToken();
       await kv.set(`fa:invite:${inviteToken}`, { roomId }, { ex: INVITE_TTL });
@@ -92,6 +116,7 @@ module.exports = async (req, res) => {
       if (!invite?.roomId) return res.status(404).json({ error: 'invalid_or_expired_invite' });
 
       const key = `fa:room:${invite.roomId}:members`;
+      return withMembersLock(kv, invite.roomId, res, async () => {
       const members = normalize(await kv.get(key));
       // 방 이름이 바뀌었거나 비공개가 풀린 뒤의 옛 초대 링크로, 사용자 혼자만 멤버인 새 목록을
       // 만들어 방을 차지하지 못하게 한다
@@ -102,6 +127,7 @@ module.exports = async (req, res) => {
         await kv.set(key, members);
       }
       return res.json({ roomId: invite.roomId });
+      });
     }
 
     // 멤버 제거 — 방을 비공개로 전환한 사람(목록의 첫 멤버)만 다른 멤버를 내보낼 수 있고,
@@ -114,6 +140,7 @@ module.exports = async (req, res) => {
       if (!email || !(await verifyOwner(req, email))) return res.status(401).json({ error: 'unauthorized' });
 
       const key = `fa:room:${roomId}:members`;
+      return withMembersLock(kv, roomId, res, async () => {
       const members = normalize(await kv.get(key));
       const me = email.toLowerCase(), target = removeEmail.toLowerCase();
       if (!members.includes(me)) return res.status(403).json({ error: 'not_a_member' });
@@ -129,10 +156,11 @@ module.exports = async (req, res) => {
       if (!updated.length) return res.status(400).json({ error: 'cannot_remove_last_member' });
       await kv.set(key, updated);
       return res.json({ members: updated });
+      });
     }
 
     return res.status(400).json({ error: 'unknown_action' });
   }
 
   res.status(405).end();
-};
+}
