@@ -697,6 +697,15 @@
     flex-shrink: 0;
   }
 
+  /* ── AD ── */
+  .ad-slot {
+    display: flex;
+    justify-content: center;
+    background: var(--paper2);
+  }
+  /* 광고가 채워지기 전(ins가 display:none)에는 여백까지 사라져 빈 띠가 남지 않는다 */
+  .ad-slot .kakao_ad_area { margin: 24px 16px; }
+
   /* ── FOOTER ── */
   footer {
     background: var(--ink);
@@ -1205,6 +1214,18 @@
     </div>
   </div>
 </section>
+
+
+<!-- ══════════════════════════
+     AD (Kakao AdFit)
+══════════════════════════ -->
+<div class="ad-slot">
+  <ins class="kakao_ad_area" style="display:none;"
+       data-ad-unit="DAN-DJpJjrVTEs6u05Qh"
+       data-ad-width="300"
+       data-ad-height="250"></ins>
+  <script src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
+</div>
 
 
 <!-- ══════════════════════════
