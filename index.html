@@ -705,6 +705,7 @@
     justify-content: center;
     background: var(--paper2);
   }
+  .ad-slot--white { background: var(--white); } /* 흰 기능 섹션과 맞닿는 자리 */
   /* 광고가 채워지기 전(ins가 display:none)에는 여백까지 사라져 빈 띠가 남지 않는다 */
   .ad-slot .kakao_ad_area { margin: 24px 16px; }
 
@@ -1032,6 +1033,25 @@
 
 
 <!-- ══════════════════════════
+     AD (Kakao AdFit) — 히어로 아래. 화면 폭에 맞는 크기만 남긴다
+══════════════════════════ -->
+<div class="ad-slot ad-slot--white" id="ad-hero">
+  <ins class="kakao_ad_area" style="display:none;"
+       data-ad-unit="DAN-aSw8EAwd6QXWqTCW"
+       data-ad-width="728"
+       data-ad-height="90"></ins>
+  <ins class="kakao_ad_area" style="display:none;"
+       data-ad-unit="DAN-XhQy76O5zTeHBNwt"
+       data-ad-width="320"
+       data-ad-height="100"></ins>
+</div>
+<script>
+  // 광고 스크립트(푸터 위 ba.min.js)가 읽기 전에 지워서, 안 보일 광고를 호출하지 않게 한다
+  document.querySelector('#ad-hero [data-ad-width="' + (matchMedia('(min-width: 760px)').matches ? '320' : '728') + '"]').remove();
+</script>
+
+
+<!-- ══════════════════════════
      CARD SECTION — 기능
 ══════════════════════════ -->
 <section class="cards-section" id="features">
@@ -1163,6 +1183,17 @@
     </div>
   </div>
 </section>
+
+
+<!-- ══════════════════════════
+     AD (Kakao AdFit) — 기능 소개 아래
+══════════════════════════ -->
+<div class="ad-slot ad-slot--white">
+  <ins class="kakao_ad_area" style="display:none;"
+       data-ad-unit="DAN-dSAYjJO6UExo9Pkr"
+       data-ad-width="300"
+       data-ad-height="250"></ins>
+</div>
 
 
 <!-- ══════════════════════════
