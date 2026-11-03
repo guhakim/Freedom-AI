@@ -108,8 +108,12 @@ async function safeTrigger(pusher, channel, event, data, excl) {
 // 좌표·크기는 반드시 이걸로 검사한다. typeof만 보면 Infinity·NaN이 통과하는데, 그 값은
 // KV에 JSON으로 저장되는 순간 null이 되어 항목이 화면에서 깨진다(위치를 잃거나 사라진다).
 const isNum = v => typeof v === 'number' && Number.isFinite(v);
-const validGroupId = g => (typeof g === 'string' && g.length > 0 && g.length <= 40) ? g : undefined;
-const validId = id => typeof id === 'string' && id.length > 0 && id.length <= 64;
+// id는 다른 사용자 화면의 HTML 속성에도 들어간다. 길이만 보면 `"><img onerror=...>` 같은 id가
+// 통과해 방을 연 사람의 브라우저에서 스크립트가 실행됐다(저장형 XSS). 문자셋까지 제한한다 —
+// 클라이언트의 genId()·genImgId()가 만드는 id는 모두 이 형식이다.
+const VALID_ID = /^[A-Za-z0-9_-]+$/;
+const validGroupId = g => (typeof g === 'string' && g.length > 0 && g.length <= 40 && VALID_ID.test(g)) ? g : undefined;
+const validId = id => typeof id === 'string' && id.length > 0 && id.length <= 64 && VALID_ID.test(id);
 
 // 펜 획 하나를 저장 가능한 형태로 정리 (stroke_end·erase_result 공통). 유효하지 않으면 null.
 function sanitizeStroke(s, userId) {
@@ -478,7 +482,7 @@ module.exports = async (req, res) => {
 
     case 'shape_add': {
       const { shape } = action;
-      if (!shape?.id) break;
+      if (!validId(shape?.id)) break;
       if (!state.shapes) state.shapes = [];
       if (state.shapes.find(s => s.id === shape.id)) break;
       // image_add와 같은 이유로, 한도 초과는 조용히 버리지 않고 사유를 알린다.
@@ -628,7 +632,7 @@ module.exports = async (req, res) => {
     case 'group_set': {
       const { ids, groupId } = action;
       if (!Array.isArray(ids) || !ids.length || ids.length > MAX_GROUP_IDS) break;
-      if (groupId !== null && (typeof groupId !== 'string' || !groupId || groupId.length > 40)) break;
+      if (groupId !== null && !validGroupId(groupId)) break;
       const idSet = new Set(ids.filter(id => typeof id === 'string'));
       const applied = [];
       for (const list of [state.notes, state.images, state.shapes, state.strokes]) {
@@ -649,7 +653,7 @@ module.exports = async (req, res) => {
     case 'todo_add': {
       const { date, todo } = action;
       if (!VALID_DATE_KEY.test(date)) break;
-      if (!todo?.id || typeof todo.text !== 'string') break;
+      if (!validId(todo?.id) || typeof todo.text !== 'string') break;
       const text = todo.text.trim().slice(0, MAX_TODO_TEXT);
       if (!text) break;
       if (!state.todos[date]) state.todos[date] = [];

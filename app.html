@@ -1532,7 +1532,7 @@ function buildNoteEl(note, autoFocus=false) {
       <button class="note-fontsize-btn" title="${tr('글자 크기', 'Text size', '文字サイズ')}">가</button>
       <button class="note-delete" title="${tr('삭제', 'Delete', '削除')}">×</button>
     </div>
-    <div class="note-text" contenteditable="true" spellcheck="false" style="font-size:${note.fontSize||13}px"
+    <div class="note-text" contenteditable="true" spellcheck="false" style="font-size:${esc(note.fontSize||13)}px"
          data-placeholder="${tr('내용을 입력하세요', 'Type something', '内容を入力してください')}">${esc(note.text||'')}</div>
     <div class="note-resize-bar">
       <div class="note-resize-handle left"  data-dir="left">${RESIZE_L}</div>
@@ -2187,6 +2187,7 @@ function setupImageEvents(img) {
 function shapeSvgMarkup(type, w, h, color) {
   w = Math.max(w, 1); h = Math.max(h, 1);
   const sw = 2.5;
+  color = esc(color); // 서버 검증이 생기기 전에 저장된 값일 수 있어 HTML에 넣기 전에 항상 이스케이프한다
   const fill = /^#[0-9a-fA-F]{6}$/.test(color) ? color + '2e' : 'rgba(14,14,13,.18)';
   if (type === 'ellipse') {
     return `<ellipse cx="${w/2}" cy="${h/2}" rx="${Math.max(0,w/2-sw/2)}" ry="${Math.max(0,h/2-sw/2)}" fill="${fill}" stroke="${color}" stroke-width="${sw}"/>`;
@@ -2395,17 +2396,19 @@ function renderArrowEl(shape) {
   el.style.cssText = `left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;`;
   const lx1=shape.x1-b.x, ly1=shape.y1-b.y, lx2=shape.x2-b.x, ly2=shape.y2-b.y;
   const lcx=b.ctrlX-b.x, lcy=b.ctrlY-b.y;
-  const sw = shape.strokeWidth || 6;
+  const sw = Number(shape.strokeWidth) || 6;
   const hitW = Math.max(sw+18, 22);
+  // 이미 KV에 저장된 악성 id·색상도 막아야 하므로 서버 검증과 별개로 이스케이프한다
+  const safeId = esc(shape.id), safeColor = esc(shape.color);
   el.innerHTML = `
     <svg width="${b.w}" height="${b.h}" viewBox="0 0 ${b.w} ${b.h}">
       <defs>
-        <marker id="arrowhead-${shape.id}" markerWidth="4" markerHeight="4" refX="3.2" refY="2" orient="auto-start-reverse">
-          <polygon points="0 0, 4 2, 0 4" fill="${shape.color}"/>
+        <marker id="arrowhead-${safeId}" markerWidth="4" markerHeight="4" refX="3.2" refY="2" orient="auto-start-reverse">
+          <polygon points="0 0, 4 2, 0 4" fill="${safeColor}"/>
         </marker>
       </defs>
       <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="transparent" stroke-width="${hitW}" class="arrow-hit"/>
-      <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="${shape.color}" stroke-width="${sw}" stroke-linecap="round" marker-end="url(#arrowhead-${shape.id})"/>
+      <path d="M ${lx1} ${ly1} Q ${lcx} ${lcy} ${lx2} ${ly2}" fill="none" stroke="${safeColor}" stroke-width="${sw}" stroke-linecap="round" marker-end="url(#arrowhead-${safeId})"/>
     </svg>
     <button class="shape-delete" title="${tr('삭제', 'Delete', '削除')}" style="left:${lx2}px;top:${ly2-22}px;">×</button>
     <div class="arrow-handle" data-role="p1" style="left:${lx1}px;top:${ly1}px;"></div>

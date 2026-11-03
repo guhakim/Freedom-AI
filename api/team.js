@@ -12,6 +12,9 @@ const INVITE_TTL = 7 * 24 * 3600; // 초대 링크 유효기간: 7일
 
 const verifyOwner = verifyEmail;
 
+// fa:room: 아래에 두면 "<방이름>:inviteEpoch"라는 이름의 방 상태와 키가 겹친다
+const inviteEpochKey = roomId => `fa:inviteEpoch:${roomId}`;
+
 // 초대 토큰은 추측할 수 없어야 한다 (Math.random은 예측 가능)
 function genToken() {
   return crypto.randomBytes(18).toString('base64url');
@@ -102,7 +105,8 @@ async function handle(req, res, kv) {
       if (denied) return;
 
       const inviteToken = genToken();
-      await kv.set(`fa:invite:${inviteToken}`, { roomId }, { ex: INVITE_TTL });
+      const epoch = Number(await kv.get(inviteEpochKey(roomId))) || 0;
+      await kv.set(`fa:invite:${inviteToken}`, { roomId, epoch }, { ex: INVITE_TTL });
       return res.json({ token: inviteToken });
     }
 
@@ -121,6 +125,9 @@ async function handle(req, res, kv) {
       // 방 이름이 바뀌었거나 비공개가 풀린 뒤의 옛 초대 링크로, 사용자 혼자만 멤버인 새 목록을
       // 만들어 방을 차지하지 못하게 한다
       if (!members.length) return res.status(404).json({ error: 'invalid_or_expired_invite' });
+      // 멤버를 내보낸 뒤에는 그 전에 발급된 링크를 받지 않는다 (epoch가 없는 옛 초대는 0으로 본다)
+      const epoch = Number(await kv.get(inviteEpochKey(invite.roomId))) || 0;
+      if ((Number(invite.epoch) || 0) !== epoch) return res.status(404).json({ error: 'invalid_or_expired_invite' });
       const lower = email.toLowerCase();
       if (!members.includes(lower)) {
         members.push(lower);
@@ -155,6 +162,10 @@ async function handle(req, res, kv) {
       // 바로 필요해지는 마지막 방어선이라 남겨 둔다.
       if (!updated.length) return res.status(400).json({ error: 'cannot_remove_last_member' });
       await kv.set(key, updated);
+      // 소유자가 내보낸 경우 기존 초대 링크를 모두 무효화한다 — 초대 링크는 7일간 재사용할 수
+      // 있어서, 예전엔 내보낸 사람이 같은 링크로 곧바로 다시 들어올 수 있었다. 스스로 나간
+      // 경우에는 다른 사람에게 보낸 링크까지 죽이지 않는다.
+      if (me !== target) await kv.incr(inviteEpochKey(roomId));
       return res.json({ members: updated });
       });
     }

@@ -191,3 +191,44 @@ test('a KV failure returns a JSON server_error instead of throwing', async () =>
   assert.equal(res.statusCode, 500);
   assert.deepEqual(res.body, { error: 'server_error' });
 });
+
+// 회귀 테스트: 초대 링크는 재사용할 수 있어서, 내보낸 사람이 같은 링크로 바로 돌아올 수 있었다
+test('removing a member revokes invites issued before the removal', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ own: 'owner@x.com', mate: 'mate@x.com', next: 'next@x.com' });
+  const call = async (token, body) => {
+    const res = mockRes();
+    await freshHandler(api)(mockReq({ headers: { authorization: `Bearer ${token}` }, body }), res);
+    return res;
+  };
+  const invite = async () => (await call('own', { action: 'invite', roomId: 'board', email: 'owner@x.com' })).body.token;
+  try {
+    await kv.set(kvKey('board'), { strokes: [], notes: [], images: [], shapes: [], createdBy: 'owner@x.com' });
+    const oldToken = await invite();
+    assert.equal((await call('mate', { action: 'redeem', token: oldToken, email: 'mate@x.com' })).statusCode, 200);
+    assert.equal((await call('own', { action: 'remove', roomId: 'board', email: 'owner@x.com', removeEmail: 'mate@x.com' })).statusCode, 200);
+
+    assert.equal((await call('mate', { action: 'redeem', token: oldToken, email: 'mate@x.com' })).statusCode, 404);
+    assert.deepEqual(await kv.get(`${kvKey('board')}:members`), ['owner@x.com']);
+
+    // 내보낸 뒤 새로 발급한 링크는 정상 동작한다
+    const newToken = await invite();
+    assert.equal((await call('next', { action: 'redeem', token: newToken, email: 'next@x.com' })).statusCode, 200);
+  } finally { restore(); }
+});
+
+test('a member leaving on their own does not revoke invites sent to others', async () => {
+  const { kv } = installMocks();
+  const restore = stubGoogleAuth({ own: 'owner@x.com', mate: 'mate@x.com', next: 'next@x.com' });
+  const call = async (token, body) => {
+    const res = mockRes();
+    await freshHandler(api)(mockReq({ headers: { authorization: `Bearer ${token}` }, body }), res);
+    return res;
+  };
+  try {
+    await kv.set(`${kvKey('board')}:members`, ['owner@x.com', 'mate@x.com']);
+    const token = (await call('own', { action: 'invite', roomId: 'board', email: 'owner@x.com' })).body.token;
+    assert.equal((await call('mate', { action: 'remove', roomId: 'board', email: 'mate@x.com', removeEmail: 'mate@x.com' })).statusCode, 200);
+    assert.equal((await call('next', { action: 'redeem', token, email: 'next@x.com' })).statusCode, 200);
+  } finally { restore(); }
+});
