@@ -716,14 +716,37 @@
   }
   /* 양옆 세로 광고(3개씩) — 정사각 3개 + 양옆 1열씩(332px × 5)이 다 들어가는 넓은 화면에서만 보인다 */
   .ad-side { display: none; flex-direction: column; }
+  /* 넓은 화면: 광고를 5열 격자 하나로 맞춘다
+     1줄: 왼1 · 정사각1 · 정사각2 · 정사각3 · 오른1
+     2줄: 왼2 · 띠 배너 · 쿠팡 · 오른3 · 오른2
+     3줄: 왼3 */
   @media (min-width: 1680px) {
-    .ad-slot { align-items: flex-start; } /* 양옆 첫 광고를 가운데 광고 줄과 같은 높이에 맞춘다 */
-    .ad-side { display: flex; }
+    .ad-slot {
+      display: grid;
+      grid-template-columns: repeat(5, 332px); /* 300 + 좌우 여백 16×2 */
+      justify-content: center;
+      justify-items: center;
+      align-items: start;
+    }
+    .ad-side { display: contents; }
+    .ad-slot-break { display: none; }
+    #ad-side-left  > :nth-child(1) { grid-area: 1 / 1; }
+    #ad-side-left  > :nth-child(2) { grid-area: 2 / 1; }
+    #ad-side-left  > :nth-child(3) { grid-area: 3 / 1; }
+    .ad-slot > [data-ad-unit="DAN-dSAYjJO6UExo9Pkr"] { grid-area: 1 / 2; }
+    .ad-slot > [data-ad-unit="DAN-DJpJjrVTEs6u05Qh"] { grid-area: 1 / 3; }
+    .ad-slot > [data-ad-unit="DAN-fLCP0coiXJu4HhuL"] { grid-area: 1 / 4; }
+    #ad-side-right > :nth-child(1) { grid-area: 1 / 5; }
+    #ad-side-right > :nth-child(2) { grid-area: 2 / 5; }
+    #ad-side-right > :nth-child(3) { grid-area: 2 / 4; }
+    .ad-slot > [data-ad-width="320"] { grid-area: 2 / 2; align-self: center; margin: 24px 6px; }
+    .ad-slot > .coupang-slot { grid-area: 2 / 3; width: auto; padding: 24px 16px 0; }
   }
 
   /* ── 쿠팡 파트너스 배너 ── */
   .coupang-slot { padding: 24px 16px; text-align: center; background: var(--paper2); }
   .coupang-slot iframe { max-width: 100%; }
+  .ad-slot > .coupang-slot { flex-basis: 100%; width: 100%; box-sizing: border-box; align-self: flex-start; } /* 격자가 아닐 때는 광고 아래 한 줄을 다 쓴다 */
   .coupang-disclosure { margin-top: 8px; font-size: 12px; color: var(--ink3); }
 
   /* ── FOOTER ── */
@@ -1291,23 +1314,26 @@
   </div>
   <script>
     // 광고 스크립트(ba.min.js)가 읽기 전에 지워서, 안 보일 광고를 호출하지 않게 한다
-    document.querySelector('#ad-bottom [data-ad-width="' + (matchMedia('(min-width: 760px)').matches ? '320' : '728') + '"]').remove();
-    if (!matchMedia('(min-width: 1680px)').matches) {
+    // 넓은 화면(격자)에서는 칸에 들어가는 320×100을, 그 아래 760px 이상에서는 728×90을 남긴다
+    var adWide = matchMedia('(min-width: 1680px)').matches;
+    var keep728 = !adWide && matchMedia('(min-width: 760px)').matches;
+    document.querySelector('#ad-bottom [data-ad-width="' + (keep728 ? '320' : '728') + '"]').remove();
+    if (!adWide) {
       document.querySelectorAll('#ad-bottom .ad-side').forEach(function (el) { el.remove(); });
     }
   </script>
   <script src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
-</div>
 
-<!-- ══════════════════════════
-     쿠팡 파트너스 다이나믹 배너 — 폭은 화면에 맞추고, 대가성 문구를 배너 바로 아래에 둔다
-══════════════════════════ -->
-<div class="coupang-slot" id="coupang-bottom">
-  <script src="https://ads-partners.coupang.com/g.js"></script>
-  <script>
-    new PartnersCoupang.G({"id":1046696,"template":"carousel","trackingCode":"AF6245340","width":String(Math.min(680,document.documentElement.clientWidth-32)),"height":"140","tsource":""});
-  </script>
-  <p class="coupang-disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
+  <!-- ══════════════════════════
+       쿠팡 파트너스 다이나믹 배너 — 넓은 화면에서는 격자 한 칸(300×250), 그 밖에는 화면 폭에 맞춘 띠. 대가성 문구는 배너 바로 아래에 둔다
+  ══════════════════════════ -->
+  <div class="coupang-slot" id="coupang-bottom">
+    <script src="https://ads-partners.coupang.com/g.js"></script>
+    <script>
+      new PartnersCoupang.G({"id":1046696,"template":"carousel","trackingCode":"AF6245340","width":adWide ? "300" : String(Math.min(680,document.documentElement.clientWidth-32)),"height":adWide ? "250" : "140","tsource":""});
+    </script>
+    <p class="coupang-disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
+  </div>
 </div>
 
 
