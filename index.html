@@ -719,7 +719,7 @@
   /* 넓은 화면: 광고를 5열 격자 하나로 맞춘다
      1줄: 왼1 · 정사각1 · 정사각2 · 정사각3 · 오른1
      2줄: 왼2 · 띠 배너 · 쿠팡 · 오른3 · 오른2
-     3줄: 왼3 */
+     3줄: 왼3 · 아래1 · 아래2 · 아래3 · 아래4 */
   @media (min-width: 1680px) {
     .ad-slot {
       display: grid;
@@ -733,6 +733,10 @@
     #ad-side-left  > :nth-child(1) { grid-area: 1 / 1; }
     #ad-side-left  > :nth-child(2) { grid-area: 2 / 1; }
     #ad-side-left  > :nth-child(3) { grid-area: 3 / 1; }
+    #ad-row3 > :nth-child(1) { grid-area: 3 / 2; }
+    #ad-row3 > :nth-child(2) { grid-area: 3 / 3; }
+    #ad-row3 > :nth-child(3) { grid-area: 3 / 4; }
+    #ad-row3 > :nth-child(4) { grid-area: 3 / 5; }
     .ad-slot > [data-ad-unit="DAN-dSAYjJO6UExo9Pkr"] { grid-area: 1 / 2; }
     .ad-slot > [data-ad-unit="DAN-DJpJjrVTEs6u05Qh"] { grid-area: 1 / 3; }
     .ad-slot > [data-ad-unit="DAN-fLCP0coiXJu4HhuL"] { grid-area: 1 / 4; }
@@ -1309,6 +1313,25 @@
          data-ad-height="250"></ins>
     <ins class="kakao_ad_area" style="display:none;"
          data-ad-unit="DAN-nepiosXHET32MTCn"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+  </div>
+  <!-- 3줄 2~5열 — 양옆 광고처럼 넓은 화면(격자)에서만 쓴다 -->
+  <div class="ad-side" id="ad-row3">
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-gYI8qTv0yTAsGTr0"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-nsZl5jT4YUxIqHls"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-pFF5398BxcsgB031"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-OUgljFHsAtvM4pSS"
          data-ad-width="300"
          data-ad-height="250"></ins>
   </div>
