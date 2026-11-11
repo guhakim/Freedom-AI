@@ -714,6 +714,17 @@
     .ad-slot { flex-direction: column; align-items: center; }
     .ad-slot-break { display: none; }
   }
+  /* 양옆 세로 광고(3개씩) — 정사각 3개 + 양옆 1열씩(332px × 5)이 다 들어가는 넓은 화면에서만 보인다 */
+  .ad-side { display: none; flex-direction: column; }
+  @media (min-width: 1680px) {
+    .ad-slot { align-items: flex-start; } /* 양옆 첫 광고를 가운데 광고 줄과 같은 높이에 맞춘다 */
+    .ad-side { display: flex; }
+  }
+
+  /* ── 쿠팡 파트너스 배너 ── */
+  .coupang-slot { padding: 24px 16px; text-align: center; background: var(--paper2); }
+  .coupang-slot iframe { max-width: 100%; }
+  .coupang-disclosure { margin-top: 8px; font-size: 12px; color: var(--ink3); }
 
   /* ── FOOTER ── */
   footer {
@@ -1238,6 +1249,20 @@
        data-ad-width="320"
        data-ad-height="100"></ins>
   <div class="ad-slot-break"></div>
+  <div class="ad-side" id="ad-side-left">
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-2zvZLKdgoZyxejRz"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-2tj2Kg29rpfyO8zL"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-s2q9FJ9e6n4qPEUA"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+  </div>
   <ins class="kakao_ad_area" style="display:none;"
        data-ad-unit="DAN-dSAYjJO6UExo9Pkr"
        data-ad-width="300"
@@ -1250,11 +1275,39 @@
        data-ad-unit="DAN-fLCP0coiXJu4HhuL"
        data-ad-width="300"
        data-ad-height="250"></ins>
+  <div class="ad-side" id="ad-side-right">
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-7umI7PdQvGYewDxt"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-Yoidneee4sSOdfKA"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+    <ins class="kakao_ad_area" style="display:none;"
+         data-ad-unit="DAN-nepiosXHET32MTCn"
+         data-ad-width="300"
+         data-ad-height="250"></ins>
+  </div>
   <script>
     // 광고 스크립트(ba.min.js)가 읽기 전에 지워서, 안 보일 광고를 호출하지 않게 한다
     document.querySelector('#ad-bottom [data-ad-width="' + (matchMedia('(min-width: 760px)').matches ? '320' : '728') + '"]').remove();
+    if (!matchMedia('(min-width: 1680px)').matches) {
+      document.querySelectorAll('#ad-bottom .ad-side').forEach(function (el) { el.remove(); });
+    }
   </script>
   <script src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
+</div>
+
+<!-- ══════════════════════════
+     쿠팡 파트너스 다이나믹 배너 — 폭은 화면에 맞추고, 대가성 문구를 배너 바로 아래에 둔다
+══════════════════════════ -->
+<div class="coupang-slot" id="coupang-bottom">
+  <script src="https://ads-partners.coupang.com/g.js"></script>
+  <script>
+    new PartnersCoupang.G({"id":1046696,"template":"carousel","trackingCode":"AF6245340","width":String(Math.min(680,document.documentElement.clientWidth-32)),"height":"140","tsource":""});
+  </script>
+  <p class="coupang-disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
 </div>
 
 
