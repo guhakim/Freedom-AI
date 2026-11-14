@@ -42,7 +42,6 @@
     <a href="guide.html">使い方ガイド</a>
     <a href="blog.html">ブログ</a>
     <a href="faq.html" aria-current="page">よくある質問</a>
-    <span class="lang-switch" role="group" aria-label="Language"><a href="../faq.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/faq.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/faq.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
     <a href="../app.html" class="cta">はじめる</a>
   </nav>
 </header>
@@ -86,11 +85,5 @@
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
-<script>
-// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
-document.querySelectorAll('.lang-switch a').forEach(function (a) {
-  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
-});
-</script>
 </body>
 </html>

@@ -7,8 +7,8 @@
 // 본문 안의 "@/" 는 사이트 루트를 뜻한다 (예: @/app.html, @/#about) — 언어 폴더 깊이에 맞게 바뀐다.
 //
 // 랜딩 페이지(index.html)는 한 주소에서 버튼으로 언어를 바꾸고 localStorage 'fa_lang'에 기억한다.
-// 이 페이지들은 검색엔진이 언어별로 따로 색인하도록 주소를 나누되, 같은 'fa_lang'을 읽어
-// 랜딩에서 고른 언어의 주소로 옮겨 간다. 언어 버튼을 누르면 'fa_lang'도 함께 바꾼다.
+// 이 페이지들에는 따로 언어 버튼을 두지 않는다 — 검색엔진이 언어별로 색인하도록 주소만 나누고,
+// 같은 'fa_lang'을 읽어 랜딩에서 고른 언어의 주소로 옮겨 간다.
 const fs = require('fs');
 const path = require('path');
 
@@ -17,8 +17,6 @@ const SITE = 'https://freedomai-app.vercel.app';
 const UPDATED = '2026-11-15';
 const LANGS = ['ko', 'en', 'ja'];
 const DIR = { ko: '', en: 'en/', ja: 'ja/' };
-const LABEL = { ko: 'KO', en: 'EN', ja: 'JP' };
-const NAME = { ko: '한국어', en: 'English', ja: '日本語' };
 
 const content = Object.fromEntries(LANGS.map((l) => [l, require(`./pages/${l}.js`)]));
 
@@ -49,8 +47,6 @@ function render(lang, p) {
         mainEntityOfPage: url(lang),
       })}</script>`
     : '';
-  const switcher = LANGS.map((l) =>
-    `<a href="${root}${DIR[l]}${p.file}" hreflang="${l}" lang="${l}" data-lang="${l}" title="${NAME[l]}"${l === lang ? ' aria-current="true"' : ''}>${LABEL[l]}</a>`).join('');
 
   return `<!DOCTYPE html>
 <html lang="${ui.htmlLang}">
@@ -94,7 +90,6 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${url(l)}">`).jo
     <a href="${langRoot}guide.html"${cur('guide')}>${ui.nav.guide}</a>
     <a href="${langRoot}blog.html"${cur('blog')}>${ui.nav.blog}</a>
     <a href="${langRoot}faq.html"${cur('faq')}>${ui.nav.faq}</a>
-    <span class="lang-switch" role="group" aria-label="Language">${switcher}</span>
     <a href="${root}app.html" class="cta">${ui.nav.start}</a>
   </nav>
 </header>
@@ -114,12 +109,6 @@ ${body}
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
-<script>
-// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
-document.querySelectorAll('.lang-switch a').forEach(function (a) {
-  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
-});
-</script>
 </body>
 </html>
 `;
