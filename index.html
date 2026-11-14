@@ -708,45 +708,6 @@
   }
   /* 광고가 채워지기 전(ins가 display:none)에는 여백까지 사라져 빈 띠가 남지 않는다 */
   .ad-slot .kakao_ad_area { margin: 24px 16px; }
-  .ad-slot-break { flex-basis: 100%; } /* 띠 배너 아래에서 줄을 바꾼다 */
-  /* 정사각 광고 3개가 한 줄에 다 안 들어가는 폭(300×3 + 좌우 여백)에서는 2+1로 어긋나지 않게 세로로 쌓는다 */
-  @media (max-width: 995px) {
-    .ad-slot { flex-direction: column; align-items: center; }
-    .ad-slot-break { display: none; }
-  }
-  /* 양옆 세로 광고(3개씩) — 정사각 3개 + 양옆 1열씩(332px × 5)이 다 들어가는 넓은 화면에서만 보인다 */
-  .ad-side { display: none; flex-direction: column; }
-  /* 넓은 화면: 광고를 5열 격자 하나로 맞춘다
-     1줄: 왼1 · 정사각1 · 정사각2 · 정사각3 · 오른1
-     2줄: 왼2 · 띠 배너 · 쿠팡 · 오른3 · 오른2
-     3줄: 왼3 · 아래1 · 아래2 · 아래3 · 아래4 */
-  @media (min-width: 1680px) {
-    .ad-slot {
-      display: grid;
-      grid-template-columns: repeat(5, 332px); /* 300 + 좌우 여백 16×2 */
-      justify-content: center;
-      justify-items: center;
-      align-items: start;
-    }
-    .ad-side { display: contents; }
-    .ad-slot-break { display: none; }
-    #ad-side-left  > :nth-child(1) { grid-area: 1 / 1; }
-    #ad-side-left  > :nth-child(2) { grid-area: 2 / 1; }
-    #ad-side-left  > :nth-child(3) { grid-area: 3 / 1; }
-    #ad-row3 > :nth-child(1) { grid-area: 3 / 2; }
-    #ad-row3 > :nth-child(2) { grid-area: 3 / 3; }
-    #ad-row3 > :nth-child(3) { grid-area: 3 / 4; }
-    #ad-row3 > :nth-child(4) { grid-area: 3 / 5; }
-    .ad-slot > [data-ad-unit="DAN-dSAYjJO6UExo9Pkr"] { grid-area: 1 / 2; }
-    .ad-slot > [data-ad-unit="DAN-DJpJjrVTEs6u05Qh"] { grid-area: 1 / 3; }
-    .ad-slot > [data-ad-unit="DAN-fLCP0coiXJu4HhuL"] { grid-area: 1 / 4; }
-    #ad-side-right > :nth-child(1) { grid-area: 1 / 5; }
-    #ad-side-right > :nth-child(2) { grid-area: 2 / 5; }
-    #ad-side-right > :nth-child(3) { grid-area: 2 / 4; }
-    .ad-slot > [data-ad-width="320"] { grid-area: 2 / 2; align-self: center; margin: 24px 6px; }
-    .ad-slot > .coupang-slot { grid-area: 2 / 3; width: auto; padding: 24px 16px 0; }
-  }
-
   /* ── 쿠팡 파트너스 배너 ── */
   .coupang-slot { padding: 24px 16px; text-align: center; background: var(--paper2); }
   .coupang-slot iframe { max-width: 100%; }
@@ -1012,7 +973,8 @@
   <nav>
     <a href="#features" data-i18n-en="Features" data-i18n-ja="機能" data-i18n-ko="기능">기능</a>
     <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
-    <a href="#about" data-i18n-en="About" data-i18n-ja="概要" data-i18n-ko="소개">소개</a>
+    <a href="guide.html" data-i18n-en="Guide" data-i18n-ja="ガイド" data-i18n-ko="가이드">가이드</a>
+    <a href="blog.html" data-i18n-en="Blog" data-i18n-ja="ブログ" data-i18n-ko="블로그">블로그</a>
   </nav>
 
   <div class="header-cta">
@@ -1264,7 +1226,8 @@
 
 
 <!-- ══════════════════════════
-     AD (Kakao AdFit) — 광고는 이 자리에만 둔다. 띠 배너는 화면 폭에 맞는 크기만 남긴다
+     AD — 콘텐츠보다 광고가 많아 보이지 않도록 띠 배너 1개 + 쿠팡 1개만 둔다.
+     (예전 5열 격자·양옆 300×250 등 최대 16개를 두었다가 애드센스 "가치 없는 콘텐츠" 판정을 받았다)
 ══════════════════════════ -->
 <div class="ad-slot" id="ad-bottom">
   <ins class="kakao_ad_area" style="display:none;"
@@ -1275,85 +1238,18 @@
        data-ad-unit="DAN-XhQy76O5zTeHBNwt"
        data-ad-width="320"
        data-ad-height="100"></ins>
-  <div class="ad-slot-break"></div>
-  <div class="ad-side" id="ad-side-left">
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-2zvZLKdgoZyxejRz"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-2tj2Kg29rpfyO8zL"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-s2q9FJ9e6n4qPEUA"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-  </div>
-  <ins class="kakao_ad_area" style="display:none;"
-       data-ad-unit="DAN-dSAYjJO6UExo9Pkr"
-       data-ad-width="300"
-       data-ad-height="250"></ins>
-  <ins class="kakao_ad_area" style="display:none;"
-       data-ad-unit="DAN-DJpJjrVTEs6u05Qh"
-       data-ad-width="300"
-       data-ad-height="250"></ins>
-  <ins class="kakao_ad_area" style="display:none;"
-       data-ad-unit="DAN-fLCP0coiXJu4HhuL"
-       data-ad-width="300"
-       data-ad-height="250"></ins>
-  <div class="ad-side" id="ad-side-right">
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-7umI7PdQvGYewDxt"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-Yoidneee4sSOdfKA"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-nepiosXHET32MTCn"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-  </div>
-  <!-- 3줄 2~5열 — 양옆 광고처럼 넓은 화면(격자)에서만 쓴다 -->
-  <div class="ad-side" id="ad-row3">
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-gYI8qTv0yTAsGTr0"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-nsZl5jT4YUxIqHls"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-pFF5398BxcsgB031"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-    <ins class="kakao_ad_area" style="display:none;"
-         data-ad-unit="DAN-OUgljFHsAtvM4pSS"
-         data-ad-width="300"
-         data-ad-height="250"></ins>
-  </div>
   <script>
-    // 광고 스크립트(ba.min.js)가 읽기 전에 지워서, 안 보일 광고를 호출하지 않게 한다
-    // 넓은 화면(격자)에서는 칸에 들어가는 320×100을, 그 아래 760px 이상에서는 728×90을 남긴다
-    var adWide = matchMedia('(min-width: 1680px)').matches;
-    var keep728 = !adWide && matchMedia('(min-width: 760px)').matches;
+    // 광고 스크립트(ba.min.js)가 읽기 전에, 화면 폭에 맞지 않는 띠 배너를 지운다
+    var keep728 = matchMedia('(min-width: 760px)').matches;
     document.querySelector('#ad-bottom [data-ad-width="' + (keep728 ? '320' : '728') + '"]').remove();
-    if (!adWide) {
-      document.querySelectorAll('#ad-bottom .ad-side').forEach(function (el) { el.remove(); });
-    }
   </script>
   <script src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
 
-  <!-- ══════════════════════════
-       쿠팡 파트너스 다이나믹 배너 — 넓은 화면에서는 격자 한 칸(300×250), 그 밖에는 화면 폭에 맞춘 띠. 대가성 문구는 배너 바로 아래에 둔다
-  ══════════════════════════ -->
+  <!-- 쿠팡 파트너스 다이나믹 배너 — 대가성 문구는 배너 바로 아래에 둔다 -->
   <div class="coupang-slot" id="coupang-bottom">
     <script src="https://ads-partners.coupang.com/g.js"></script>
     <script>
-      new PartnersCoupang.G({"id":1046696,"template":"carousel","trackingCode":"AF6245340","width":adWide ? "300" : String(Math.min(680,document.documentElement.clientWidth-32)),"height":adWide ? "250" : "140","tsource":""});
+      new PartnersCoupang.G({"id":1046696,"template":"carousel","trackingCode":"AF6245340","width":String(Math.min(680,document.documentElement.clientWidth-32)),"height":"140","tsource":""});
     </script>
     <p class="coupang-disclosure">이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.</p>
   </div>
@@ -1382,21 +1278,22 @@
         <h4 data-i18n-en="Product" data-i18n-ja="製品" data-i18n-ko="제품">제품</h4>
         <a href="#features" data-i18n-en="Features" data-i18n-ja="機能紹介" data-i18n-ko="기능 소개">기능 소개</a>
         <a href="#phases" data-i18n-en="Roadmap" data-i18n-ja="ロードマップ" data-i18n-ko="로드맵">로드맵</a>
-        <a href="#" class="js-soon" data-i18n-en="Updates" data-i18n-ja="アップデート" data-i18n-ko="업데이트">업데이트</a>
+        <a href="guide.html" data-i18n-en="User guide" data-i18n-ja="使い方ガイド" data-i18n-ko="사용 가이드">사용 가이드</a>
       </div>
 
       <div class="footer-col">
         <h4 data-i18n-en="Support" data-i18n-ja="サポート" data-i18n-ko="지원">지원</h4>
         <a href="app.html" data-i18n-en="Get started" data-i18n-ja="始める" data-i18n-ko="시작하기">시작하기</a>
         <a href="#" id="contact-link" data-i18n-en="Contact us" data-i18n-ja="お問い合わせ" data-i18n-ko="문의하기">문의하기</a>
-        <a href="#" class="js-soon">GitHub</a>
+        <a href="faq.html" data-i18n-en="FAQ" data-i18n-ja="よくある質問" data-i18n-ko="자주 묻는 질문">자주 묻는 질문</a>
       </div>
 
       <div class="footer-col">
         <h4 data-i18n-en="Company" data-i18n-ja="会社" data-i18n-ko="회사">회사</h4>
         <a href="https://felpenfriends.vercel.app/" target="_blank" rel="noopener" data-i18n-en="About" data-i18n-ja="会社概要" data-i18n-ko="소개">소개</a>
-        <a href="#" class="js-soon" data-i18n-en="Blog" data-i18n-ja="ブログ" data-i18n-ko="블로그">블로그</a>
-        <a href="#" class="js-soon" data-i18n-en="Careers" data-i18n-ja="採用" data-i18n-ko="채용">채용</a>
+        <a href="blog.html" data-i18n-en="Blog" data-i18n-ja="ブログ" data-i18n-ko="블로그">블로그</a>
+        <a href="privacy.html" data-i18n-en="Privacy policy" data-i18n-ja="プライバシーポリシー" data-i18n-ko="개인정보처리방침">개인정보처리방침</a>
+        <a href="terms.html" data-i18n-en="Terms of service" data-i18n-ja="利用規約" data-i18n-ko="이용약관">이용약관</a>
       </div>
 
     </div>
@@ -1467,20 +1364,6 @@
 
   openLink.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
 
-  // 아직 준비되지 않은 메뉴(업데이트·GitHub)는 어디로도 보내지 않고 안내만 띄운다.
-  // 토스트 요소는 이 스크립트보다 뒤에 있으므로 클릭 시점에 찾는다 (미리 잡으면 null)
-  let soonTimer = null;
-  document.querySelectorAll('.js-soon').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      const toast = document.getElementById('soon-toast');
-      if (!toast) return;
-      toast.textContent = window._faT('현재 준비중입니다', 'Coming soon', '現在準備中です');
-      toast.classList.add('show');
-      clearTimeout(soonTimer);
-      soonTimer = setTimeout(() => toast.classList.remove('show'), 2000);
-    });
-  });
   closeBtn.addEventListener('click', closeModal);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
