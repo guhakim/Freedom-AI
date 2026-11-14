@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'en', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'faq.html' + location.hash);
+})();
+</script>
+<title>Frequently Asked Questions | Freedom AI</title>
+<meta name="description" content="Answers to the questions we hear most about Freedom AI: pricing, team size, saving, privacy, mobile support and AI background removal.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/en/faq.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/faq.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/faq.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/faq.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/faq.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Frequently Asked Questions">
+<meta property="og:description" content="Answers to the questions we hear most about Freedom AI: pricing, team size, saving, privacy, mobile support and AI background removal.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/en/faq.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="guide.html">User guide</a>
+    <a href="blog.html">Blog</a>
+    <a href="faq.html" aria-current="page">FAQ</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../faq.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/faq.html" hreflang="en" lang="en" data-lang="en" title="English" aria-current="true">EN</a><a href="../ja/faq.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
+    <a href="../app.html" class="cta">Get started</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">FAQ</span>
+<h1>Frequently Asked Questions</h1>
+<p class="lead">These are the questions users ask us most often. If yours isn’t here, send it through Contact us at the bottom of the home page.</p>
+
+<h2>Getting started and pricing</h2>
+<details><summary>Is it free?</summary><p>Yes. Every feature we currently offer — the infinite canvas, pen, sticky notes, shapes, real-time collaboration, calendar to-dos and AI background removal — is free. Running costs are covered by ads on the landing page and the guide pages; there are no ads on the workspace (the canvas).</p></details>
+<details><summary>Do I need to install anything?</summary><p>No. It runs in your browser. We recommend the latest version of Chrome, Safari, Edge or Firefox.</p></details>
+<details><summary>Does it work on phones and tablets?</summary><p>Yes. Move the view with one finger and zoom with two; draw with a finger or a stylus. A tablet is more comfortable than a small phone screen.</p></details>
+<details><summary>Can I use it without signing in?</summary><p>You can. However, boards created without signing in are deleted automatically 24 hours after the last edit. Sign in with Google to keep a board.</p></details>
+
+<h2>Collaboration</h2>
+<details><summary>How many people can work together?</summary><p>There is no fixed limit. Freedom AI is built for small teams (2–10 people); with very large groups, updates may slow down depending on network conditions.</p></details>
+<details><summary>How long is an invite link valid?</summary><p>Seven days from when it is issued. Issuing a new link immediately invalidates the previous one.</p></details>
+<details><summary>Can people I didn’t invite see my board?</summary><p>Once you start inviting, the board becomes private and only teammates who joined through an invite can open it. You can also remove people from the member list.</p></details>
+<details><summary>Can I undo something another person deleted?</summary><p>Undo (<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd>) reverts your own actions. Saving a PNG at important milestones keeps a record of earlier states.</p></details>
+
+<h2>Saving and data</h2>
+<details><summary>Where is my work stored?</summary><p>Boards of signed-in users are saved to our servers automatically, so you can open them on other devices. Details are in our <a href="privacy.html">Privacy Policy</a>.</p></details>
+<details><summary>Can I download a board as a file?</summary><p>Use “Save as image (PNG)” in the toolbar to download the current board as a picture.</p></details>
+<details><summary>What happens to images I use with AI background removal?</summary><p>They are sent to the processing server only while the background is being removed, and the result comes back to your canvas. We do not use your originals to train AI.</p></details>
+
+<h2>Troubleshooting</h2>
+<details><summary>I can’t see my teammates’ cursors.</summary><p>Company or school firewalls sometimes block real-time connections (WebSocket). Try another network or a phone hotspot.</p></details>
+<details><summary>The “sign in again” banner keeps appearing.</summary><p>It appears when your sign-in session is about to expire. Click the banner to extend it without choosing your account again. If your browser blocks third-party cookies or pop-ups, please allow them.</p></details>
+<div class="next">Want to go through the features step by step? → <a href="guide.html">User Guide</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="Site links">
+      <a href="../">Home</a>
+      <a href="guide.html">User guide</a>
+      <a href="blog.html">Blog</a>
+      <a href="faq.html">FAQ</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

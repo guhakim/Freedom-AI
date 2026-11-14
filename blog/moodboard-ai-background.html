@@ -3,11 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ko', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'blog/moodboard-ai-background.html' + location.hash);
+})();
+</script>
 <title>AI 배경 제거로 10분 만에 무드보드 만들기 | Freedom AI</title>
 <meta name="description" content="레퍼런스 이미지를 모아 분위기를 맞추는 무드보드. 배경을 지운 이미지를 겹쳐 배치하면 훨씬 정돈된 보드가 됩니다. 목적 정하기부터 공유까지 단계별로 설명합니다.">
 <link rel="canonical" href="https://freedomai-app.vercel.app/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/moodboard-ai-background.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="AI 배경 제거로 10분 만에 무드보드 만들기">
 <meta property="og:description" content="레퍼런스 이미지를 모아 분위기를 맞추는 무드보드. 배경을 지운 이미지를 겹쳐 배치하면 훨씬 정돈된 보드가 됩니다. 목적 정하기부터 공유까지 단계별로 설명합니다.">
 <meta property="og:url" content="https://freedomai-app.vercel.app/blog/moodboard-ai-background.html">
@@ -19,15 +34,16 @@
 <link rel="stylesheet" href="../fonts.css">
 <link rel="stylesheet" href="../pages.css">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"AI 배경 제거로 10분 만에 무드보드 만들기","description":"레퍼런스 이미지를 모아 분위기를 맞추는 무드보드. 배경을 지운 이미지를 겹쳐 배치하면 훨씬 정돈된 보드가 됩니다. 목적 정하기부터 공유까지 단계별로 설명합니다.","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/blog/moodboard-ai-background.html"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"AI 배경 제거로 10분 만에 무드보드 만들기","description":"레퍼런스 이미지를 모아 분위기를 맞추는 무드보드. 배경을 지운 이미지를 겹쳐 배치하면 훨씬 정돈된 보드가 됩니다. 목적 정하기부터 공유까지 단계별로 설명합니다.","inLanguage":"ko","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/blog/moodboard-ai-background.html"}</script>
 </head>
 <body>
 <header class="site-header">
-  <a href=".././" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
   <nav class="site-nav" aria-label="주 메뉴">
     <a href="../guide.html">사용 가이드</a>
     <a href="../blog.html" aria-current="page">블로그</a>
     <a href="../faq.html">자주 묻는 질문</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../blog/moodboard-ai-background.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어" aria-current="true">KO</a><a href="../en/blog/moodboard-ai-background.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/blog/moodboard-ai-background.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
     <a href="../app.html" class="cta">시작하기</a>
   </nav>
 </header>
@@ -77,7 +93,7 @@
 <footer class="site-footer">
   <div class="inner">
     <nav aria-label="사이트 안내">
-      <a href=".././">홈</a>
+      <a href="../">홈</a>
       <a href="../guide.html">사용 가이드</a>
       <a href="../blog.html">블로그</a>
       <a href="../faq.html">자주 묻는 질문</a>
@@ -87,5 +103,11 @@
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
 </body>
 </html>

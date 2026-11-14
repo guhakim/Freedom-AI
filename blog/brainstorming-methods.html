@@ -3,11 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ko', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'blog/brainstorming-methods.html' + location.hash);
+})();
+</script>
 <title>포스트잇으로 하는 브레인스토밍 기법 4가지 | Freedom AI</title>
 <meta name="description" content="브레인라이팅, 친화도 정리, 크레이지 8, 점 투표. 아이디어가 막힐 때 바로 써먹을 수 있는 네 가지 기법과 온라인 캔버스에서 진행하는 법.">
 <link rel="canonical" href="https://freedomai-app.vercel.app/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/brainstorming-methods.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="포스트잇으로 하는 브레인스토밍 기법 4가지">
 <meta property="og:description" content="브레인라이팅, 친화도 정리, 크레이지 8, 점 투표. 아이디어가 막힐 때 바로 써먹을 수 있는 네 가지 기법과 온라인 캔버스에서 진행하는 법.">
 <meta property="og:url" content="https://freedomai-app.vercel.app/blog/brainstorming-methods.html">
@@ -19,15 +34,16 @@
 <link rel="stylesheet" href="../fonts.css">
 <link rel="stylesheet" href="../pages.css">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"포스트잇으로 하는 브레인스토밍 기법 4가지","description":"브레인라이팅, 친화도 정리, 크레이지 8, 점 투표. 아이디어가 막힐 때 바로 써먹을 수 있는 네 가지 기법과 온라인 캔버스에서 진행하는 법.","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/blog/brainstorming-methods.html"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"포스트잇으로 하는 브레인스토밍 기법 4가지","description":"브레인라이팅, 친화도 정리, 크레이지 8, 점 투표. 아이디어가 막힐 때 바로 써먹을 수 있는 네 가지 기법과 온라인 캔버스에서 진행하는 법.","inLanguage":"ko","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/blog/brainstorming-methods.html"}</script>
 </head>
 <body>
 <header class="site-header">
-  <a href=".././" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
   <nav class="site-nav" aria-label="주 메뉴">
     <a href="../guide.html">사용 가이드</a>
     <a href="../blog.html" aria-current="page">블로그</a>
     <a href="../faq.html">자주 묻는 질문</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../blog/brainstorming-methods.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어" aria-current="true">KO</a><a href="../en/blog/brainstorming-methods.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/blog/brainstorming-methods.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
     <a href="../app.html" class="cta">시작하기</a>
   </nav>
 </header>
@@ -77,7 +93,7 @@
 <footer class="site-footer">
   <div class="inner">
     <nav aria-label="사이트 안내">
-      <a href=".././">홈</a>
+      <a href="../">홈</a>
       <a href="../guide.html">사용 가이드</a>
       <a href="../blog.html">블로그</a>
       <a href="../faq.html">자주 묻는 질문</a>
@@ -87,5 +103,11 @@
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
 </body>
 </html>

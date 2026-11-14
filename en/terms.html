@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'en', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'terms.html' + location.hash);
+})();
+</script>
+<title>Terms of Service | Freedom AI</title>
+<meta name="description" content="The conditions for using Freedom AI, your responsibilities, rights to your content, and limits of liability.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/en/terms.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/terms.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/terms.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/terms.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/terms.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Terms of Service">
+<meta property="og:description" content="The conditions for using Freedom AI, your responsibilities, rights to your content, and limits of liability.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/en/terms.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="guide.html">User guide</a>
+    <a href="blog.html">Blog</a>
+    <a href="faq.html">FAQ</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../terms.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/terms.html" hreflang="en" lang="en" data-lang="en" title="English" aria-current="true">EN</a><a href="../ja/terms.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
+    <a href="../app.html" class="cta">Get started</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">Policy</span>
+<h1>Terms of Service</h1>
+<p class="meta">Effective: November 14, 2026</p>
+<p>If this English version and the Korean version differ, the Korean version prevails.</p>
+
+<h2>Article 1 (Purpose)</h2>
+<p>These terms set out the conditions and procedures for using the online collaborative canvas provided by Freedom AI (the “Service”), and the rights and obligations of users and the Service.</p>
+
+<h2>Article 2 (What the Service provides)</h2>
+<p>The Service provides, free of charge, an infinite canvas, pen and eraser, sticky notes, shapes, real-time collaboration, calendar to-dos, image insertion with AI background removal, and image export. The Service may add or change features as operations require and will give advance notice of important changes.</p>
+
+<h2>Article 3 (Accounts)</h2>
+<p>Users may sign in with a Google account. Users are responsible for managing their accounts and must not use another person’s account without permission.</p>
+
+<h2>Article 4 (User obligations)</h2>
+<p>Users must not:</p>
+<ul>
+  <li>upload content that infringes the copyright, portrait rights or other rights of others;</li>
+  <li>post obscene or violent content, or content that promotes hatred;</li>
+  <li>interfere with the normal operation of the Service or access its servers by abnormal means;</li>
+  <li>attempt to access boards they were not invited to.</li>
+</ul>
+
+<h2>Article 5 (Rights to content)</h2>
+<p>Drawings, text and images that users create on the canvas belong to the users. The Service processes them only as needed to save boards and show them to teammates, and does not use them for any other purpose.</p>
+
+<h2>Article 6 (Advertising)</h2>
+<p>To keep the Service free, ads may be shown on the landing page and guide pages. The Service is not responsible for transactions between advertisers and users.</p>
+
+<h2>Article 7 (Data retention)</h2>
+<p>Boards created without signing in are deleted automatically 24 hours after the last edit. Please sign in or save important work as an image.</p>
+
+<h2>Article 8 (Limitation of liability)</h2>
+<p>The Service is not liable for damages caused by events beyond its control, such as natural disasters or outages of external services (hosting, real-time messaging providers and so on). The Service is provided free of charge and, to the extent permitted by law, makes no warranty of fitness for a particular purpose.</p>
+
+<h2>Article 9 (Contact)</h2>
+<p>Please send questions about these terms through <a href="../#about">Contact us</a> at the bottom of the home page.</p>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="Site links">
+      <a href="../">Home</a>
+      <a href="guide.html">User guide</a>
+      <a href="blog.html">Blog</a>
+      <a href="faq.html">FAQ</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../../' + dirs[want] + 'blog/kpt-retrospective.html' + location.hash);
+})();
+</script>
+<title>KPT振り返り：プロジェクト後30分でできる整理法 | Freedom AI</title>
+<meta name="description" content="Keep・Problem・Try の3つのエリアだけでチームの振り返りを進める方法。責めずに問題を出し合い、次のプロジェクトで実際に変えることを1つ決める方法。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="KPT振り返り：プロジェクト後30分でできる整理法">
+<meta property="og:description" content="Keep・Problem・Try の3つのエリアだけでチームの振り返りを進める方法。責めずに問題を出し合い、次のプロジェクトで実際に変えることを1つ決める方法。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/blog/kpt-retrospective.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../fonts.css">
+<link rel="stylesheet" href="../../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"KPT振り返り：プロジェクト後30分でできる整理法","description":"Keep・Problem・Try の3つのエリアだけでチームの振り返りを進める方法。責めずに問題を出し合い、次のプロジェクトで実際に変えることを1つ決める方法。","inLanguage":"ja","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/ja/blog/kpt-retrospective.html"}</script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../../" class="logo"><img src="../../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="../guide.html">使い方ガイド</a>
+    <a href="../blog.html" aria-current="page">ブログ</a>
+    <a href="../faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../../blog/kpt-retrospective.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../../en/blog/kpt-retrospective.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../../ja/blog/kpt-retrospective.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">振り返り</span>
+<h1>KPT振り返り：プロジェクト後30分でできる整理法</h1>
+<p class="meta">2026-11-14 · 5分で読めます</p>
+<p class="lead">プロジェクトが終わると、みんな疲れてすぐ次の仕事に移ります。そして次のプロジェクトで同じ失敗を繰り返します。振り返りは大げさなものである必要はありません。3つのエリアと30分があれば十分です。</p>
+
+<h2>KPTとは</h2>
+<ul>
+  <li><strong>Keep</strong> — うまくいったこと、次も続けること</li>
+  <li><strong>Problem</strong> — 残念だったこと、自分たちを遅くしたもの</li>
+  <li><strong>Try</strong> — 次に新しく試すこと</li>
+</ul>
+<p>シンプルですが、順番に意味があります。うまくいったことから話すと場がほぐれ、問題を出すときに身構えることが減ります。</p>
+
+<h2>キャンバスの準備（2分）</h2>
+<p>四角形を3つ横に並べて描き、それぞれ Keep、Problem、Try と書きます。エリアごとに付箋の色を決めておくと便利です。Keep は緑、Problem はピンク、Try は黄色のように。エリアの上に「今回のプロジェクト：○○リニューアル（9月〜11月）」のように範囲を書いておくと、話が脇道にそれません。</p>
+
+<h2>Keep を書く（5分）</h2>
+<p>それぞれ黙って Keep エリアに付箋を貼ります。「毎朝10分の共有がよかった」のように具体的なほど良いです。書き終えたら一人ずつ短く読み上げ、似たものは重ねて貼ります。</p>
+
+<h2>Problem を書く（8分）</h2>
+<p>いちばん気をつけるべき段階です。ルールは1つ、<strong>人ではなく状況を書く</strong>。「○○さんの受け渡しが遅かった」ではなく、「デザインレビューの日程が開発の日程と重なった」と書きます。問題を人から切り離してはじめて、解決策を話し合えます。</p>
+<p>Problem がたくさん出たら似たものをまとめ、ドット投票でいちばん痛かった問題を2、3個選びます。</p>
+<div class="tip"><p>口に出しにくい問題も、付箋になら書きやすいものです。黙って書く時間を十分にとりましょう。</p></div>
+
+<h2>Try を決める（10分）</h2>
+<p>投票で選んだ Problem ごとに Try を1つずつ貼ります。Try は<strong>来週すぐ試せるくらい小さくなければなりません</strong>。「コミュニケーションをよくしよう」は Try ではなく決意表明です。「デザインレビューは毎週火曜の午後に固定する」が Try です。</p>
+
+<h2>まとめ（5分）</h2>
+<p>決めた Try はカレンダーのToDoに移して担当者をつけます。そして次の振り返りの日程を先に決めておきましょう。次の振り返りは、前回の Try が実際に効果があったかを確認するところから始めます。こうして続けることで、振り返りは一度きりのイベントではなく、チームが少しずつ良くなっていく仕組みになります。</p>
+<p>ボードはPNGで保存してプロジェクトの資料に添付しておくと、半年後に似たプロジェクトを始めるときの良い参考資料になります。</p>
+<div class="next">次の記事 → <a href="moodboard-ai-background.html">AI背景除去で10分でムードボードを作る</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../../">ホーム</a>
+      <a href="../guide.html">使い方ガイド</a>
+      <a href="../blog.html">ブログ</a>
+      <a href="../faq.html">よくある質問</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="../terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

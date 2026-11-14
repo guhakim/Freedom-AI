@@ -3,11 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ko', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'blog/kpt-retrospective.html' + location.hash);
+})();
+</script>
 <title>KPT 회고: 프로젝트가 끝난 뒤 30분이면 되는 정리법 | Freedom AI</title>
 <meta name="description" content="Keep·Problem·Try 세 칸만으로 팀 회고를 진행하는 방법. 비난 없이 문제를 꺼내고, 다음 프로젝트에서 실제로 바꿀 것 하나를 정하는 법.">
 <link rel="canonical" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="KPT 회고: 프로젝트가 끝난 뒤 30분이면 되는 정리법">
 <meta property="og:description" content="Keep·Problem·Try 세 칸만으로 팀 회고를 진행하는 방법. 비난 없이 문제를 꺼내고, 다음 프로젝트에서 실제로 바꿀 것 하나를 정하는 법.">
 <meta property="og:url" content="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
@@ -19,15 +34,16 @@
 <link rel="stylesheet" href="../fonts.css">
 <link rel="stylesheet" href="../pages.css">
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"KPT 회고: 프로젝트가 끝난 뒤 30분이면 되는 정리법","description":"Keep·Problem·Try 세 칸만으로 팀 회고를 진행하는 방법. 비난 없이 문제를 꺼내고, 다음 프로젝트에서 실제로 바꿀 것 하나를 정하는 법.","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/blog/kpt-retrospective.html"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"KPT 회고: 프로젝트가 끝난 뒤 30분이면 되는 정리법","description":"Keep·Problem·Try 세 칸만으로 팀 회고를 진행하는 방법. 비난 없이 문제를 꺼내고, 다음 프로젝트에서 실제로 바꿀 것 하나를 정하는 법.","inLanguage":"ko","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/blog/kpt-retrospective.html"}</script>
 </head>
 <body>
 <header class="site-header">
-  <a href=".././" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
   <nav class="site-nav" aria-label="주 메뉴">
     <a href="../guide.html">사용 가이드</a>
     <a href="../blog.html" aria-current="page">블로그</a>
     <a href="../faq.html">자주 묻는 질문</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../blog/kpt-retrospective.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어" aria-current="true">KO</a><a href="../en/blog/kpt-retrospective.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/blog/kpt-retrospective.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
     <a href="../app.html" class="cta">시작하기</a>
   </nav>
 </header>
@@ -67,7 +83,7 @@
 <footer class="site-footer">
   <div class="inner">
     <nav aria-label="사이트 안내">
-      <a href=".././">홈</a>
+      <a href="../">홈</a>
       <a href="../guide.html">사용 가이드</a>
       <a href="../blog.html">블로그</a>
       <a href="../faq.html">자주 묻는 질문</a>
@@ -77,5 +93,11 @@
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
 </body>
 </html>

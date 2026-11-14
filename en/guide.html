@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'en', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'guide.html' + location.hash);
+})();
+</script>
+<title>User Guide — Getting Started with Freedom AI | Freedom AI</title>
+<meta name="description" content="From signing in to pens, sticky notes and shapes, inviting teammates, calendar to-dos, AI background removal and PNG export — every Freedom AI feature, in the order you will use it.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/en/guide.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/guide.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/guide.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/guide.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/guide.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="User Guide — Getting Started with Freedom AI">
+<meta property="og:description" content="From signing in to pens, sticky notes and shapes, inviting teammates, calendar to-dos, AI background removal and PNG export — every Freedom AI feature, in the order you will use it.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/en/guide.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="guide.html" aria-current="page">User guide</a>
+    <a href="blog.html">Blog</a>
+    <a href="faq.html">FAQ</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../guide.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/guide.html" hreflang="en" lang="en" data-lang="en" title="English" aria-current="true">EN</a><a href="../ja/guide.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
+    <a href="../app.html" class="cta">Get started</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">User guide</span>
+<h1>Freedom AI User Guide</h1>
+<p class="lead">Freedom AI is a web collaboration tool where several people can draw, place sticky notes and share to-dos on an endless canvas at the same time. This guide follows the order you will actually use the features, so a first-time visitor can set up a team board in about ten minutes.</p>
+<div class="toc"><ol>
+  <li><a href="#start">Getting started: sign-in and your first project</a></li>
+  <li><a href="#canvas">Moving around the canvas</a></li>
+  <li><a href="#tools">Toolbar and shortcuts</a></li>
+  <li><a href="#notes">Sticky notes and arrows</a></li>
+  <li><a href="#team">Inviting teammates and real-time collaboration</a></li>
+  <li><a href="#todo">Calendar to-dos</a></li>
+  <li><a href="#image">Adding images and AI background removal</a></li>
+  <li><a href="#export">Saving and exporting</a></li>
+  <li><a href="#trouble">Troubleshooting</a></li>
+</ol></div>
+
+<h2 id="start">1. Getting started: sign-in and your first project</h2>
+<p>There is nothing to install. Open <a href="../app.html">Get started</a> in an up-to-date browser (Chrome, Safari, Edge or Firefox) on a PC, tablet or phone and the canvas opens right away.</p>
+<ul>
+  <li><strong>Sign in with Google</strong> and your projects are saved to your account, so you can pick up where you left off on another device.</li>
+  <li>You can also <strong>look around without signing in</strong>. Boards made without signing in are deleted automatically 24 hours after the last edit, so sign in or save a PNG if you want to keep the work.</li>
+</ul>
+<p>Open the <strong>project list</strong> in the top-left corner and choose <strong>New project</strong> to create an empty board. Click the board name and give it something recognizable, such as “Q3 marketing meeting”, so it is easy to find later.</p>
+
+<h2 id="canvas">2. Moving around the canvas</h2>
+<p>The canvas has no edges. When you run out of room, just move over and keep going.</p>
+<div class="table-wrap"><table>
+  <tr><th>To do this</th><th>Mouse / trackpad</th><th>Touch screen</th></tr>
+  <tr><td>Move the view</td><td>Drag with the Move tool (<kbd>H</kbd>)</td><td>Drag an empty area with one finger</td></tr>
+  <tr><td>Zoom in and out</td><td>Mouse wheel, or two-finger scroll on a trackpad</td><td>Pinch with two fingers</td></tr>
+  <tr><td>Select items</td><td>Click or drag with the Select tool (<kbd>V</kbd>)</td><td>Tap with the Select tool</td></tr>
+</table></div>
+
+<h2 id="tools">3. Toolbar and shortcuts</h2>
+<p>Pick a tool from the toolbar or switch instantly with a keyboard shortcut. Shortcuts are ignored while you are typing text, so you can type freely.</p>
+<div class="table-wrap"><table>
+  <tr><th>Tool</th><th>Shortcut</th><th>What it does</th></tr>
+  <tr><td>Select</td><td><kbd>V</kbd></td><td>Pick items to move or resize them. Drag to select several at once.</td></tr>
+  <tr><td>Move</td><td><kbd>H</kbd></td><td>Moves only the view, without touching any items.</td></tr>
+  <tr><td>Pen</td><td><kbd>P</kbd></td><td>Draw freely. Choose from three widths (thin, medium, thick) and a color palette.</td></tr>
+  <tr><td>Eraser</td><td><kbd>E</kbd></td><td>Erases lines drawn with the pen.</td></tr>
+  <tr><td>Sticky note</td><td><kbd>S</kbd></td><td>Places a sticky note where you click.</td></tr>
+  <tr><td>Shapes</td><td><kbd>R</kbd></td><td>Inserts rectangles, circles, triangles and arrows.</td></tr>
+  <tr><td>Undo</td><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd></td><td>Reverts your last action.</td></tr>
+  <tr><td>Group / Ungroup</td><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>G</kbd> / +<kbd>Shift</kbd>+<kbd>G</kbd></td><td>Bundles several items so they move together.</td></tr>
+</table></div>
+
+<h2 id="notes">4. Sticky notes and arrows</h2>
+<p>Sticky notes come in five colors. Giving each color a meaning makes a board much easier to read — for example yellow for ideas, pink for problems and green for decisions.</p>
+<ul>
+  <li>Double-click a note to write in it, and use the text-size button to change the font size.</li>
+  <li>Drag a corner to resize it.</li>
+  <li>Bring a note close to another and it snaps into line like a magnet.</li>
+  <li>Connect notes with arrows to show order or cause and effect.</li>
+</ul>
+
+<h2 id="team">5. Inviting teammates and real-time collaboration</h2>
+<p>Press the <strong>Invite</strong> button on a project to create an invite link. Send the link in any messenger; the person who receives it signs in with Google and joins the same board.</p>
+<ul>
+  <li>Invite links are valid for <strong>7 days</strong>. Issue a new one when it expires.</li>
+  <li>Once you start inviting, the board becomes <strong>private</strong> and only invited teammates can open it. Any public link that was circulating before stops working.</li>
+  <li>People who joined appear in the <strong>invited members</strong> list, where you can also remove them.</li>
+  <li>Everyone’s cursor and name appear in real time, and whenever someone draws or moves a note it shows up on every screen immediately.</li>
+</ul>
+
+<h2 id="todo">6. Calendar to-dos</h2>
+<p>Open the <strong>Calendar</strong> in the toolbar to see the to-do list attached to the project. Pick a date and write a task: every teammate sees the same list, and check marks update in real time. If you turn decisions into dated to-dos during the meeting, there is nothing left to tidy up afterwards.</p>
+
+<h2 id="image">7. Adding images and AI background removal</h2>
+<p>Drag a reference image file onto the browser window to add it to the canvas — handy for mood boards and collecting references.</p>
+<p><strong>Press and hold</strong> an image on the canvas and AI removes its background. It recognizes not only portraits but also logos and text images. While it works, the image is sent to the background-removal server, and only the result comes back to the canvas.</p>
+<div class="tip"><p><strong>Tip</strong> — The clearer the color difference between subject and background, the cleaner the result. Blurry photos may get rough edges.</p></div>
+
+<h2 id="export">8. Saving and exporting</h2>
+<p>When you are signed in, your work is saved automatically. To paste a board into a document or a chat, choose <strong>Save as image (PNG)</strong> to download the current board as a picture.</p>
+
+<h2 id="trouble">9. Troubleshooting</h2>
+<ul>
+  <li><strong>A “sign in again” banner appears</strong> — This shows up when your sign-in session is about to expire. Click the banner once to extend it without choosing your account again.</li>
+  <li><strong>I can’t see my teammates’ changes</strong> — Some company or school networks block real-time connections (WebSocket). Try a different network.</li>
+  <li><strong>The invite link won’t open</strong> — Either 7 days have passed, or the board owner issued a new link, which invalidates the old one.</li>
+</ul>
+<p>For anything else, see the <a href="faq.html">FAQ</a> or send us a message with <a href="../#about">Contact us at the bottom of the home page</a>.</p>
+<div class="next">Read next → <a href="blog/online-whiteboard-meeting.html">Cut Meeting Time in Half with an Online Whiteboard: 5 Steps</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="Site links">
+      <a href="../">Home</a>
+      <a href="guide.html">User guide</a>
+      <a href="blog.html">Blog</a>
+      <a href="faq.html">FAQ</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

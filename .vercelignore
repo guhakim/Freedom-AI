@@ -15,3 +15,5 @@ product-screenshot.png
 CleanShot*.png
 Freedom Ai logo.png
 logo 복사본.png
+# 안내·블로그 페이지 생성기와 원문 — 만들어진 HTML만 배포한다
+tools/

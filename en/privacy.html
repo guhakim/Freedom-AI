@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'en', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'privacy.html' + location.hash);
+})();
+</script>
+<title>Privacy Policy | Freedom AI</title>
+<meta name="description" content="What personal information Freedom AI collects, why, how long it is kept, who it is shared with, and how advertising cookies are used.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/en/privacy.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/privacy.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/privacy.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/privacy.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/privacy.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Privacy Policy">
+<meta property="og:description" content="What personal information Freedom AI collects, why, how long it is kept, who it is shared with, and how advertising cookies are used.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/en/privacy.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="guide.html">User guide</a>
+    <a href="blog.html">Blog</a>
+    <a href="faq.html">FAQ</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../privacy.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/privacy.html" hreflang="en" lang="en" data-lang="en" title="English" aria-current="true">EN</a><a href="../ja/privacy.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
+    <a href="../app.html" class="cta">Get started</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">Policy</span>
+<h1>Privacy Policy</h1>
+<p class="meta">Effective: November 14, 2026</p>
+<p>Freedom AI (the “Service”) takes your personal information seriously and complies with the Personal Information Protection Act of Korea and other applicable laws. This policy explains what information we collect and why, how long we keep it, and who we share it with. If this English version and the Korean version differ, the Korean version prevails.</p>
+
+<h2>1. What we collect and why</h2>
+<div class="table-wrap"><table>
+  <tr><th>When</th><th>What</th><th>Purpose</th></tr>
+  <tr><td>Signing in with Google</td><td>Name, email address, profile picture URL, Google account identifier</td><td>Identifying members, saving projects, inviting and showing teammates</td></tr>
+  <tr><td>Using the canvas</td><td>Drawings, sticky notes, shapes, images and to-dos on your boards; project names</td><td>Saving boards and sharing them with teammates in real time</td></tr>
+  <tr><td>Contact form</td><td>Name, email address, message</td><td>Reading and answering your inquiry</td></tr>
+  <tr><td>Using the Service</td><td>IP address (for abuse prevention), page view counts</td><td>Preventing misuse, statistics for improving the Service</td></tr>
+</table></div>
+<p>We do not collect sensitive information such as national ID numbers or payment details.</p>
+
+<h2>2. How long we keep it</h2>
+<ul>
+  <li>Member information and signed-in users’ boards: until the member asks for deletion or deletes the project</li>
+  <li>Boards created without signing in: deleted automatically 24 hours after the last edit</li>
+  <li>Team invite links: expire automatically 7 days after they are issued</li>
+  <li>Contact messages: the most recent 200 are kept; older ones are deleted automatically</li>
+  <li>Access records used for abuse prevention: deleted automatically within one minute</li>
+</ul>
+
+<h2>3. Processors and external services</h2>
+<p>We use the following external services to run Freedom AI. Each processes information only for the stated purpose.</p>
+<ul>
+  <li><strong>Vercel</strong> — website hosting and data storage</li>
+  <li><strong>Pusher</strong> — real-time synchronization between teammates</li>
+  <li><strong>Google</strong> — account sign-in (Google Identity Services)</li>
+  <li><strong>Render</strong> — AI background removal (images are sent only while being processed and are not stored)</li>
+</ul>
+
+<h2>4. Advertising and cookies</h2>
+<p>We show ads on the landing page and on the guide and blog pages. There are no ads on the workspace (the canvas).</p>
+<ul>
+  <li><strong>Google AdSense</strong>: Third-party vendors, including Google, use cookies to serve ads based on your prior visits to this website or other websites. Google’s use of advertising cookies enables it and its partners to serve ads based on your visits to this site and other sites on the Internet.</li>
+  <li>You can opt out of personalized advertising in <a href="https://adssettings.google.com" rel="noopener" target="_blank">Google Ads Settings</a>, and opt out of third-party vendors’ cookies for personalized advertising at <a href="https://www.aboutads.info/choices" rel="noopener" target="_blank">www.aboutads.info</a>.</li>
+  <li>We also show <strong>Kakao AdFit</strong> and <strong>Coupang Partners</strong> ads, and may receive a commission through Coupang Partners.</li>
+</ul>
+<p>We use browser storage (localStorage) to remember display settings such as your language. This information stays on your device.</p>
+
+<h2>5. Your rights</h2>
+<p>You may ask at any time to access, correct, delete or stop the processing of your personal information. Send a request through <a href="../#about">Contact us</a> at the bottom of the home page and we will handle it without delay. You can also delete projects yourself inside the app.</p>
+
+<h2>6. Security measures</h2>
+<p>All communication is encrypted with HTTPS, and the server checks permissions so that private boards can only be opened by invited teammates. Administrator functions are protected by separate authentication.</p>
+
+<h2>7. Changes</h2>
+<p>If this policy changes, we will announce it on this page at least 7 days before the change takes effect.</p>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="Site links">
+      <a href="../">Home</a>
+      <a href="guide.html">User guide</a>
+      <a href="blog.html">Blog</a>
+      <a href="faq.html">FAQ</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>
