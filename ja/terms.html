@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'terms.html' + location.hash);
+})();
+</script>
+<title>利用規約 | Freedom AI</title>
+<meta name="description" content="Freedom AI の利用条件、利用者の義務、コンテンツの権利、責任の範囲についてご案内します。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/terms.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/terms.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/terms.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/terms.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/terms.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="利用規約">
+<meta property="og:description" content="Freedom AI の利用条件、利用者の義務、コンテンツの権利、責任の範囲についてご案内します。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/terms.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="guide.html">使い方ガイド</a>
+    <a href="blog.html">ブログ</a>
+    <a href="faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../terms.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/terms.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/terms.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">ポリシー</span>
+<h1>利用規約</h1>
+<p class="meta">施行日：2026年11月14日</p>
+<p>日本語版と韓国語版の内容が異なる場合は、韓国語版が優先されます。</p>
+
+<h2>第1条（目的）</h2>
+<p>この規約は、Freedom AI（以下「本サービス」）が提供するオンライン共同編集キャンバスの利用条件と手続き、利用者と本サービスの権利・義務を定めるものです。</p>
+
+<h2>第2条（サービスの内容）</h2>
+<p>本サービスは、無限キャンバス、ペン・消しゴム、付箋、図形、リアルタイム共同編集、カレンダーのToDo、画像の挿入とAI背景除去、画像の書き出し機能を無料で提供します。本サービスは運営上の必要に応じて機能を追加・変更することがあり、重要な変更は事前にお知らせします。</p>
+
+<h2>第3条（アカウント）</h2>
+<p>利用者はGoogleアカウントでログインして本サービスを利用できます。アカウントの管理責任は利用者にあり、他人のアカウントを無断で使ってはいけません。</p>
+
+<h2>第4条（利用者の義務）</h2>
+<p>利用者は次の行為をしてはいけません。</p>
+<ul>
+  <li>他人の著作権・肖像権などの権利を侵害するコンテンツをアップロードする行為</li>
+  <li>わいせつなもの、暴力的なもの、憎悪をあおるコンテンツを掲載する行為</li>
+  <li>本サービスの正常な運営を妨げたり、不正な方法でサーバーにアクセスしたりする行為</li>
+  <li>招待されていないボードへのアクセスを試みる行為</li>
+</ul>
+
+<h2>第5条（コンテンツの権利）</h2>
+<p>利用者がキャンバスで作成した絵・文章・画像の権利は利用者に帰属します。本サービスは、ボードを保存しメンバーに表示するために必要な範囲でのみこれを処理し、それ以外の目的には使いません。</p>
+
+<h2>第6条（広告）</h2>
+<p>本サービスは無料で運営するため、ランディングページと案内ページに広告を掲載することがあります。広告主と利用者との間の取引について、本サービスは責任を負いません。</p>
+
+<h2>第7条（データの保存）</h2>
+<p>ログインせずに作成したボードは、最後の編集から24時間後に自動で削除されます。大切な内容はログインするか、画像として保存してください。</p>
+
+<h2>第8条（責任の範囲）</h2>
+<p>本サービスは、天災や外部サービス（ホスティング・リアルタイム通信事業者など）の障害など、本サービスが管理できない事由により生じた損害について責任を負いません。本サービスは無料で提供され、法令で認められる範囲で、特定の目的への適合性を保証しません。</p>
+
+<h2>第9条（お問い合わせ）</h2>
+<p>規約に関するお問い合わせは、ホーム画面下部の<a href="../#about">お問い合わせ</a>からお送りください。</p>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../">ホーム</a>
+      <a href="guide.html">使い方ガイド</a>
+      <a href="blog.html">ブログ</a>
+      <a href="faq.html">よくある質問</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+      <a href="terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

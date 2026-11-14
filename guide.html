@@ -3,11 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ko', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('' + dirs[want] + 'guide.html' + location.hash);
+})();
+</script>
 <title>사용 가이드 — 처음 쓰는 분을 위한 Freedom AI 안내 | Freedom AI</title>
 <meta name="description" content="가입부터 펜·포스트잇·도형, 팀원 초대, 캘린더 할 일, AI 배경 제거, PNG 저장까지 Freedom AI의 모든 기능을 순서대로 설명합니다.">
 <link rel="canonical" href="https://freedomai-app.vercel.app/guide.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/guide.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/guide.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/guide.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/guide.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="사용 가이드 — 처음 쓰는 분을 위한 Freedom AI 안내">
 <meta property="og:description" content="가입부터 펜·포스트잇·도형, 팀원 초대, 캘린더 할 일, AI 배경 제거, PNG 저장까지 Freedom AI의 모든 기능을 순서대로 설명합니다.">
 <meta property="og:url" content="https://freedomai-app.vercel.app/guide.html">
@@ -22,11 +37,12 @@
 </head>
 <body>
 <header class="site-header">
-  <a href="./" class="logo"><img src="logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <a href="" class="logo"><img src="logo-mark.png" alt=""><span>Freedom Ai</span></a>
   <nav class="site-nav" aria-label="주 메뉴">
     <a href="guide.html" aria-current="page">사용 가이드</a>
     <a href="blog.html">블로그</a>
     <a href="faq.html">자주 묻는 질문</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="guide.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어" aria-current="true">KO</a><a href="en/guide.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="ja/guide.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
     <a href="app.html" class="cta">시작하기</a>
   </nav>
 </header>
@@ -112,13 +128,13 @@
   <li><strong>팀원의 변경이 안 보인다</strong> — 회사·학교 네트워크가 실시간 연결(WebSocket)을 막는 경우가 있습니다. 다른 네트워크에서 다시 시도해 보세요.</li>
   <li><strong>초대 링크가 열리지 않는다</strong> — 7일이 지났거나, 보드 주인이 링크를 새로 발급해 이전 링크가 무효가 된 경우입니다.</li>
 </ul>
-<p>그 밖의 질문은 <a href="faq.html">자주 묻는 질문</a>을 보시거나, <a href="./#about">홈 화면 아래의 문의하기</a>로 알려 주세요.</p>
+<p>그 밖의 질문은 <a href="faq.html">자주 묻는 질문</a>을 보시거나, <a href="#about">홈 화면 아래의 문의하기</a>로 알려 주세요.</p>
 <div class="next">다음 읽을 글 → <a href="blog/online-whiteboard-meeting.html">온라인 화이트보드로 회의 시간을 절반으로 줄이는 5단계</a></div>
 </main>
 <footer class="site-footer">
   <div class="inner">
     <nav aria-label="사이트 안내">
-      <a href="./">홈</a>
+      <a href="">홈</a>
       <a href="guide.html">사용 가이드</a>
       <a href="blog.html">블로그</a>
       <a href="faq.html">자주 묻는 질문</a>
@@ -128,5 +144,11 @@
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../../' + dirs[want] + 'blog/moodboard-ai-background.html' + location.hash);
+})();
+</script>
+<title>AI背景除去で10分でムードボードを作る | Freedom AI</title>
+<meta name="description" content="参考画像を集めて雰囲気をそろえるムードボード。背景を消した画像を重ねて配置すると、ずっと整ったボードになります。目的決めから共有まで手順ごとに説明します。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/moodboard-ai-background.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/moodboard-ai-background.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="AI背景除去で10分でムードボードを作る">
+<meta property="og:description" content="参考画像を集めて雰囲気をそろえるムードボード。背景を消した画像を重ねて配置すると、ずっと整ったボードになります。目的決めから共有まで手順ごとに説明します。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/blog/moodboard-ai-background.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../fonts.css">
+<link rel="stylesheet" href="../../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"AI背景除去で10分でムードボードを作る","description":"参考画像を集めて雰囲気をそろえるムードボード。背景を消した画像を重ねて配置すると、ずっと整ったボードになります。目的決めから共有まで手順ごとに説明します。","inLanguage":"ja","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/ja/blog/moodboard-ai-background.html"}</script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../../" class="logo"><img src="../../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="../guide.html">使い方ガイド</a>
+    <a href="../blog.html" aria-current="page">ブログ</a>
+    <a href="../faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../../blog/moodboard-ai-background.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../../en/blog/moodboard-ai-background.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../../ja/blog/moodboard-ai-background.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">デザイン</span>
+<h1>AI背景除去で10分でムードボードを作る</h1>
+<p class="meta">2026-11-14 · 5分で読めます</p>
+<p class="lead">ムードボードは「こんな感じ」を言葉ではなく画像でそろえるための道具です。デザイナー、企画者、クライアントが頭の中に同じ絵を描けるようにしてくれます。ただ、画像をそのまま並べるだけでは背景がばらばらで散らかって見えます。背景を消した画像を重ねて置くと、ボードが1枚のコラージュのようにまとまります。</p>
+
+<h2>1. ムードボードの目的を1行で書く</h2>
+<p>キャンバスのいちばん上に、付箋1枚で目的を書きます。「20代向けカフェのリブランディング — 温かいけれど野暮ったくなく」のように。この1行が画像を選ぶときの基準になります。基準がないと、きれいな画像はいくらでも集まりますが、方向は決まりません。</p>
+
+<h2>2. 画像を集める（3分）</h2>
+<p>保存しておいた写真や自分で撮った写真を、1枚ずつブラウザのウィンドウにドラッグ＆ドロップします。ドロップした場所に画像が入ります。この段階では選ばず、とにかく入れてください。15〜20枚あれば十分です。</p>
+<div class="tip"><p>ムードボードに使う画像は、自分で撮ったものか使用許可を得たものにしましょう。外部に公開する案なら、出典とライセンスを必ず確認してください。</p></div>
+
+<h2>3. 主役の画像の背景を消す（3分）</h2>
+<p>製品、人物、小物など、主役がはっきりした画像を長押しすると、AIが背景を消してくれます。背景のなくなった画像は、ほかの画像の上に重ねても自然です。</p>
+<ul>
+  <li><strong>うまくいく写真</strong>：被写体と背景の色がはっきり違う写真、被写体にピントが合っている写真</li>
+  <li><strong>難しい写真</strong>：ぼやけた写真、髪の毛のような細い部分が背景と似た色の写真</li>
+</ul>
+<p>ロゴや文字の画像も認識するので、既存のブランドロゴをきれいに切り抜いてボードに置いておけます。</p>
+
+<h2>4. 3つのエリアに配置する（3分）</h2>
+<p>ボードを3つのエリアに分けると、ストーリーが生まれます。</p>
+<ol>
+  <li><strong>色</strong> — 求める色合いの画像。付箋の色を選んで、代表色を2、3個横に貼っておきましょう。</li>
+  <li><strong>質感と素材</strong> — 木、リネン、光沢のあるプラスチックなど、手ざわりが伝わるもの</li>
+  <li><strong>シーン</strong> — このブランドを使う人がいそうな空間や瞬間</li>
+</ol>
+<p>背景を消した主役の画像は、3つのエリアにまたがるよう中央に大きく置くと視線が集まります。</p>
+
+<h2>5. 説明をつけて共有する（1分）</h2>
+<p>画像ごとに「この程度の彩度」「この照明」のように、選んだ理由を短い付箋で添えます。画像だけだと、見る人によって注目する部分が違うからです。完成したら招待リンクでメンバーを呼んで付箋で意見をもらうか、PNGで保存してチャットで送りましょう。</p>
+
+<h2>チェックリスト</h2>
+<ul>
+  <li>目的の1行がいちばん上にあるか</li>
+  <li>画像が20枚を超えていないか（多すぎるとかえってぼやける）</li>
+  <li>色・質感・シーンの3つのエリアに分かれているか</li>
+  <li>画像ごとに選んだ理由が書かれているか</li>
+  <li>使用権のある画像だけを使ったか</li>
+</ul>
+<div class="next">最初に戻る → <a href="../guide.html">Freedom AI 使い方ガイド</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../../">ホーム</a>
+      <a href="../guide.html">使い方ガイド</a>
+      <a href="../blog.html">ブログ</a>
+      <a href="../faq.html">よくある質問</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="../terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

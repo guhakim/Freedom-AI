@@ -83,3 +83,13 @@ details p { margin: 10px 0 0; }
 .site-footer a { color: #cfcfc8; text-decoration: none; font-size: 14px; }
 .site-footer a:hover { color: var(--accent); }
 .site-footer p { margin: 0; font-size: 13px; color: #9a9a93; }
+
+/* 언어 전환 (KO · EN · JP) — 언어마다 주소가 따로 있다 */
+.lang-switch { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; }
+.site-nav .lang-switch a { padding: 2px 9px; font-size: 13px; font-weight: 700; color: var(--ink2); text-decoration: none; }
+.site-nav .lang-switch a + a { border-left: 1.5px solid var(--ink); }
+.site-nav .lang-switch a[aria-current] { background: var(--ink); color: var(--paper); }
+.site-nav .lang-switch a:hover { background: var(--accent); color: var(--ink); }
+html[lang="ja"] { --font-body: 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
+/* 일본어는 띄어쓰기가 없어 keep-all이면 구두점에서만 줄이 바뀐다 */
+html[lang="ja"] body { word-break: normal; line-break: strict; }

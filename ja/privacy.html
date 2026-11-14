@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'privacy.html' + location.hash);
+})();
+</script>
+<title>プライバシーポリシー | Freedom AI</title>
+<meta name="description" content="Freedom AI が収集する個人情報の項目、目的、保存期間、第三者提供、広告Cookieについてのご案内です。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/privacy.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/privacy.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/privacy.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/privacy.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/privacy.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="プライバシーポリシー">
+<meta property="og:description" content="Freedom AI が収集する個人情報の項目、目的、保存期間、第三者提供、広告Cookieについてのご案内です。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/privacy.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="guide.html">使い方ガイド</a>
+    <a href="blog.html">ブログ</a>
+    <a href="faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../privacy.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/privacy.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/privacy.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">ポリシー</span>
+<h1>プライバシーポリシー</h1>
+<p class="meta">施行日：2026年11月14日</p>
+<p>Freedom AI（以下「本サービス」）は、利用者の個人情報を大切に扱い、韓国「個人情報保護法」などの関連法令を守ります。このポリシーでは、本サービスがどのような情報を何のために収集し、どれくらい保存し、誰と共有するかを説明します。日本語版と韓国語版の内容が異なる場合は、韓国語版が優先されます。</p>
+
+<h2>1. 収集する項目と目的</h2>
+<div class="table-wrap"><table>
+  <tr><th>場面</th><th>収集する項目</th><th>目的</th></tr>
+  <tr><td>Googleアカウントでのログイン</td><td>氏名、メールアドレス、プロフィール画像のURL、Googleアカウント識別子</td><td>会員の識別、プロジェクトの保存、メンバーの招待・表示</td></tr>
+  <tr><td>キャンバスの利用</td><td>ボードに作成した絵・付箋・図形・画像・ToDo、プロジェクト名</td><td>ボードの保存とメンバー間のリアルタイム共有</td></tr>
+  <tr><td>お問い合わせ</td><td>氏名、メールアドレス、お問い合わせ内容</td><td>お問い合わせの確認と回答</td></tr>
+  <tr><td>サービスの利用</td><td>接続IP（不正利用防止用）、ページ閲覧数の集計</td><td>不正利用の防止、サービス改善のための統計</td></tr>
+</table></div>
+<p>マイナンバー等の識別番号や決済情報など、機微な情報は収集しません。</p>
+
+<h2>2. 保存期間</h2>
+<ul>
+  <li>会員情報とログインユーザーのボード：会員が削除を依頼するか、プロジェクトを削除するまで</li>
+  <li>ログインせずに作成したボード：最後の編集から24時間後に自動削除</li>
+  <li>チームの招待リンク：発行から7日後に自動で失効</li>
+  <li>お問い合わせ内容：直近200件まで保存し、それより古いものは自動削除</li>
+  <li>不正利用防止のための接続記録：1分以内に自動削除</li>
+</ul>
+
+<h2>3. 業務委託および外部サービス</h2>
+<p>本サービスは運営のため次の外部サービスを利用しており、各事業者は該当する目的の範囲でのみ情報を処理します。</p>
+<ul>
+  <li><strong>Vercel</strong> — ウェブサイトのホスティングとデータ保存</li>
+  <li><strong>Pusher</strong> — メンバー間のリアルタイム同期</li>
+  <li><strong>Google</strong> — アカウントログイン（Google Identity Services）</li>
+  <li><strong>Render</strong> — AI背景除去の処理（画像は処理中にのみ送信され、保存しません）</li>
+</ul>
+
+<h2>4. 広告とCookie</h2>
+<p>本サービスは、ランディングページと案内・ブログページに広告を掲載しています。作業画面（キャンバス）には広告はありません。</p>
+<ul>
+  <li><strong>Google AdSense</strong>：Google などの第三者配信事業者は Cookie を使用して、利用者がこのウェブサイトや他のウェブサイトに過去にアクセスした際の情報に基づいて広告を配信します。Google が広告 Cookie を使用することにより、利用者がこのサイトや他のサイトにアクセスした際の情報に基づいて、Google やそのパートナーが適切な広告を表示できます。</li>
+  <li>利用者は<a href="https://adssettings.google.com" rel="noopener" target="_blank">Google 広告設定</a>でパーソナライズ広告を無効にできます。また、<a href="https://www.aboutads.info/choices" rel="noopener" target="_blank">www.aboutads.info</a> で第三者配信事業者のパーソナライズ広告用 Cookie を無効にできます。</li>
+  <li><strong>Kakao AdFit</strong>、<strong>Coupang Partners</strong> の広告も掲載しており、Coupang Partners の活動により一定の手数料を受け取ることがあります。</li>
+</ul>
+<p>また、言語選択などの表示設定を記憶するためにブラウザのストレージ（localStorage）を使います。この情報は利用者の端末にのみ残ります。</p>
+
+<h2>5. 利用者の権利</h2>
+<p>利用者はいつでも、自分の個人情報の閲覧・訂正・削除・処理停止を求めることができます。ホーム画面下部の<a href="../#about">お問い合わせ</a>からご依頼いただければ、遅滞なく対応します。プロジェクトはアプリ内で直接削除することもできます。</p>
+
+<h2>6. 安全管理措置</h2>
+<p>すべての通信は HTTPS で暗号化され、非公開のボードは招待されたメンバーだけが開けるよう、サーバーで権限を確認します。管理者機能は別の認証で保護しています。</p>
+
+<h2>7. 改定</h2>
+<p>このポリシーを変更する場合は、施行の7日前からこのページでお知らせします。</p>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../">ホーム</a>
+      <a href="guide.html">使い方ガイド</a>
+      <a href="blog.html">ブログ</a>
+      <a href="faq.html">よくある質問</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+      <a href="terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

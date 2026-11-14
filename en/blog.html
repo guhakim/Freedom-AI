@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'en', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'blog.html' + location.hash);
+})();
+</script>
+<title>Blog | Freedom AI</title>
+<meta name="description" content="The Freedom AI blog: practical ways to run better meetings, planning sessions and classes with an online whiteboard.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/en/blog.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Blog">
+<meta property="og:description" content="The Freedom AI blog: practical ways to run better meetings, planning sessions and classes with an online whiteboard.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/en/blog.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="guide.html">User guide</a>
+    <a href="blog.html" aria-current="page">Blog</a>
+    <a href="faq.html">FAQ</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../blog.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/blog.html" hreflang="en" lang="en" data-lang="en" title="English" aria-current="true">EN</a><a href="../ja/blog.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
+    <a href="../app.html" class="cta">Get started</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">Blog</span>
+<h1>Notes on thinking together</h1>
+<p class="lead">Practical ways to run meetings, planning and classes better with an infinite canvas and sticky notes — mostly things we learned by doing them ourselves.</p>
+<ul class="post-list">
+  <li><a href="blog/online-whiteboard-meeting.html"><span class="meta">2026-11-14</span><h2>Cut Meeting Time in Half with an Online Whiteboard: 5 Steps</h2><p>Meetings that run on talk alone drag on and end without clear conclusions. Here is a practical way to run one with a single whiteboard, from organizing the agenda to recording decisions.</p></a></li>
+  <li><a href="blog/brainstorming-methods.html"><span class="meta">2026-11-14</span><h2>4 Brainstorming Techniques with Sticky Notes</h2><p>Brainwriting, affinity mapping, Crazy 8s and dot voting: four techniques you can use the moment ideas stall, and how to run them on an online canvas.</p></a></li>
+  <li><a href="blog/kpt-retrospective.html"><span class="meta">2026-11-14</span><h2>KPT Retrospectives: A 30-Minute Wrap-Up After Any Project</h2><p>How to run a team retrospective with just three areas — Keep, Problem, Try. Bring up problems without blame and pick one thing you will actually change next time.</p></a></li>
+  <li><a href="blog/moodboard-ai-background.html"><span class="meta">2026-11-14</span><h2>Make a Mood Board in 10 Minutes with AI Background Removal</h2><p>A mood board aligns everyone on a feeling through reference images. Layering cut-out images makes it far tidier. A step-by-step walkthrough from setting the goal to sharing.</p></a></li>
+</ul>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="Site links">
+      <a href="../">Home</a>
+      <a href="guide.html">User guide</a>
+      <a href="blog.html">Blog</a>
+      <a href="faq.html">FAQ</a>
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Service</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

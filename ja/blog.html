@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'blog.html' + location.hash);
+})();
+</script>
+<title>ブログ | Freedom AI</title>
+<meta name="description" content="オンラインホワイトボードで会議・企画・授業をもっとうまく進める方法をまとめた Freedom AI のブログです。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/blog.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="ブログ">
+<meta property="og:description" content="オンラインホワイトボードで会議・企画・授業をもっとうまく進める方法をまとめた Freedom AI のブログです。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/blog.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="guide.html">使い方ガイド</a>
+    <a href="blog.html" aria-current="page">ブログ</a>
+    <a href="faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../blog.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/blog.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/blog.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">ブログ</span>
+<h1>一緒に考えるための記録</h1>
+<p class="lead">無限キャンバスと付箋で会議・企画・授業をうまく回す方法を、実際に使ってみて分かったことを中心にまとめています。</p>
+<ul class="post-list">
+  <li><a href="blog/online-whiteboard-meeting.html"><span class="meta">2026-11-14</span><h2>オンラインホワイトボードで会議時間を半分にする5つのステップ</h2><p>話すだけの会議は長引き、結論がぼやけます。ホワイトボード1枚で、議題の整理から決定事項の記録まで終わらせる実践的な進め方を紹介します。</p></a></li>
+  <li><a href="blog/brainstorming-methods.html"><span class="meta">2026-11-14</span><h2>付箋でできるブレインストーミング手法4選</h2><p>ブレインライティング、親和図法、クレイジー8、ドット投票。アイデアに詰まったときにすぐ使える4つの手法と、オンラインキャンバスでの進め方。</p></a></li>
+  <li><a href="blog/kpt-retrospective.html"><span class="meta">2026-11-14</span><h2>KPT振り返り：プロジェクト後30分でできる整理法</h2><p>Keep・Problem・Try の3つのエリアだけでチームの振り返りを進める方法。責めずに問題を出し合い、次のプロジェクトで実際に変えることを1つ決める方法。</p></a></li>
+  <li><a href="blog/moodboard-ai-background.html"><span class="meta">2026-11-14</span><h2>AI背景除去で10分でムードボードを作る</h2><p>参考画像を集めて雰囲気をそろえるムードボード。背景を消した画像を重ねて配置すると、ずっと整ったボードになります。目的決めから共有まで手順ごとに説明します。</p></a></li>
+</ul>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../">ホーム</a>
+      <a href="guide.html">使い方ガイド</a>
+      <a href="blog.html">ブログ</a>
+      <a href="faq.html">よくある質問</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+      <a href="terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'en', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../../' + dirs[want] + 'blog/kpt-retrospective.html' + location.hash);
+})();
+</script>
+<title>KPT Retrospectives: A 30-Minute Wrap-Up After Any Project | Freedom AI</title>
+<meta name="description" content="How to run a team retrospective with just three areas — Keep, Problem, Try. Bring up problems without blame and pick one thing you will actually change next time.">
+<link rel="canonical" href="https://freedomai-app.vercel.app/en/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/kpt-retrospective.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/kpt-retrospective.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="KPT Retrospectives: A 30-Minute Wrap-Up After Any Project">
+<meta property="og:description" content="How to run a team retrospective with just three areas — Keep, Problem, Try. Bring up problems without blame and pick one thing you will actually change next time.">
+<meta property="og:url" content="https://freedomai-app.vercel.app/en/blog/kpt-retrospective.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../fonts.css">
+<link rel="stylesheet" href="../../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"KPT Retrospectives: A 30-Minute Wrap-Up After Any Project","description":"How to run a team retrospective with just three areas — Keep, Problem, Try. Bring up problems without blame and pick one thing you will actually change next time.","inLanguage":"en","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/en/blog/kpt-retrospective.html"}</script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../../" class="logo"><img src="../../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="Main menu">
+    <a href="../guide.html">User guide</a>
+    <a href="../blog.html" aria-current="page">Blog</a>
+    <a href="../faq.html">FAQ</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../../blog/kpt-retrospective.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../../en/blog/kpt-retrospective.html" hreflang="en" lang="en" data-lang="en" title="English" aria-current="true">EN</a><a href="../../ja/blog/kpt-retrospective.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
+    <a href="../../app.html" class="cta">Get started</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">Retrospective</span>
+<h1>KPT Retrospectives: A 30-Minute Wrap-Up After Any Project</h1>
+<p class="meta">2026-11-14 · 5 min read</p>
+<p class="lead">When a project ends, everyone is tired and moves straight on to the next thing — and then repeats the same mistakes in the next project. A retrospective doesn’t need to be elaborate. Three areas and thirty minutes are enough.</p>
+
+<h2>What is KPT?</h2>
+<ul>
+  <li><strong>Keep</strong> — what went well and what we will keep doing</li>
+  <li><strong>Problem</strong> — what was disappointing or slowed us down</li>
+  <li><strong>Try</strong> — what we will try next time</li>
+</ul>
+<p>It is simple, but the order matters. Starting with what went well relaxes the room and makes people less defensive when problems come up.</p>
+
+<h2>Prepare the canvas (2 min)</h2>
+<p>Draw three rectangles side by side and label them Keep, Problem and Try. It helps to give each area its own note color: green for Keep, pink for Problem, yellow for Try. Write the scope above the areas — for example “This project: XX redesign (Sep–Nov)” — so the conversation doesn’t wander.</p>
+
+<h2>Write Keeps (5 min)</h2>
+<p>Everyone quietly adds notes to the Keep area. The more specific the better: “The ten-minute check-in every morning was great.” When everyone is done, each person reads theirs briefly, and similar notes are stacked together.</p>
+
+<h2>Write Problems (8 min)</h2>
+<p>This is the step that needs the most care. There is one rule: <strong>write about situations, not people</strong>. Instead of “X handed things over late”, write “Design review overlapped with the development schedule.” Separating the problem from the person is what makes it possible to talk about solutions.</p>
+<p>If many Problems come up, group similar ones and use dot voting to pick the two or three that hurt most.</p>
+<div class="tip"><p>Problems that are hard to say out loud are easier to write on a note. Give people plenty of quiet writing time.</p></div>
+
+<h2>Decide on Tries (10 min)</h2>
+<p>Attach one Try to each Problem you voted for. A Try must be <strong>small enough to start next week</strong>. “Let’s communicate better” is a resolution, not a Try. “Fix design review to Tuesday afternoons every week” is a Try.</p>
+
+<h2>Wrap up (5 min)</h2>
+<p>Move the Tries into calendar to-dos and assign owners. Then schedule the next retrospective right away. It begins by checking whether last time’s Tries actually worked. Continuing like this turns the retrospective from a one-off event into a mechanism that helps the team improve little by little.</p>
+<p>Save the board as a PNG and attach it to your project documents; six months from now, when you start a similar project, it will be a valuable reference.</p>
+<div class="next">Next → <a href="moodboard-ai-background.html">Make a Mood Board in 10 Minutes with AI Background Removal</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="Site links">
+      <a href="../../">Home</a>
+      <a href="../guide.html">User guide</a>
+      <a href="../blog.html">Blog</a>
+      <a href="../faq.html">FAQ</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Service</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

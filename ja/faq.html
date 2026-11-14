@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'faq.html' + location.hash);
+})();
+</script>
+<title>よくある質問 | Freedom AI</title>
+<meta name="description" content="Freedom AI の料金、同時接続、保存、セキュリティ、モバイル対応、AI背景除去についてよくいただく質問と回答です。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/faq.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/faq.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/faq.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/faq.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/faq.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="よくある質問">
+<meta property="og:description" content="Freedom AI の料金、同時接続、保存、セキュリティ、モバイル対応、AI背景除去についてよくいただく質問と回答です。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/faq.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="guide.html">使い方ガイド</a>
+    <a href="blog.html">ブログ</a>
+    <a href="faq.html" aria-current="page">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../faq.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/faq.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/faq.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">FAQ</span>
+<h1>よくある質問</h1>
+<p class="lead">ユーザーの皆さまからよくいただく質問をまとめました。ここにない内容は、ホーム画面下部のお問い合わせからお送りください。</p>
+
+<h2>はじめ方と料金</h2>
+<details><summary>無料ですか？</summary><p>はい。現在提供しているすべての機能（無限キャンバス、ペン、付箋、図形、リアルタイム共同編集、カレンダーのToDo、AI背景除去）を無料で使えます。運営費はランディングページと案内ページの広告でまかなっており、作業画面（キャンバス）には広告を入れていません。</p></details>
+<details><summary>ソフトをインストールする必要はありますか？</summary><p>いいえ。ブラウザですぐに動きます。Chrome、Safari、Edge、Firefox の最新版をおすすめします。</p></details>
+<details><summary>スマートフォンやタブレットでも使えますか？</summary><p>使えます。指1本で画面を動かし、2本指で拡大・縮小でき、ペンは指やスタイラスで使えます。画面の小さいスマートフォンよりタブレットのほうが快適です。</p></details>
+<details><summary>ログインせずに使えますか？</summary><p>使えます。ただし、ログインせずに作ったボードは最後の編集から24時間後に自動で削除されます。ボードを使い続けるにはGoogleアカウントでログインしてください。</p></details>
+
+<h2>共同編集</h2>
+<details><summary>何人まで一緒に使えますか？</summary><p>人数の上限は決めていません。少人数のチーム（2〜10人）での利用を想定して作っており、人数がとても多くなると、ネットワーク状況によって反映が遅くなることがあります。</p></details>
+<details><summary>招待リンクの有効期限は？</summary><p>発行から7日間です。新しいリンクを発行すると、以前のリンクはすぐに無効になります。</p></details>
+<details><summary>招待していない人がボードを見られますか？</summary><p>招待を始めたボードは非公開になり、招待から参加したメンバーだけが開けます。メンバー一覧から人を外すこともできます。</p></details>
+<details><summary>ほかの人が消したものを元に戻せますか？</summary><p>元に戻す（<kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd>）は自分の操作を取り消します。大事な節目ごとにPNGで保存しておけば、以前の状態を記録として残せます。</p></details>
+
+<h2>保存とデータ</h2>
+<details><summary>作業内容はどこに保存されますか？</summary><p>ログインしたユーザーのボードはサーバーに自動保存され、別の端末でも開けます。詳しい取り扱いは<a href="privacy.html">プライバシーポリシー</a>に記載しています。</p></details>
+<details><summary>ボードをファイルで受け取れますか？</summary><p>ツールバーの「画像として保存（PNG）」で、今のボードを画像ファイルとしてダウンロードできます。</p></details>
+<details><summary>AI背景除去に使った画像はどうなりますか？</summary><p>背景を消している間だけ処理サーバーに送られ、結果の画像がキャンバスに戻ります。元の画像をAIの学習に使うことはありません。</p></details>
+
+<h2>トラブルシューティング</h2>
+<details><summary>メンバーのカーソルが見えません。</summary><p>会社や学校のファイアウォールがリアルタイム接続（WebSocket）をブロックしていることがあります。別のネットワークやスマートフォンのテザリングで試してください。</p></details>
+<details><summary>「再ログイン」のバナーが何度も出ます。</summary><p>ログインの有効時間が切れそうなときに表示されます。バナーを押せば、アカウントを選び直さずに延長されます。ブラウザがサードパーティCookieやポップアップをブロックしている場合は許可してください。</p></details>
+<div class="next">機能を最初から順番に見たい方は → <a href="guide.html">使い方ガイド</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../">ホーム</a>
+      <a href="guide.html">使い方ガイド</a>
+      <a href="blog.html">ブログ</a>
+      <a href="faq.html">よくある質問</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+      <a href="terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

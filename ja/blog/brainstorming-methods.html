@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../../' + dirs[want] + 'blog/brainstorming-methods.html' + location.hash);
+})();
+</script>
+<title>付箋でできるブレインストーミング手法4選 | Freedom AI</title>
+<meta name="description" content="ブレインライティング、親和図法、クレイジー8、ドット投票。アイデアに詰まったときにすぐ使える4つの手法と、オンラインキャンバスでの進め方。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/blog/brainstorming-methods.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/blog/brainstorming-methods.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="付箋でできるブレインストーミング手法4選">
+<meta property="og:description" content="ブレインライティング、親和図法、クレイジー8、ドット投票。アイデアに詰まったときにすぐ使える4つの手法と、オンラインキャンバスでの進め方。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/blog/brainstorming-methods.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../fonts.css">
+<link rel="stylesheet" href="../../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"付箋でできるブレインストーミング手法4選","description":"ブレインライティング、親和図法、クレイジー8、ドット投票。アイデアに詰まったときにすぐ使える4つの手法と、オンラインキャンバスでの進め方。","inLanguage":"ja","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"Freedom AI"},"publisher":{"@type":"Organization","name":"Freedom AI","logo":{"@type":"ImageObject","url":"https://freedomai-app.vercel.app/logo.png"}},"mainEntityOfPage":"https://freedomai-app.vercel.app/ja/blog/brainstorming-methods.html"}</script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../../" class="logo"><img src="../../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="../guide.html">使い方ガイド</a>
+    <a href="../blog.html" aria-current="page">ブログ</a>
+    <a href="../faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../../blog/brainstorming-methods.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../../en/blog/brainstorming-methods.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../../ja/blog/brainstorming-methods.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">アイデア</span>
+<h1>付箋でできるブレインストーミング手法4選</h1>
+<p class="meta">2026-11-14 · 7分で読めます</p>
+<p class="lead">「自由にアイデアを出してください」ほど、人を固まらせる言葉はなかなかありません。良いブレインストーミングにはルールが必要です。次の4つは付箋さえあればできるので、オンラインキャンバスでもそのまま実践できます。状況に合わせて1つだけ使ってもいいし、順につなげれば1時間のワークショップになります。</p>
+
+<h2>1. ブレインライティング — 話す代わりに書いてアイデアをつなぐ</h2>
+<p><strong>使いどき</strong>：参加者が多いとき、または一部の人だけが話している雰囲気のとき。</p>
+<p><strong>進め方</strong></p>
+<ol>
+  <li>参加者ごとに、キャンバス上に自分の名前を書いた縦の列を1つずつ作ります。</li>
+  <li>3分間で、自分の列にアイデアの付箋を3枚貼ります。</li>
+  <li>時間になったら右隣の人の列に移り、そこにあるアイデアを発展させた付箋を3枚、下に書き足します。</li>
+  <li>すべての列を一周するまで繰り返します。</li>
+</ol>
+<p>6人なら30分で100枚を超えるアイデアが出ます。他人のアイデアの「続き」を書くので、最初から斬新なことを思いつかなければというプレッシャーが減るのがポイントです。</p>
+
+<h2>2. 親和図法 — ばらばらのアイデアに構造を与える</h2>
+<p><strong>使いどき</strong>：アイデアはたくさんあるのに、何が大事なのか見えないとき。</p>
+<p>すべての付箋をキャンバスの片側に広げ、黙ったまま似たものどうしを寄せていきます。誰かが動かした付箋を別の人がまた動かしてもかまいません。動きが落ち着いたら、まとまりごとに文章でタイトルをつけます。「UI」のような単語より、「はじめての人がボタンを見つけられない」のように文章で書くのがおすすめです。文章で書くと、次の行動が見えてきます。</p>
+<div class="tip"><p>まとまりのタイトルを別の色の付箋で貼っておくと、あとでPNG保存したときにも構造が一目で分かります。</p></div>
+
+<h2>3. クレイジー8 — 8分で8つのスケッチ</h2>
+<p><strong>使いどき</strong>：画面、ポスター、ロゴなど、目に見えるものを作るとき。</p>
+<p>四角形の図形8つで2×4のマス目を作り、1マスにつき1分ずつ、ペンで素早くスケッチします。上手に描こうとしてはいけません。1分は本当に短いので、最初の2、3マスはありがちなアイデアになりますが、5マス目あたりから、普段は考えもしない方向が飛び出してきます。</p>
+<p>終わったら、それぞれがいちばん気に入ったマスに星印をつけ、選んだ理由を30秒ずつ説明します。</p>
+
+<h2>4. ドット投票 — 素早く公平に選ぶ</h2>
+<p><strong>使いどき</strong>：選択肢は十分あるのに決められないとき。</p>
+<p>一人3つずつ点を持ち、気に入ったアイデアの横にペンで打ちます。1つのアイデアに3つ全部を打ってもかまいません。投票の間は互いに説得しないのがルールです。点が集まったアイデアを2、3個選んで次の段階に進めます。</p>
+<p>ドット投票は最終決定ではなく、<strong>議論の範囲を絞るための道具</strong>です。点の少なかったアイデアでも、どうしても必要な理由があるなら、この場で話しましょう。</p>
+
+<h2>4つをつなげると</h2>
+<div class="table-wrap"><table>
+  <tr><th>順番</th><th>手法</th><th>時間</th><th>成果</th></tr>
+  <tr><td>1</td><td>ブレインライティング</td><td>20分</td><td>数十枚のアイデア</td></tr>
+  <tr><td>2</td><td>親和図法</td><td>15分</td><td>テーマ別のまとまり5〜8個</td></tr>
+  <tr><td>3</td><td>ドット投票</td><td>5分</td><td>集中すべきまとまり2〜3個</td></tr>
+  <tr><td>4</td><td>クレイジー8</td><td>15分</td><td>具体的な案のスケッチ</td></tr>
+</table></div>
+<p>1時間で、漠然としたテーマが手に取れる案になります。最後に決まった案はカレンダーのToDoに移し、担当者を決めましょう。</p>
+<div class="next">次の記事 → <a href="kpt-retrospective.html">KPT振り返り：プロジェクト後30分でできる整理法</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../../">ホーム</a>
+      <a href="../guide.html">使い方ガイド</a>
+      <a href="../blog.html">ブログ</a>
+      <a href="../faq.html">よくある質問</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="../terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

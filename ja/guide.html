@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ja', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('../' + dirs[want] + 'guide.html' + location.hash);
+})();
+</script>
+<title>使い方ガイド — はじめての Freedom AI | Freedom AI</title>
+<meta name="description" content="ログインからペン・付箋・図形、チームメンバーの招待、カレンダーのToDo、AI背景除去、PNG保存まで、Freedom AI の機能を使う順に説明します。">
+<link rel="canonical" href="https://freedomai-app.vercel.app/ja/guide.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/guide.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/guide.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/guide.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/guide.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ja_JP">
+<meta property="og:title" content="使い方ガイド — はじめての Freedom AI">
+<meta property="og:description" content="ログインからペン・付箋・図形、チームメンバーの招待、カレンダーのToDo、AI背景除去、PNG保存まで、Freedom AI の機能を使う順に説明します。">
+<meta property="og:url" content="https://freedomai-app.vercel.app/ja/guide.html">
+<meta property="og:image" content="https://freedomai-app.vercel.app/logo.png">
+<link rel="icon" type="image/png" href="../logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../pages.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3217274047131813" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="site-header">
+  <a href="../" class="logo"><img src="../logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <nav class="site-nav" aria-label="メインメニュー">
+    <a href="guide.html" aria-current="page">使い方ガイド</a>
+    <a href="blog.html">ブログ</a>
+    <a href="faq.html">よくある質問</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="../guide.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어">KO</a><a href="../en/guide.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../ja/guide.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語" aria-current="true">JP</a></span>
+    <a href="../app.html" class="cta">はじめる</a>
+  </nav>
+</header>
+<main>
+<span class="kicker">使い方ガイド</span>
+<h1>Freedom AI 使い方ガイド</h1>
+<p class="lead">Freedom AI は、果てしなく広いキャンバスの上で、複数の人が同時に描いたり、付箋を貼ったり、ToDoを分担したりできるウェブのコラボレーションツールです。このガイドは、はじめての方が10分ほどでチームのボードを用意できるよう、実際に使う順番で機能をまとめました。</p>
+<div class="toc"><ol>
+  <li><a href="#start">はじめに：ログインと最初のプロジェクト</a></li>
+  <li><a href="#canvas">キャンバスの動かし方</a></li>
+  <li><a href="#tools">ツールバーとショートカット</a></li>
+  <li><a href="#notes">付箋と矢印</a></li>
+  <li><a href="#team">メンバーの招待とリアルタイム共同編集</a></li>
+  <li><a href="#todo">カレンダーのToDo</a></li>
+  <li><a href="#image">画像の追加とAI背景除去</a></li>
+  <li><a href="#export">保存と書き出し</a></li>
+  <li><a href="#trouble">困ったときは</a></li>
+</ol></div>
+
+<h2 id="start">1. はじめに：ログインと最初のプロジェクト</h2>
+<p>インストールは不要です。PC・タブレット・スマートフォンの最新ブラウザ（Chrome、Safari、Edge、Firefox）で<a href="../app.html">はじめる</a>を押すと、すぐにキャンバスが開きます。</p>
+<ul>
+  <li><strong>Googleアカウントでログイン</strong>すると、作ったプロジェクトがアカウントに保存され、別の端末でも続きから作業できます。</li>
+  <li><strong>ログインせずに</strong>試すこともできます。ただし、ログインせずに作ったボードは最後の編集から24時間後に自動で削除されます。残したい内容はログインするか、PNGで保存してください。</li>
+</ul>
+<p>左上の<strong>プロジェクト一覧</strong>から<strong>新規プロジェクト</strong>を選ぶと、空のボードができます。ボード名をクリックして「第3四半期マーケティング会議」のように分かりやすい名前にしておくと、あとで探しやすくなります。</p>
+
+<h2 id="canvas">2. キャンバスの動かし方</h2>
+<p>キャンバスに端はありません。スペースが足りなくなったら、横に移動して続けて書けばいいのです。</p>
+<div class="table-wrap"><table>
+  <tr><th>やりたいこと</th><th>マウス・トラックパッド</th><th>タッチ画面</th></tr>
+  <tr><td>画面を動かす</td><td>移動ツール（<kbd>H</kbd>）でドラッグ</td><td>空いている所を指1本でドラッグ</td></tr>
+  <tr><td>拡大・縮小</td><td>マウスホイール、トラックパッドの2本指スクロール</td><td>2本指でピンチ</td></tr>
+  <tr><td>要素を選ぶ</td><td>選択ツール（<kbd>V</kbd>）でクリックまたはドラッグ</td><td>選択ツールでタップ</td></tr>
+</table></div>
+
+<h2 id="tools">3. ツールバーとショートカット</h2>
+<p>ツールバーから選ぶか、キーボードのショートカットですぐに切り替えられます。文字を入力している間はショートカットが働かないので、安心して入力してください。</p>
+<div class="table-wrap"><table>
+  <tr><th>ツール</th><th>ショートカット</th><th>使いみち</th></tr>
+  <tr><td>選択</td><td><kbd>V</kbd></td><td>要素を選んで移動・サイズ変更します。ドラッグで複数をまとめて選べます。</td></tr>
+  <tr><td>移動</td><td><kbd>H</kbd></td><td>要素に触れずに画面だけを動かします。</td></tr>
+  <tr><td>ペン</td><td><kbd>P</kbd></td><td>自由に描きます。細い・標準・太いの3種類の太さとカラーパレットを選べます。</td></tr>
+  <tr><td>消しゴム</td><td><kbd>E</kbd></td><td>ペンで描いた線を消します。</td></tr>
+  <tr><td>付箋</td><td><kbd>S</kbd></td><td>クリックした場所に付箋を貼ります。</td></tr>
+  <tr><td>図形</td><td><kbd>R</kbd></td><td>四角形・円・三角形・矢印を挿入します。</td></tr>
+  <tr><td>元に戻す</td><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Z</kbd></td><td>直前の操作を取り消します。</td></tr>
+  <tr><td>グループ化 / 解除</td><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>G</kbd> / +<kbd>Shift</kbd>+<kbd>G</kbd></td><td>複数の要素をまとめて一緒に動かします。</td></tr>
+</table></div>
+
+<h2 id="notes">4. 付箋と矢印</h2>
+<p>付箋は5色あります。色に意味を決めておくと、ボードがぐっと読みやすくなります。たとえば黄色はアイデア、ピンクは課題、緑は決定事項、のように。</p>
+<ul>
+  <li>付箋をダブルクリックして内容を書き、文字サイズボタンで大きさを変えます。</li>
+  <li>角をドラッグしてサイズを調整します。</li>
+  <li>付箋を別の付箋に近づけると、磁石のようにくっついて列がそろいます。</li>
+  <li>矢印で付箋どうしをつなぎ、順番や因果関係を示せます。</li>
+</ul>
+
+<h2 id="team">5. メンバーの招待とリアルタイム共同編集</h2>
+<p>プロジェクト画面の<strong>招待</strong>ボタンを押すと招待リンクが作られます。このリンクをメッセンジャーで送ると、受け取った人がGoogleアカウントでログインして同じボードに入れます。</p>
+<ul>
+  <li>招待リンクの有効期限は<strong>7日間</strong>です。期限が切れたら新しく発行してください。</li>
+  <li>招待を始めるとボードは<strong>非公開</strong>になり、招待されたメンバーだけが開けます。以前の公開リンクは使えなくなります。</li>
+  <li>参加したメンバーは<strong>招待されたメンバー</strong>一覧で確認でき、必要に応じて外すこともできます。</li>
+  <li>一緒に接続している人のカーソルと名前がリアルタイムで表示され、誰かが描いたり付箋を動かしたりすると、全員の画面にすぐ反映されます。</li>
+</ul>
+
+<h2 id="todo">6. カレンダーのToDo</h2>
+<p>ツールバーの<strong>カレンダー</strong>を開くと、プロジェクトに紐づいたToDoリストが表示されます。日付を選んでやることを書くと、メンバー全員に同じリストが見え、誰がチェックしたかもリアルタイムで反映されます。会議で決まったことをその場で期日つきのToDoにしておけば、会議のあとで改めて整理する必要がありません。</p>
+
+<h2 id="image">7. 画像の追加とAI背景除去</h2>
+<p>参考画像のファイルをブラウザのウィンドウにドラッグ＆ドロップすると、キャンバスに追加されます。ムードボードや資料集めに便利です。</p>
+<p>キャンバス上の画像を<strong>長押しする</strong>と、AIが背景を消してくれます。人物写真だけでなく、ロゴや文字の画像も認識します。処理の間、画像は背景除去サーバーに送られ、処理が終わると結果だけがキャンバスに戻ります。</p>
+<div class="tip"><p><strong>ヒント</strong> — 被写体と背景の色がはっきり違うほど、きれいに仕上がります。ぼやけた写真は輪郭が粗く切り抜かれることがあります。</p></div>
+
+<h2 id="export">8. 保存と書き出し</h2>
+<p>ログインしていれば、作業内容は自動で保存されます。ボードを資料やチャットに貼りたいときは、<strong>画像として保存（PNG）</strong>を押して、今のボードを画像ファイルでダウンロードしてください。</p>
+
+<h2 id="trouble">9. 困ったときは</h2>
+<ul>
+  <li><strong>「再ログイン」の案内が出る</strong> — ログインの有効時間が切れそうなときに表示されます。バナーを一度押せば、アカウントを選び直さずに延長されます。</li>
+  <li><strong>メンバーの変更が見えない</strong> — 会社や学校のネットワークがリアルタイム接続（WebSocket）をブロックしていることがあります。別のネットワークで試してください。</li>
+  <li><strong>招待リンクが開けない</strong> — 7日が過ぎたか、ボードのオーナーがリンクを再発行して以前のリンクが無効になった可能性があります。</li>
+</ul>
+<p>そのほかの質問は<a href="faq.html">よくある質問</a>をご覧いただくか、<a href="../#about">ホーム画面下部のお問い合わせ</a>からお知らせください。</p>
+<div class="next">次に読む → <a href="blog/online-whiteboard-meeting.html">オンラインホワイトボードで会議時間を半分にする5つのステップ</a></div>
+</main>
+<footer class="site-footer">
+  <div class="inner">
+    <nav aria-label="サイト案内">
+      <a href="../">ホーム</a>
+      <a href="guide.html">使い方ガイド</a>
+      <a href="blog.html">ブログ</a>
+      <a href="faq.html">よくある質問</a>
+      <a href="privacy.html">プライバシーポリシー</a>
+      <a href="terms.html">利用規約</a>
+    </nav>
+    <p>© 2026 Freedom AI. All rights reserved.</p>
+  </div>
+</footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
+</body>
+</html>

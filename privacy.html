@@ -3,11 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// 랜딩 페이지에서 고른 언어(fa_lang)와 이 페이지 언어가 다르면 그 언어 주소로 옮긴다
+(function () {
+  var here = 'ko', want;
+  try { want = localStorage.getItem('fa_lang'); } catch (e) {}
+  if (!want || want === here || ['ko', 'en', 'ja'].indexOf(want) < 0) return;
+  var dirs = { ko: '', en: 'en/', ja: 'ja/' };
+  location.replace('' + dirs[want] + 'privacy.html' + location.hash);
+})();
+</script>
 <title>개인정보처리방침 | Freedom AI</title>
 <meta name="description" content="Freedom AI가 수집하는 개인정보의 항목, 목적, 보관 기간, 제3자 제공, 광고 쿠키에 대한 안내입니다.">
 <link rel="canonical" href="https://freedomai-app.vercel.app/privacy.html">
+<link rel="alternate" hreflang="ko" href="https://freedomai-app.vercel.app/privacy.html">
+<link rel="alternate" hreflang="en" href="https://freedomai-app.vercel.app/en/privacy.html">
+<link rel="alternate" hreflang="ja" href="https://freedomai-app.vercel.app/ja/privacy.html">
+<link rel="alternate" hreflang="x-default" href="https://freedomai-app.vercel.app/privacy.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Freedom AI">
+<meta property="og:locale" content="ko_KR">
 <meta property="og:title" content="개인정보처리방침">
 <meta property="og:description" content="Freedom AI가 수집하는 개인정보의 항목, 목적, 보관 기간, 제3자 제공, 광고 쿠키에 대한 안내입니다.">
 <meta property="og:url" content="https://freedomai-app.vercel.app/privacy.html">
@@ -22,11 +37,12 @@
 </head>
 <body>
 <header class="site-header">
-  <a href="./" class="logo"><img src="logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <a href="" class="logo"><img src="logo-mark.png" alt=""><span>Freedom Ai</span></a>
   <nav class="site-nav" aria-label="주 메뉴">
     <a href="guide.html">사용 가이드</a>
     <a href="blog.html">블로그</a>
     <a href="faq.html">자주 묻는 질문</a>
+    <span class="lang-switch" role="group" aria-label="Language"><a href="privacy.html" hreflang="ko" lang="ko" data-lang="ko" title="한국어" aria-current="true">KO</a><a href="en/privacy.html" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="ja/privacy.html" hreflang="ja" lang="ja" data-lang="ja" title="日本語">JP</a></span>
     <a href="app.html" class="cta">시작하기</a>
   </nav>
 </header>
@@ -74,7 +90,7 @@
 <p>또한 언어 선택 같은 화면 설정을 기억하기 위해 브라우저 저장소(localStorage)를 씁니다. 이 정보는 이용자의 기기에만 남습니다.</p>
 
 <h2>5. 이용자의 권리</h2>
-<p>이용자는 언제든 자신의 개인정보 열람·정정·삭제·처리 정지를 요청할 수 있습니다. 홈 화면 아래 <a href="./#about">문의하기</a>로 요청하시면 지체 없이 처리합니다. 프로젝트는 앱 안에서 직접 삭제할 수도 있습니다.</p>
+<p>이용자는 언제든 자신의 개인정보 열람·정정·삭제·처리 정지를 요청할 수 있습니다. 홈 화면 아래 <a href="#about">문의하기</a>로 요청하시면 지체 없이 처리합니다. 프로젝트는 앱 안에서 직접 삭제할 수도 있습니다.</p>
 
 <h2>6. 안전성 확보 조치</h2>
 <p>모든 통신은 HTTPS로 암호화되며, 비공개 보드는 초대받은 팀원만 열 수 있도록 서버에서 권한을 확인합니다. 관리자 기능은 별도 인증으로 보호합니다.</p>
@@ -85,7 +101,7 @@
 <footer class="site-footer">
   <div class="inner">
     <nav aria-label="사이트 안내">
-      <a href="./">홈</a>
+      <a href="">홈</a>
       <a href="guide.html">사용 가이드</a>
       <a href="blog.html">블로그</a>
       <a href="faq.html">자주 묻는 질문</a>
@@ -95,5 +111,11 @@
     <p>© 2026 Freedom AI. All rights reserved.</p>
   </div>
 </footer>
+<script>
+// 언어 버튼을 누르면 랜딩 페이지와 같은 저장값도 바꿔, 위의 자동 이동이 되돌리지 않게 한다
+document.querySelectorAll('.lang-switch a').forEach(function (a) {
+  a.addEventListener('click', function () { try { localStorage.setItem('fa_lang', a.dataset.lang); } catch (e) {} });
+});
+</script>
 </body>
 </html>
