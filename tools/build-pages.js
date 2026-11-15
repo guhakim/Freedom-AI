@@ -28,6 +28,45 @@ for (const l of LANGS) {
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
+// ── 카카오 애드핏 ──
+// freedom-ai 매체에 등록된 광고 단위 15개 중 300×250 13개를 안내·블로그 글에 나눠 단다.
+// (728×90, 320×100 띠 배너 2개는 랜딩과 이 페이지들 끝에 함께 쓴다)
+// 한 페이지에는 본문 중간 1개 + 본문 끝 1개 + 띠 배너 1개 — 같은 단위가 한 페이지에 두 번 나오지 않게 페이지마다 돌려 쓴다.
+// 개인정보처리방침·이용약관에는 광고를 달지 않는다.
+const ADFIT_RECT = [
+  'DAN-2zvZLKdgoZyxejRz', 'DAN-2tj2Kg29rpfyO8zL', 'DAN-s2q9FJ9e6n4qPEUA', 'DAN-dSAYjJO6UExo9Pkr',
+  'DAN-DJpJjrVTEs6u05Qh', 'DAN-fLCP0coiXJu4HhuL', 'DAN-7umI7PdQvGYewDxt', 'DAN-Yoidneee4sSOdfKA',
+  'DAN-nepiosXHET32MTCn', 'DAN-gYI8qTv0yTAsGTr0', 'DAN-nsZl5jT4YUxIqHls', 'DAN-pFF5398BxcsgB031',
+  'DAN-OUgljFHsAtvM4pSS',
+];
+const NO_ADS = new Set(['privacy.html', 'terms.html']);
+const AD_ORDER = ['guide.html', 'faq.html', 'blog.html']; // 나머지(블로그 글)는 뒤에 이어 붙는다
+const rect = (unit) => `<div class="ad-box"><ins class="kakao_ad_area" style="display:none;" data-ad-unit="${unit}" data-ad-width="300" data-ad-height="250"></ins></div>`;
+const band = `<div class="ad-box ad-band" id="ad-band">
+  <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-aSw8EAwd6QXWqTCW" data-ad-width="728" data-ad-height="90"></ins>
+  <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-XhQy76O5zTeHBNwt" data-ad-width="320" data-ad-height="100"></ins>
+  <script>
+    // 광고 스크립트가 읽기 전에, 화면 폭에 맞지 않는 띠 배너를 지운다
+    document.querySelector('#ad-band [data-ad-width="' + (matchMedia('(min-width: 760px)').matches ? '320' : '728') + '"]').remove();
+  </script>
+</div>`;
+
+// 본문 가운데쯤의 <h2> 앞에 광고 하나, 본문 끝에 광고 하나와 띠 배너를 넣는다
+function withAds(body, slot) {
+  const mid = ADFIT_RECT[(slot * 2) % ADFIT_RECT.length];
+  const end = ADFIT_RECT[(slot * 2 + 1) % ADFIT_RECT.length];
+  const heads = [...body.matchAll(/<h2[\s>]/g)].map((m) => m.index);
+  let out = body;
+  if (heads.length >= 2) {
+    const at = heads[Math.floor(heads.length / 2)];
+    out = out.slice(0, at) + rect(mid) + '\n' + out.slice(at);
+  } else {
+    // 소제목이 적은 페이지(블로그 목록 등)는 첫 문단 다음에 넣는다
+    out = out.replace(/(<p class="lead">[\s\S]*?<\/p>)/, `$1\n${rect(mid)}`);
+  }
+  return `${out}\n${rect(end)}\n${band}\n<script src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>`;
+}
+
 function render(lang, p) {
   const { ui } = content[lang];
   const rel = DIR[lang] + p.file;                         // 사이트 루트 기준 경로
@@ -37,7 +76,8 @@ function render(lang, p) {
   const langRoot = home ? '../'.repeat(home) : '';        // 이 언어의 최상위로 가는 상대 경로
   const cur = (k) => (p.nav === k ? ' aria-current="page"' : '');
   const url = (l) => `${SITE}/${DIR[l]}${p.file}`;
-  const body = p.body.trim().replace(/(href|src)="@\//g, `$1="${root}`);
+  let body = p.body.trim().replace(/(href|src)="@\//g, `$1="${root}`);
+  if (!NO_ADS.has(p.file)) body = withAds(body, p.adSlot);
   const ld = p.article
     ? `\n<script type="application/ld+json">${JSON.stringify({
         '@context': 'https://schema.org', '@type': 'Article', headline: p.title, description: p.desc,
@@ -126,7 +166,10 @@ for (const lang of LANGS) {
 ${posts.map((p) => `  <li><a href="${p.file}"><span class="meta">${p.article.date}</span><h2>${p.title}</h2><p>${p.desc}</p></a></li>`).join('\n')}
 </ul>`,
   }];
+  const adPages = list.filter((p) => !NO_ADS.has(p.file)).map((p) => p.file)
+    .sort((a, b) => ((AD_ORDER.indexOf(a) + 1) || 99) - ((AD_ORDER.indexOf(b) + 1) || 99) || a.localeCompare(b));
   for (const p of list) {
+    p.adSlot = adPages.indexOf(p.file);
     const rel = DIR[lang] + p.file;
     const out = path.join(ROOT, rel);
     fs.mkdirSync(path.dirname(out), { recursive: true });
