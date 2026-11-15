@@ -125,7 +125,7 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${url(l)}">`).jo
 </head>
 <body>
 <header class="site-header">
-  <a href="${root}" class="logo"><img src="${root}logo-mark.png" alt=""><span>Freedom Ai</span></a>
+  <a href="${root || './'}" class="logo"><img src="${root}logo-mark.png" alt=""><span>Freedom Ai</span></a>
   <nav class="site-nav" aria-label="${ui.nav.menu}">
     <a href="${langRoot}guide.html"${cur('guide')}>${ui.nav.guide}</a>
     <a href="${langRoot}blog.html"${cur('blog')}>${ui.nav.blog}</a>
@@ -139,7 +139,7 @@ ${body}
 <footer class="site-footer">
   <div class="inner">
     <nav aria-label="${ui.nav.footer}">
-      <a href="${root}">${ui.footer.home}</a>
+      <a href="${root || './'}">${ui.footer.home}</a>
       <a href="${langRoot}guide.html">${ui.nav.guide}</a>
       <a href="${langRoot}blog.html">${ui.nav.blog}</a>
       <a href="${langRoot}faq.html">${ui.nav.faq}</a>
