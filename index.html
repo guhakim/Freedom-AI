@@ -1226,10 +1226,20 @@
 
 
 <!-- ══════════════════════════
-     AD — 콘텐츠보다 광고가 많아 보이지 않도록 띠 배너 1개 + 쿠팡 1개만 둔다.
-     (예전 5열 격자·양옆 300×250 등 최대 16개를 두었다가 애드센스 "가치 없는 콘텐츠" 판정을 받았다)
+     AD — 300×250 2개 + 띠 배너 1개 + 쿠팡 1개.
+     (예전 5열 격자·양옆 300×250 등 최대 16개를 두었다가 애드센스 "가치 없는 콘텐츠" 판정을 받았다.
+      나머지 애드핏 단위는 안내·블로그 페이지에 페이지당 3개씩 나눠 단다 — tools/build-pages.js)
 ══════════════════════════ -->
 <div class="ad-slot" id="ad-bottom">
+  <ins class="kakao_ad_area" style="display:none;"
+       data-ad-unit="DAN-s2q9FJ9e6n4qPEUA"
+       data-ad-width="300"
+       data-ad-height="250"></ins>
+  <ins class="kakao_ad_area" style="display:none;"
+       data-ad-unit="DAN-dSAYjJO6UExo9Pkr"
+       data-ad-width="300"
+       data-ad-height="250"></ins>
+  <div style="flex-basis:100%;height:0"></div><!-- 띠 배너는 다음 줄로 -->
   <ins class="kakao_ad_area" style="display:none;"
        data-ad-unit="DAN-aSw8EAwd6QXWqTCW"
        data-ad-width="728"

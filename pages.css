@@ -87,3 +87,7 @@ details p { margin: 10px 0 0; }
 html[lang="ja"] { --font-body: 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
 /* 일본어는 띄어쓰기가 없어 keep-all이면 구두점에서만 줄이 바뀐다 */
 html[lang="ja"] body { word-break: normal; line-break: strict; }
+
+/* ── 카카오 애드핏 ── 채워지기 전(ins가 display:none)에는 높이가 0이라 빈칸이 남지 않는다 */
+.ad-box { display: flex; justify-content: center; margin: 32px auto; max-width: 100%; overflow: hidden; }
+.ad-band { margin-top: 40px; }
