@@ -89,5 +89,6 @@ html[lang="ja"] { --font-body: 'Noto Sans JP', 'Noto Sans KR', sans-serif; }
 html[lang="ja"] body { word-break: normal; line-break: strict; }
 
 /* ── 카카오 애드핏 ── 채워지기 전(ins가 display:none)에는 높이가 0이라 빈칸이 남지 않는다 */
-.ad-box { display: flex; justify-content: center; margin: 32px auto; max-width: 100%; overflow: hidden; }
-.ad-band { margin-top: 40px; }
+/* 본문 아래 한 줄: 300×250을 가운데 정렬로 나란히, 좁은 화면에서는 아래로 쌓인다 */
+.ad-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 24px; max-width: 1000px; box-sizing: border-box; margin: 0 auto; padding: 0 16px 48px; }
+.ad-cell { width: 300px; }

@@ -1226,7 +1226,7 @@
 
 
 <!-- ══════════════════════════
-     AD — 300×250 2개 + 띠 배너 1개 + 쿠팡 1개.
+     AD — 300×250 3개를 한 줄로 + 쿠팡 1개.
      (예전 5열 격자·양옆 300×250 등 최대 16개를 두었다가 애드센스 "가치 없는 콘텐츠" 판정을 받았다.
       나머지 애드핏 단위는 안내·블로그 페이지에 페이지당 3개씩 나눠 단다 — tools/build-pages.js)
 ══════════════════════════ -->
@@ -1239,20 +1239,10 @@
        data-ad-unit="DAN-dSAYjJO6UExo9Pkr"
        data-ad-width="300"
        data-ad-height="250"></ins>
-  <div style="flex-basis:100%;height:0"></div><!-- 띠 배너는 다음 줄로 -->
   <ins class="kakao_ad_area" style="display:none;"
-       data-ad-unit="DAN-aSw8EAwd6QXWqTCW"
-       data-ad-width="728"
-       data-ad-height="90"></ins>
-  <ins class="kakao_ad_area" style="display:none;"
-       data-ad-unit="DAN-XhQy76O5zTeHBNwt"
-       data-ad-width="320"
-       data-ad-height="100"></ins>
-  <script>
-    // 광고 스크립트(ba.min.js)가 읽기 전에, 화면 폭에 맞지 않는 띠 배너를 지운다
-    var keep728 = matchMedia('(min-width: 760px)').matches;
-    document.querySelector('#ad-bottom [data-ad-width="' + (keep728 ? '320' : '728') + '"]').remove();
-  </script>
+       data-ad-unit="DAN-2zvZLKdgoZyxejRz"
+       data-ad-width="300"
+       data-ad-height="250"></ins>
   <script src="https://t1.kakaocdn.net/kas/static/ba.min.js" async></script>
 
   <!-- 쿠팡 파트너스 다이나믹 배너 — 대가성 문구는 배너 바로 아래에 둔다 -->
